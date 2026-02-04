@@ -1,208 +1,193 @@
 <template>
-  <div class="login-page d-flex align-items-center justify-content-center">
-    <div class="login-card shadow">
-
-      <!-- 標題 -->
-      <div class="login-header text-center">
-        <h2 class="fw-bold">歡迎回來</h2>
-        <p class="text-muted">請輸入您的帳號密碼</p>
+  <div class="auth-page d-flex align-items-center justify-content-center">
+    <div class="auth-card shadow">
+      <div class="text-center mb-5">
+        <h2 class="fw-bold tech-blue-text">歡迎回來</h2>
+        <p class="text-muted small">請輸入您的帳號密碼以繼續</p>
       </div>
 
-      <!-- 表單 -->
-      <form @submit.prevent="handleLogin" class="mt-4">
-
-        <!-- 帳號 -->
-        <div class="form-group mb-3">
-          <label class="form-label">電子郵件 / 帳號</label>
-          <div class="input-group">
-            <span class="input-group-text">
-              <i class="fa fa-envelope-o"></i>
-            </span>
-            <input
-              type="email"
-              v-model="email"
-              class="form-control"
-              placeholder="example@mail.com"
-              required
-            />
-          </div>
-        </div>
-
-        <!-- 密碼 -->
-        <div class="form-group mb-3">
-          <label class="form-label">密碼</label>
-          <div class="input-group">
-            <span class="input-group-text">
-              <i class="fa fa-lock"></i>
-            </span>
-            <input
-              :type="showPassword ? 'text' : 'password'"
-              v-model="password"
-              class="form-control"
-              placeholder="請輸入密碼"
-              required
-            />
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              @click="showPassword = !showPassword"
-            >
-              <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- 記住我 / 忘記密碼 -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div class="form-check">
-            <input
-              type="checkbox"
-              class="form-check-input"
-              id="rememberMe"
-              v-model="rememberMe"
-            />
-            <label class="form-check-label small" for="rememberMe">
-              記住我
-            </label>
-          </div>
-
-          <router-link
-            to="/user/forgot-password"
-            class="small text-tech-blue"
+      <form @submit.prevent="handleLogin">
+        <div class="input-wrapper mb-4">
+          <input 
+            type="text" 
+            v-model="email" 
+            class="minimal-input" 
+            placeholder=" " 
+            required
           >
-            忘記密碼？
-          </router-link>
+          <label class="floating-label">電郵或手機號碼</label>
         </div>
 
-        <!-- 登入按鈕 -->
-        <button
-          type="submit"
-          class="btn btn-login w-100 py-2 fw-bold text-white"
-        >
-          登入系統
-        </button>
-
-        <!-- 註冊 -->
-        <div class="text-center mt-4">
-          <p class="small text-muted">
-            還沒有帳號嗎？
-            <router-link
-              to="/users/register"
-              class="text-tech-blue fw-bold"
-            >
-              立即註冊
-            </router-link>
-          </p>
+        <div class="input-wrapper mb-2">
+          <input 
+            :type="showPassword ? 'text' : 'password'" 
+            v-model="password" 
+            class="minimal-input" 
+            placeholder=" " 
+            required
+          >
+          <label class="floating-label">密碼</label>
+          <span class="eye-icon" @click="showPassword = !showPassword">
+            <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+          </span>
         </div>
 
+        <div class="text-start mb-5">
+          <router-link to="/user/forgot-password" class="forgot-link">忘記密碼？</router-link>
+        </div>
+
+        <button type="submit" class="btn-outline-tech w-100">登入</button>
       </form>
+
+      <div class="social-section">
+        <div class="divider"><span>或使用其他方式</span></div>
+        <div class="d-flex justify-content-center gap-4">
+          <button class="social-circle google" @click="socialLogin('Google')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+          </button>
+          <button class="social-circle line" @click="socialLogin('LINE')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE">
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center mt-5">
+        <h3 class="fw-bold mb-3" style="font-size: 1.5rem;">還沒有帳號？</h3>
+        <p class="text-muted small mb-4">立即註冊享有更多優惠！</p>
+        <router-link to="/users/register" class="btn-outline-tech w-100 d-block text-decoration-none">註冊</router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
-
-const email = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const rememberMe = ref(false)
+const router = useRouter();
+const email = ref('');
+const password = ref('');
+const showPassword = ref(false);
 
 const handleLogin = () => {
-  // 模擬登入成功
-  console.log('登入資料', {
-    email: email.value,
-    password: password.value,
-    rememberMe: rememberMe.value
-  })
+  console.log('執行登入:', { email: email.value, password: password.value });
+  // 登入成功後跳轉
+  router.push('/');
+};
 
-  // 之後可改成 API 驗證
-  sessionStorage.setItem('isLogin', 'true')
-
-  // 假設第一次登入
-  const isFirstLogin = true
-
-  if (isFirstLogin) {
-    router.push('/user/welcome')
-  } else {
-    router.push('/dashboard')
-  }
-}
+const socialLogin = (platform) => {
+  console.log(`${platform} 登入啟動`);
+};
 </script>
 
 <style scoped>
-/* 整個頁面背景 */
-.login-page {
+.auth-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fc 0%, #e2e6ea 100%);
-  padding: 20px;
-}
-
-/* 登入卡片 */
-.login-card {
   background: #ffffff;
+  padding: 40px 20px;
+}
+
+.auth-card {
   width: 100%;
-  max-width: 420px;
-  padding: 40px;
+  max-width: 440px;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+  padding: 40px;
 }
 
-/* 藍色連結 */
-.text-tech-blue {
-  color: #4e73df;
-  text-decoration: none;
-  font-weight: 500;
-}
-.text-tech-blue:hover {
-  color: #2e59d9;
-  text-decoration: underline;
+.tech-blue-text { color: #4e73df; }
+
+/* 極簡底線設計 */
+.input-wrapper {
+  position: relative;
 }
 
-/* input 群組 */
-.input-group-text {
-  background-color: #f8f9fc;
-  border-right: none;
-  color: #4e73df;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-
-.form-control {
-  border-left: none;
-  padding: 12px;
-  font-size: 0.9rem;
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-.form-control:focus {
-  border-color: #bac8f3;
-  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-}
-
-/* 登入按鈕 */
-.btn-login {
-  background-color: #4e73df;
+.minimal-input {
+  width: 100%;
   border: none;
-  border-radius: 6px;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 12px 0;
+  font-size: 16px;
+  background: transparent;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.minimal-input:focus {
+  border-bottom: 2px solid #4e73df;
+}
+
+/* 浮動標籤 */
+.floating-label {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  color: #999;
+  pointer-events: none;
   transition: all 0.3s ease;
+}
+
+.minimal-input:focus ~ .floating-label,
+.minimal-input:not(:placeholder-shown) ~ .floating-label {
+  top: -18px;
+  font-size: 12px;
+  color: #4e73df;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 0;
+  top: 12px;
+  cursor: pointer;
+  color: #666;
+}
+
+.forgot-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* 圖片中的按鈕風格 */
+.btn-outline-tech {
+  background: transparent;
+  border: 1.5px solid #4e73df;
+  color: #4e73df;
   padding: 12px;
-  letter-spacing: 1px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  transition: 0.3s;
+  cursor: pointer;
 }
 
-.btn-login:hover {
-  background-color: #2e59d9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(78, 115, 223, 0.3);
+.btn-outline-tech:hover {
+  background: #4e73df;
+  color: #ffffff;
 }
 
-/* checkbox */
-.form-check-input:checked {
-  background-color: #4e73df;
-  border-color: #4e73df;
+/* 第三方登入區 */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 35px 0 25px;
 }
+.divider::before, .divider::after {
+  content: ""; flex: 1; border-bottom: 1px solid #eee;
+}
+.divider span { padding: 0 15px; font-size: 12px; color: #999; }
+
+.social-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+.social-circle img { width: 24px; }
+.social-circle:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 </style>
