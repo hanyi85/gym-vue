@@ -271,10 +271,12 @@ const handleLogout = () => {
 }
 
 .logo-img {
-  height: 48px;   /* 可自行調整：36～44 都好看 */
+  height: 64px;        /* 原本48 → 放大很有感 */
   width: auto;
   display: block;
+  object-fit: contain;
 }
+
 
 
 .logo_container a {
@@ -525,4 +527,17 @@ a {
     display: none !important;
   }
 }
+
+html {
+  --s: 291px; /* control the size*/
+  --c1: #f5f5f5;
+  --c2: #f9dbc3;
+  
+  --g:#0000 45%,var(--c1) 46% 54%,#0000 55%;
+  background:
+    linear-gradient( 60deg,var(--g)),
+    linear-gradient(-60deg,var(--g)) var(--c2);
+  background-size: var(--s) calc(tan(60deg)*var(--s));
+}
+
 </style>

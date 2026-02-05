@@ -1,5 +1,8 @@
 <template>
-
+<Banner
+  title="會員專區"
+  subtitle="減輕您多餘的體重，降低身體負擔，打造完美動人曲線"
+/>
 <div class="stepper">
   <!-- STEP 01 -->
   <div class="step done">
@@ -21,6 +24,7 @@
         <div class="main-card shadow-lg">
 
             <div class="top-accent"></div>
+
 
             <div class="content-padding">
                 <div class="text-center mb-5">
@@ -99,7 +103,7 @@
 import { reactive, ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import defaultAvatar from '@/assets/預設頭像.png'
-
+import Banner from '@/components/banner.vue'
 const router = useRouter()
 const user = ref({
   email: '' // 一開始沒有 email
