@@ -185,7 +185,7 @@ p {
 }
 
 .btn-gym {
-  background-color: #f6214b; /* 健身房常用的亮紅色 */
+  background-color: #f38d00; /* 健身房常用的亮紅色 */
   color: #fff;
   padding: 12px 35px;
   font-weight: 600;
@@ -197,7 +197,7 @@ p {
 }
 
 .btn-gym:hover {
-  background-color: #ff3c63;
+  background-color: #d38211;
   transform: scale(1.05);
   box-shadow: 0 10px 20px rgba(246, 33, 75, 0.3);
 }
