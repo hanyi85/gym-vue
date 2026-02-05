@@ -1,1 +1,286 @@
-<template></template>
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue'; 
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const cartItems = ref([]);
+const shippingFee = ref(80);
+
+const addonProducts = ref([
+  { id: 101, name: '濃縮乳清蛋白【鴨屎香檸檬茶】隨身包', price: 50, image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
+  { id: 102, name: '蛋白香酥脆【愛情海瓜子】', price: 42, image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
+  { id: 103, name: '蛋白香酥脆【朱雀咖喱聯名】', price: 42, image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
+  { id: 104, name: '堅果能量棒【黑巧瑪卡】', price: 49, image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href}
+]);
+
+const loadCart = () => {
+  cartItems.value = JSON.parse(localStorage.getItem('cart') || '[]');
+};
+
+onMounted(loadCart);
+
+const subtotal = computed(() => {
+  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+});
+
+const totalAmount = computed(() => subtotal.value + shippingFee.value);
+
+const updateQty = (index, delta) => {
+  const newQty = cartItems.value[index].quantity + delta;
+  if (newQty >= 1) {
+    cartItems.value[index].quantity = newQty;
+    saveCart();
+  }
+};
+
+const removeItem = (index) => {
+  cartItems.value.splice(index, 1);
+  saveCart();
+};
+
+const saveCart = () => {
+  localStorage.setItem('cart', JSON.stringify(cartItems.value));
+};
+
+// 📍 修正 3: 加入監聽確保資料同步更新
+watch(cartItems, saveCart, { deep: true });
+
+const addonContainer = ref(null);
+const currentAddonPage = ref(0);
+
+const scrollToPage = (pageIndex) => {
+  currentAddonPage.value = pageIndex;
+  if (addonContainer.value) {
+    const container = addonContainer.value;
+    // 假設一組顯示 3 個產品，計算該頁面對應的滾動距離
+    // 這裡使用容器寬度作為位移基準
+    const scrollAmount = container.clientWidth * pageIndex;
+    container.scrollTo({
+      left: scrollAmount,
+      behavior: 'smooth'
+    });
+  }
+};
+
+const goToCheckout = () => {
+  if (cartItems.value.length === 0) {
+    alert('您的購物車是空的喔！');
+    return;
+  }
+  
+  // 📍 執行跳轉至填寫資料頁面
+  router.push({ name: 'shop-booking' });
+};
+</script>
+
+<template>
+  <div class="cart-page bg-light min-vh-100 py-5">
+    <div class="container" style="max-width: 1140px;">
+      
+      <div class="checkout-stepper mb-5">
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="step-item d-flex flex-column align-items-center active">
+            <div class="step-circle">1</div>
+            <span class="step-label">購物車</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item d-flex flex-column align-items-center">
+            <div class="step-circle">2</div>
+            <span class="step-label">填寫資料</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item d-flex flex-column align-items-center">
+            <div class="step-circle">3</div>
+            <span class="step-label">訂單確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="cartItems.length > 0" class="row g-4">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm rounded-1 mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+              <h5 class="fw-bold mb-0">購物車 ({{ cartItems.length }} 件)</h5>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="bg-gray-50 small text-secondary">
+                  <tr>
+                    <th class="ps-4 border-0" style="width: 35%;">商品資料</th>
+                    <th class="border-0 text-start" style="width: 15%;">優惠</th>
+                    <th class="border-0 text-start">單件價格</th>
+                    <th class="border-0 text-center" style="width: 150px;">數量</th>
+                    <th class="border-0 text-end" style="padding-right: 40px;">小計</th>
+                    <th class="border-0"></th>
+                  </tr>
+                </thead>
+                <tbody class="border-top-0">
+                  <tr v-for="(item, index) in cartItems" :key="item.id">
+                    <td class="ps-4 py-4">
+                      <div class="d-flex align-items-center">
+                        <img :src="item.image" class="rounded border bg-white" width="70" height="70">
+                        <div class="ms-3">
+                          <div class="small fw-bold text-dark mb-1">{{ item.name }}</div>
+                          <div class="text-danger x-small">免運優惠中</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-start">
+                      <span class="text-secondary small"></span>
+                    </td>
+                    <td class="small">
+                      <div class="text-dark">NT${{ item.price }}</div>
+                      <div class="text-muted x-small text-decoration-line-through">NT${{ item.price + 200 }}</div>
+                    </td>
+                    <td>
+                      <div class="d-flex justify-content-center">
+                        <div class="input-group input-group-sm qty-selector">
+                          <button class="btn btn-outline-secondary border-light-subtle" @click="updateQty(index, -1)">-</button>
+                          <input type="text" class="form-control text-center bg-light border-0" :value="item.quantity" readonly>
+                          <button class="btn btn-outline-secondary border-light-subtle" @click="updateQty(index, 1)">+</button>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="fw-bold text-dark text-end" style="padding-right: 40px;">
+                      NT${{ item.price * item.quantity }}
+                    </td>
+                    <td class="pe-4 text-end">
+                      <button class="btn btn-link text-muted p-0 text-decoration-none" @click="removeItem(index)">✕</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-footer bg-white border-top-0 py-3 px-4">
+              <div class="promo-hint mb-2 d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border fw-normal">優惠促銷</span>
+                <span class="small text-secondary">常溫商品滿 $899 免運，<span class="text-gym-green">再買 NT$115 即享有免運</span></span>
+              </div>
+              <div class="text-end">
+                <a @click="router.push('/shop')" class="text-decoration-underline small text-dark cursor-pointer">繼續購物</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 mb-4">
+          <div class="card border-0 shadow-sm rounded-1">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+              <h5 class="fw-bold mb-0">購物車加價購</h5>
+            </div>
+            <div class="card-body p-4 position-relative">
+              <div ref="addonContainer" class="d-flex gap-4 overflow-hidden pb-3 hide-scrollbar" style="scroll-snap-type: x mandatory;">
+                <div v-for="addon in addonProducts" :key="addon.id" class="addon-item flex-shrink-0" style="width: calc(33.333% - 1.5rem); scroll-snap-align: start;">
+                  <div class="d-flex align-items-start">
+                    <img :src="addon.image" class="rounded border" width="100" height="100" style="object-fit: cover;">
+                    <div class="ms-3 flex-grow-1">
+                      <div class="small fw-bold text-dark mb-1 lh-sm">{{ addon.name }}</div>
+                      <div class="text-secondary x-small mb-2">限購 100 件</div>
+                      <div class="text-gym-orange fw-bold mb-2">NT${{ addon.price }}</div>
+                      <button class="btn btn-dark btn-sm w-100 py-1 fw-bold" style="font-size: 12px;">加入購物車</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-center gap-2 mt-3">
+                <span v-for="n in Math.ceil(addonProducts.length / 3)" :key="n" class="dot cursor-pointer" :class="{ active: currentAddonPage === n - 1 }" @click="scrollToPage(n - 1)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm rounded-1 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+              <h5 class="fw-bold mb-0">選擇送貨及付款方式</h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label small fw-bold">送貨地點</label>
+                  <select class="form-select bg-light border-0 py-2"><option>台灣</option></select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold">送貨方式</label>
+                  <select class="form-select bg-light border-0 py-2">
+                    <option>宅配 (黑貓宅急便/新竹物流)</option>
+                  </select>
+                  <div class="p-3 mt-2 rounded x-small text-secondary" style="background-color: #f8f9fa;">
+                    採用黑貓宅急便、新竹物流等配送。本島未達門檻運費 NT$80。
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold">付款方式</label>
+                  <select class="form-select bg-light border-0 py-2"><option>信用卡 (一次付清)</option></select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm rounded-1 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+              <h5 class="fw-bold mb-0">訂單資訊</h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between mb-3">
+                <span class="text-secondary small">小計:</span>
+                <span class="fw-bold">NT${{ subtotal }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-3">
+                <span class="text-secondary small">運費:</span>
+                <span class="fw-bold">NT${{ shippingFee }}</span>
+              </div>
+              <button class="btn btn-link p-0 text-primary small text-decoration-none">使用優惠代碼</button>
+              <hr class="my-4">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <span class="fw-bold fs-5">合計:</span>
+                <span class="fw-bold fs-4 text-dark">NT${{ totalAmount }}</span>
+              </div>
+              <button class="btn btn-gym-green w-100 py-3 fw-bold shadow-sm" @click="goToCheckout">
+                前往結帳
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+  </div>
+</template>
+
+<style scoped>
+/* 📍 統一進度條樣式 */
+.step-item { position: relative; width: 80px; }
+.step-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #fff; border: 2px solid #dee2e6;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; color: #dee2e6; z-index: 2;
+}
+.step-label { font-size: 0.85rem; margin-top: 8px; color: #adb5bd; }
+.step-item.active .step-circle { border-color: #62b562; color: #62b562; }
+.step-item.active .step-label { color: #333; font-weight: bold; }
+
+.step-line { height: 2px; width: 100px; background: #dee2e6; margin-bottom: 25px; margin-left: -10px; margin-right: -10px; }
+
+/* 📍 統一標題與輸入框風格 */
+h5 { font-size: 1.15rem; }
+.form-select, .form-control { font-size: 0.9rem; }
+.form-select:focus { border: 1px solid #62b562 !important; box-shadow: none; background-color: #fff !important; }
+
+/* 📍 數量選擇器優化 */
+.qty-selector { width: 120px; }
+.qty-selector .form-control { height: 34px; }
+.qty-selector button { background: #fff; border-color: #dee2e6; }
+
+/* 其他既有樣式... */
+.text-gym-green { color: #62b562; }
+.btn-gym-green { background-color: #62b562; color: white; border: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.dot { width: 10px; height: 10px; background-color: #dee2e6; border-radius: 50%; cursor: pointer; }
+.dot.active { background-color: #ff8c00; }
+</style>
