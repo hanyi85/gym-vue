@@ -33,7 +33,7 @@
         </div>
 
         <div class="text-start mb-5">
-          <router-link to="/user/forgot-password" class="forgot-link">忘記密碼？</router-link>
+          <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
 
         <button type="submit" class="btn-outline-tech w-100">登入</button>

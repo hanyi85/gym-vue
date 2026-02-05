@@ -1,1 +1,24 @@
-<template></template>
+<script setup>
+
+</script>
+
+
+
+<template>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-6">
+      購物車
+    </div>
+  </div>
+</div>
+
+
+</template>
+
+
+
+<style scoped>
+
+</style>

@@ -32,6 +32,12 @@ const routes = [
     component: () => import('@/views/users/UserProfile.vue'),
   },
 
+   {
+    path: '/users/verifyEmail',
+    name: 'user-verify-Email',
+    component: () => import('@/views/users/UserVerifyEmail.vue'),
+  },
+
   // 會員健康資訊
   {
     path: '/users/profile-health',
