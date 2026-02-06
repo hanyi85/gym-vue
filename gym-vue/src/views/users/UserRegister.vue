@@ -107,6 +107,7 @@ const socialAuth = (platform) => {
 
 <style scoped>
 
+
 .stepper {
   display: flex;
   align-items: center;
@@ -153,7 +154,7 @@ const socialAuth = (platform) => {
 
 /* 已完成 */
 .step.done .step-circle {
-  background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+  background: linear-gradient(135deg, #f38d00, #5c6bc0);
   color: #fff;
   box-shadow: 0 6px 16px rgba(63, 81, 181, 0.35);
 }
@@ -166,8 +167,8 @@ const socialAuth = (platform) => {
 /* 目前進行中（發光） */
 .step.active .step-circle {
   background: #ffffff;
-  color: #3f51b5;
-  border: 2px solid #3f51b5;
+  color: #f38d00;
+  border: 2px solid #f38d00;
   box-shadow:
     0 0 0 6px rgba(63, 81, 181, 0.12),
     0 10px 30px rgba(63, 81, 181, 0.35);

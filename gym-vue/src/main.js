@@ -2,6 +2,8 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import Banner from './components/banner.vue'
+import Btn from './components/btn.vue'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css' // 這是讓左右箭頭出現的關鍵
@@ -13,3 +15,5 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.mount('#app')
+app.component('Banner', Banner)
+app.component('Btn', Btn)

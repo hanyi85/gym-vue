@@ -112,7 +112,7 @@
 }
 
 .sitename small {
-  color: #28a745; 
+  color: #f38d00; 
   font-size: 14px;
   margin-left: 5px;
   text-decoration: none !important;
@@ -135,7 +135,7 @@ h4::after {
   bottom: 0;
   height: 2px;
   width: 20px;
-  background-color: #28a745;
+  background-color: #f38d00;
 }
 
 /* 列表連結消除底線 */
@@ -156,7 +156,7 @@ h4::after {
 }
 
 .footer-links ul li a:hover {
-  color: #28a745;
+  color: #f38d00;
   text-decoration: none !important;
 }
 
@@ -170,7 +170,7 @@ h4::after {
 /* 消除版權條內連結底線 */
 .credits a {
   text-decoration: none !important;
-  color: #28a745;
+  color: #f38d00;
 }
 
 /* 社群方框按鈕 */
@@ -188,7 +188,7 @@ h4::after {
 }
 
 .social-links a:hover {
-  background: #28a745;
+  background: #f38d00;
   color: #fff;
 }
 </style>
