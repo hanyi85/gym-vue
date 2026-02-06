@@ -72,10 +72,10 @@ onMounted(() => {
 
 
 <template>
-<section>
-<StepIndicator :currentStep="2"/>
+<div>
+<StepIndicator :currentStep="1"/>
 
-</section>
+</div>
 
   <section class="container my-4">
     <h3 class="mb-3"> 我的購物車</h3>
