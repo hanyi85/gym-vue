@@ -1,8 +1,10 @@
 <script setup>
-import Btn from '@/components/Meals/nextbtn.vue'
+import Btn from '@/components/Meals/submitbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
-
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+//訂單編號已在資料庫  要改
 
 // 🔹 假「登入會員資料」
 const fakeMember = {
@@ -34,6 +36,11 @@ const order = ref({
   paymentMethod: 'cash'
 })
 
+// 下一步
+// const goConfirm = () => {
+//   router.push('/meals/result/:orderId')
+// }
+
 // 模擬「頁面載入時已登入」
 onMounted(() => {
   order.value.name = fakeMember.name
@@ -43,19 +50,24 @@ onMounted(() => {
 
 // 送出訂單
 const submitOrder = () => {
+
+
+  // 🔹 假建立訂單
+  const fakeOrderId = 1
+
+  // 🔹 信用卡例外
   if (order.value.paymentMethod === 'credit') {
     alert('導向第三方信用卡付款（假）')
     return
   }
 
-  alert(`
-訂單已送出（假資料）：
-姓名：${order.value.name}
-電話：${order.value.phone}
-Email：${order.value.email}
-店家ID：${order.value.storeId}
-付款方式：${order.value.paymentMethod}
-  `)
+  // ✅ 成功後導頁
+  router.push({
+    name: 'meals-result',
+    params: {
+      orderId: fakeOrderId
+    }
+  })
 }
 
 </script>
@@ -138,9 +150,10 @@ Email：${order.value.email}
       </div>
 
       <!-- 按鈕 -->
-      <button type="submit" class="btn-submit">
+      <!-- <button type="submit" class="btn-submit">
         送出訂單
-      </button>
+      </button> -->
+      <Btn buyText="下一步" type="submit" />
     </form>
   </section>
 
