@@ -3,16 +3,20 @@
     <div class="footer-top">
       <div class="container">
         <div class="row gy-4">
-          
+
           <div class="col-lg-4 col-md-6 footer-about">
             <router-link to="/" class="logo d-flex align-items-center mb-3">
-              <span class="sitename">練吧 <small>Fitness bar</small></span>
+              <span class="sitename">
+                練<span class="bar-word">吧</span>
+                <small>Fitness bar</small>
+              </span>
             </router-link>
+
             <div class="footer-contact">
               <p>台南市安南區安南路一段 88 號</p>
               <p>台南市, 709 台灣</p>
               <p class="mt-4"><strong>Phone:</strong> <span>+886 6 123 4567</span></p>
-              <p><strong>Email:</strong> <span>info@Fitnessbar.com</span></p>
+              <p><strong>Email:</strong> <span>Fitnessbar@gmail.com</span></p>
             </div>
           </div>
 
@@ -66,7 +70,7 @@
 
     <div class="copyright-bar">
       <div class="container d-flex flex-column flex-lg-row justify-content-between align-items-center">
-        <div class="copyright-content">
+        <div class="copyright-content sitename">
           <p>© Copyright <strong><span>練吧 Fitness bar</span></strong>. All Rights Reserved</p>
           <div class="credits">
             Designed by <a href="#">YourTeam</a> Distributed by <a href="#">Fitness bar</a>
@@ -99,7 +103,7 @@
 
 /* 移除 Logo 的底線 */
 .logo {
-  text-decoration: none !important; /* 強制消除底線 */
+  text-decoration: none !important;
   display: inline-flex;
   align-items: center;
 }
@@ -107,12 +111,17 @@
 .sitename {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff; /* 確保字體是純白，不被超連結顏色覆蓋 */
+  color: #ffffff;
+  /* 確保字體是純白，不被超連結顏色覆蓋 */
   text-decoration: none !important;
 }
 
+.bar-word {
+  color: #f38d00;   /* 橘色 */
+}
+
 .sitename small {
-  color: #f38d00; 
+  color: #f38d00;
   font-size: 14px;
   margin-left: 5px;
   text-decoration: none !important;
@@ -150,7 +159,8 @@ h4::after {
 
 .footer-links ul li a {
   color: #dbdbdb;
-  text-decoration: none !important; /* 確保所有連結都沒有底線 */
+  text-decoration: none !important;
+  /* 確保所有連結都沒有底線 */
   transition: 0.3s;
   font-size: 14px;
 }

@@ -277,7 +277,7 @@ const handleLogout = () => {
 }
 
 .logo-img {
-  height: 130px;
+  height: 120px;
   width: auto;
   max-height: none;
   object-fit: contain;

@@ -534,7 +534,7 @@ h6 {
 }
 
 .footer .footer-about .logo span {
-  color: var(--heading-color);
+  /* color: var(--heading-color); */
   font-family: var(--heading-font);
   font-size: 26px;
   font-weight: 700;
