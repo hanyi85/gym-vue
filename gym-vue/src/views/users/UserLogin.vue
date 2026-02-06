@@ -151,8 +151,8 @@ const socialLogin = (platform) => {
 /* 圖片中的按鈕風格 */
 .btn-outline-tech {
   background: transparent;
-  border: 1.5px solid #4e73df;
-  color: #4e73df;
+  border: 1.5px solid #f38d00;
+  color: #f38d00;
   padding: 12px;
   border-radius: 8px;
   font-weight: 600;
