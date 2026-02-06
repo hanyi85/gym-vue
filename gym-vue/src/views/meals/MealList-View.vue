@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import MealCard from '@/components/Meals/MealCardList.vue'
+import MealBbanner from '@/components/banner.vue'
+
 
 // 分類
 const categories = [
@@ -34,6 +36,11 @@ const filteredMeals = computed(() => {
 </script>
 
 <template>
+  <!-- Banner -->
+   <div class="pb-5">
+      <MealBbanner title="餐點列表" subtitle="選擇你的餐點類型，享受美味又健康的飲食！"/>
+   </div>
+
   <div class="container">
     <div class="row">
 
