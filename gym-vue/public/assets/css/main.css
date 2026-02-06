@@ -255,10 +255,10 @@ h6 {
   line-height: 1;
 }
 
-.header .logo img {
+/* .header .logo img {
   max-height: 32px;
   margin-right: 8px;
-}
+} */
 
 .header .logo h1 {
   font-size: 30px;

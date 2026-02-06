@@ -229,6 +229,7 @@ const handleLogout = () => {
   position: sticky;
   top: 0;
   left: 0;
+  padding: 12px 0;
   width: 100%;
   background: #ffffff;
   z-index: 1000;
@@ -260,9 +261,14 @@ const handleLogout = () => {
 /* 主導覽列 */
 .main_nav_container {
   width: 100%;
-  height: 80px;
+  padding: 12px 0;
   background: #ffffff;
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.15);
+}
+
+
+.col-lg-12 {
+  min-height: 130px;
 }
 
 .logo {
@@ -271,10 +277,17 @@ const handleLogout = () => {
 }
 
 .logo-img {
-  height: 64px;        /* 原本48 → 放大很有感 */
+  height: 130px;
   width: auto;
-  display: block;
+  max-height: none;
   object-fit: contain;
+}
+
+
+.logo_container {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 
@@ -452,6 +465,9 @@ a {
   color: #1e1e27 !important;
 }
 
+
+
+
 /* =====  強制 header icon 顏色 ===== */
 .header a,
 .header i,
@@ -508,6 +524,13 @@ a {
   /* 換成你的主題森林綠 */
 }
 
+
+@media (max-width: 768px) {
+  .logo-img {
+    height: 58px;
+  }
+}
+
 @media (max-width: 1200px) {
   .navbar_menu {
     display: none !important;
@@ -529,15 +552,15 @@ a {
 }
 
 html {
-  --s: 291px; /* control the size*/
+  --s: 291px;
+  /* control the size*/
   --c1: #f5f5f5;
   --c2: #f9dbc3;
-  
-  --g:#0000 45%,var(--c1) 46% 54%,#0000 55%;
+
+  --g: #0000 45%, var(--c1) 46% 54%, #0000 55%;
   background:
-    linear-gradient( 60deg,var(--g)),
-    linear-gradient(-60deg,var(--g)) var(--c2);
+    linear-gradient(60deg, var(--g)),
+    linear-gradient(-60deg, var(--g)) var(--c2);
   background-size: var(--s) calc(tan(60deg)*var(--s));
 }
-
 </style>
