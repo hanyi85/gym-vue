@@ -184,7 +184,7 @@ function goNext() {
 }
 
 .step.active .circle {
-  background: #3b82f6;
+  background: #ff9f1c;
   color: #fff;
   transform: scale(1.15);
 }
@@ -197,7 +197,7 @@ function goNext() {
 }
 
 .line.done {
-  background: #3b82f6;
+  background: #ff9f1c;
 }
 
 .confirm-card {
@@ -251,7 +251,7 @@ function goNext() {
 }
 
 .next-btn {
-  background: #2563eb;
+  background: #ff9f1c;
   color: white;
   border: none;
   padding: 8px 24px;

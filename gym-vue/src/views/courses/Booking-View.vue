@@ -1,188 +1,242 @@
 <script setup>
-import { ref, watch } from 'vue'
-import Flatpickr from 'vue-flatpickr-component'
-import 'flatpickr/dist/flatpickr.css'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-
+import BookingStepper from '@/components/Course/BookingStepper.vue'
 const router = useRouter()
 
-
 const courseInfo = {
-  name: '燃脂體能課程',
+ name: '燃脂體能課程',
   coach: '張老師',
-  duration: 60,
   level: '初級',
+  duration: 60,
   price: 400,
 }
 
+/* 日期處理*/
+const VISIBLE_COUNT = 7
+const visibleStart = ref(0)
 
-const selectedDate = ref(null)
+const rawDates = computed(() => {
+  const result = []
+  const today = new Date()
 
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
 
-const allSchedules = [
+    result.push({
+      date: d.toISOString().slice(0, 10),
+      day: d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+      num: String(d.getDate()).padStart(2, '0'),
+    })
+  }
+  return result
+})
+
+const visibleDates = computed(() =>
+  rawDates.value.slice(
+    visibleStart.value,
+    visibleStart.value + VISIBLE_COUNT
+  )
+)
+
+const currentMonth = computed(() => {
+  const d = visibleDates.value[0]
+  return d
+    ? new Date(d.date).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : ''
+})
+
+function prevDates() {
+  if (visibleStart.value > 0) {
+    visibleStart.value -= VISIBLE_COUNT
+  }
+}
+
+function nextDates() {
+  if (visibleStart.value + VISIBLE_COUNT < rawDates.value.length) {
+    visibleStart.value += VISIBLE_COUNT
+  }
+}
+
+const allSchedules = computed(() => [
   {
-    date: '2026-02-04',
+    date: rawDates.value[0]?.date,
     slots: [
-      { id: 1, time: '09:00', remain: 3 },
-      { id: 2, time: '11:00', remain: 0 },
-      { id: 3, time: '15:00', remain: 2 },
-      { id: 4, time: '17:00', remain: 5 },
+      { time: '09:00', full: false },
+      { time: '10:30', full: true },
+      { time: '14:00', full: false },
+      { time: '16:00', full: false },
     ],
   },
   {
-    date: '2026-02-05',
+    date: rawDates.value[1]?.date,
     slots: [
-      { id: 5, time: '10:00', remain: 1 },
-      { id: 6, time: '14:00', remain: 0 },
-      { id: 7, time: '18:00', remain: 2 },
+      { time: '10:00', full: false },
+      { time: '13:00', full: false },
+      { time: '15:30', full: true },
     ],
   },
-]
+])
 
+
+const selectedDate = ref('')
 const todaySlots = ref([])
 const selectedSlot = ref(null)
 
+function selectDate(date) {
+  selectedDate.value = date
 
-watch(selectedDate, (newDate) => {
-  if (!newDate) return
-  const result = allSchedules.find((d) => d.date === newDate)
+  const result = allSchedules.value.find(d => d.date === date)
   todaySlots.value = result ? result.slots : []
   selectedSlot.value = null
-})
+}
+
+function selectSlot(slot) {
+  if (slot.full) return
+  selectedSlot.value = slot.time
+}
+
 
 function goNext() {
+  if (!selectedSlot.value) return
+
   router.push({
     name: 'courses-booking-confirm',
     query: {
       date: selectedDate.value,
-      time: selectedSlot.value.time,
+      time: selectedSlot.value,
     },
   })
 }
+function goBack() {
+  router.push({ name: 'courses-list' })
+}
+
+/* 預設選第一天 */
+watch(
+  visibleDates,
+  (list) => {
+    if (list.length) {
+      selectDate(list[0].date)
+    }
+  },
+  { immediate: true }
+)
+
 </script>
 
 <template>
   <div class="booking-wrapper">
-    <div class="container py-5">
+    <div class="container">
+      <header class="booking-title">
+        <h2>課程預約</h2>
+        <p>選擇日期與時段</p>
+      </header>
 
-<div class="booking-title">
-  <h2>課程預約系統</h2>
-  <p>選擇日期與時段完成預約</p>
+    <BookingStepper :current-step="1">
+        <template #step-1>選日期<br />及時段</template>
+        <template #step-2>確認資訊</template>
+        <template #step-3>付款</template>
+        <template #step-4>完成預約</template>
+      </BookingStepper>
+      <!-- 課程卡 -->
+      <section class="course-card">
+        <img
+          src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400"
+          alt="course"
+        />
+        <div>
+          <h3>{{ courseInfo.name }}</h3>
+          <p><i class="bi bi-person"></i> {{ courseInfo.coach }}</p>
+          <p><i class="bi bi-star"></i> {{ courseInfo.level }}</p>
+           <p><i class="bi bi-clock"></i> {{ courseInfo.duration }}分鐘</p>
+              <span class="price">NT$ {{ courseInfo.price }}</span>
+        </div>
+      </section>
+
+      <!-- 日期 -->
+      <section class="date-section">
+        <div class="date-header">
+          <button class="nav-btn" @click="prevDates">‹</button>
+
+          <div class="date-center">
+            <div class="month-title">{{ currentMonth }}</div>
+
+            <div class="date-row">
+              <button
+                v-for="d in visibleDates"
+                :key="d.date"
+                class="date-card"
+                :class="{ active: d.date === selectedDate }"
+                @click="selectDate(d.date)"
+              >
+                <div class="date-day">{{ d.day }}</div>
+                <div class="date-num">{{ d.num }}</div>
+              </button>
+            </div>
+          </div>
+
+          <button class="nav-btn" @click="nextDates">›</button>
+        </div>
+      </section>
+
+      <!-- 時段 -->
+      <section class="slot-section">
+        <h4 class="slot-title">可預約時段</h4>
+
+        <div v-if="todaySlots.length" class="slot-grid">
+        <button
+  v-for="slot in todaySlots"
+  :key="slot.time"
+  class="slot-card"
+  :class="{ active: selectedSlot === slot.time, full: slot.full }"
+  :disabled="slot.full"
+  @click="selectSlot(slot)"
+>
+  <span class="slot-time">{{ slot.time }}</span>
+
+  <span v-if="slot.full" class="slot-status">
+    已額滿
+  </span>
+</button>
+
+
+        </div>
+
+        <p v-else class="slot-empty">此日期尚無可預約時段</p>
+      </section>
+     <div class="booking-actions">
+  <!-- 回到課程列表 -->
+  <button class="back-btn" @click="goBack">
+    回到課程列表
+  </button>
+
+  <!-- 下一步 -->
+  <button
+    class="next-btn"
+    :disabled="!selectedSlot"
+    @click="goNext"
+  >
+    下一步
+  </button>
 </div>
 
-<div class="booking-steps mb-5">
-  <div class="step active">
-    <div class="circle">1</div>
-    <div class="label">選日期  <br>及時段</div>
-  </div>
-  <div class="line"></div>
-  <div class="step">
-    <div class="circle">2</div>
-    <div class="label">確認資訊</div>
-  </div>
-  <div class="line"></div>
-  <div class="step">
-    <div class="circle">3</div>
-    <div class="label">付款</div>
-  </div>
-  <div class="line"></div>
-  <div class="step">
-    <div class="circle">4</div>
-    <div class="label">完成預約</div>
-  </div>
-  </div>
 
-
-
-      <div class="card mb-4">
-        <div class="card-body d-flex gap-4">
-          <div class="bg-secondary text-white d-flex align-items-center justify-content-center"
-               style="width:120px;height:120px;">
-            課程圖
-          </div>
-          <div>
-            <h5 class="fw-bold">{{ courseInfo.name }}</h5>
-            <p class="mb-1">教練：{{ courseInfo.coach }}</p>
-            <p class="mb-1">時長：{{ courseInfo.duration }} 分鐘</p>
-            <p class="mb-1">難度：{{ courseInfo.level }}</p>
-            <p class="mb-0 fw-bold">費用：NT$ {{ courseInfo.price }}</p>
-          </div>
-        </div>
-      </div>
-
-      <h3 class="fw-bold mb-4">選擇預約日期與時段</h3>
-
-      <div class="row">
-      
-        <div class="col-md-6 mb-4">
-          <label class="form-label fw-bold">選擇日期</label>
-          <Flatpickr
-            v-model="selectedDate"
-            :config="{
-              minDate: 'today',
-              dateFormat: 'Y-m-d'
-            }"
-            class="form-control form-control-lg"
-            placeholder="請選擇日期"
-          />
-        </div>
-
-      
-<div class="col-md-6">
-  <div v-if="!selectedDate" class="text-muted mt-4">
-    請先選擇左側日期
-  </div>
-
-  <template v-else>
-    <h5 class="mb-3">{{ selectedDate }} 可預約時段</h5>
-
-
-    <div v-if="todaySlots.length === 0" class="alert alert-secondary">
-      此日期尚無課程，請選擇其他日期
-    </div>
-
-   
-    <div v-else class="time-grid">
-      <button
-        v-for="slot in todaySlots"
-        :key="slot.id"
-        class="time-btn"
-        :class="{
-          active: selectedSlot?.id === slot.id,
-          disabled: slot.remain === 0
-        }"
-        @click="slot.remain > 0 && (selectedSlot = slot)"
-      >
-        {{ slot.time }}
-      </button>
-    </div>
-
-    
-    <button
-      v-if="selectedSlot"
-      class="btn btn-primary w-100 mt-4"
-      @click="goNext"
-    >
-      下一步確認
-    </button>
-  </template>
-</div>
-
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.booking-wrapper {
-  min-height: 100vh;
-   
-  padding-bottom: 160px;
-}
 .booking-steps {
+  max-width: 700px;
+  margin: 0 auto 40px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 .step {
@@ -190,11 +244,16 @@ function goNext() {
   width: 80px;
 }
 
+.label {
+  font-size: 13px;
+  color: #666;
+}
+
 .circle {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #e0e0e0;
+  background: #e5e7eb;
   color: #555;
   display: flex;
   align-items: center;
@@ -203,68 +262,287 @@ function goNext() {
   font-weight: bold;
 }
 
-.step.active .circle {
-  background: #3b82f6;
+.step.done .circle {
+  background: #000000;
   color: #fff;
 }
 
-.label {
-  font-size: 14px;
-  color: #666;
+.step.active .circle {
+  background: #ff9f1c;
+  color: #fff;
+  transform: scale(1.15);
 }
 
 .line {
   flex: 1;
   height: 2px;
-  background: #ddd;
-  margin: 0 8px;
+  background: #e5e7eb;
+  margin: 0 6px;
 }
 
-.time-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+.line.done {
+  background: #ff9f1c;
 }
 
-.time-btn {
-  padding: 12px 0;
-  border: 1px solid #3b82f6;
-  background: #fff;
-  color: #3b82f6;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
+.booking-wrapper {
+  background: #f8fafc;
+  min-height: 100vh;
+  padding: 48px 0 120px;
 }
 
-.time-btn:hover {
-  background: #eef4ff;
+.container {
+  max-width: 1100px;
+  margin: auto;
 }
 
-.time-btn.active {
-  background: #3b82f6;
-  color: #fff;
-}
-
-.time-btn.disabled {
-  border-color: #ccc;
-  color: #aaa;
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
 .booking-title {
   text-align: center;
   margin-bottom: 32px;
 }
 
-.booking-title h2 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 4px;
+.course-card {
+  display: flex;
+  gap: 20px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 32px;
 }
 
-.booking-title p {
-  color: #6b7280;
-  font-size: 14px;
+.course-card img {
+  width: 140px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.price {
+  color: #ff8a00;
+  font-weight: 800;
+}
+
+
+.date-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.date-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.month-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.date-row {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.nav-btn:hover {
+  border-color: #ff8a00;
+  color: #ff8a00;
+}
+
+.date-card {
+  min-width: 72px;
+  height: 86px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.date-day {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.date-num {
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.date-card:hover {
+  border-color: #ff8a00;
+}
+
+.date-card.active {
+  background: #ffedd5;
+  border-color: #ff8a00;
+}
+
+.date-card.active .date-day {
+  color: #7c2d12;
+}
+
+.slot-section {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.slot-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 14px;
+  max-width: 500px;
+  margin: auto;
+}
+
+.slot-card {
+  padding: 14px 0;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .25s;
+  position: relative;
+}
+
+.slot-card:hover {
+  border-color: #ff8a00;
+  color: #ff8a00;
+}
+
+.slot-card.active {
+  background: #ffedd5;
+  border-color: #ff8a00;
+  color: #7c2d12;
+}
+
+.slot-card.full {
+ background: #f8fafc;
+  border-color: #e5e7eb;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.slot-time {
+font-size: 15px;
+  font-weight: 700;
+  position: relative;
+  display: inline-block;
+}
+.slot-card.full .slot-time::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: calc(100% + 12px);
+  height: 1.5px;
+  background: #cbd5e1;
+  transform: rotate(-15deg);
+}
+
+
+.slot-status {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.slot-card.full:hover {
+  border-color: #e5e7eb;
+  color: #94a3b8;
+}
+.slot-empty {
+  color: #64748b;
+}
+.next-btn {
+  margin-top: 32px;
+  padding: 14px 48px;
+  border-radius: 999px;
+  border: none;
+  background: #ff8a00;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.next-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* 底部操作列 */
+.booking-actions {
+  margin-top: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 回到列表 */
+.back-btn {
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.back-btn:hover {
+  border-color: #ff8a00;
+  color: #ff8a00;
+}
+
+/* 下一步（主行動） */
+.next-btn {
+  padding: 14px 48px;
+  border-radius: 999px;
+  border: none;
+  background: #ff8a00;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.next-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 </style>

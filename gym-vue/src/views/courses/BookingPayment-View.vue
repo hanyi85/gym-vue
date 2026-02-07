@@ -160,12 +160,12 @@ function goPay() {
 }
 
 .step.done .circle {
-  background: #3b82f6;
+  background: #ff9f1c;
   color: #fff;
 }
 
 .step.active .circle {
-  background: #3b82f6;
+  background: #ff9f1c;
   color: #fff;
   transform: scale(1.15);
 }
@@ -178,7 +178,7 @@ function goPay() {
 }
 
 .line.done {
-  background: #3b82f6;
+  background: #ff9f1c;
 }
 
 .payment-layout {
@@ -230,7 +230,7 @@ function goPay() {
 
 .pay-btn {
   flex: 2;
-  background: #2563eb;
+  background: #ff9f1c;
   color: white;
   border: none;
   padding: 12px;
