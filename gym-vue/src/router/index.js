@@ -355,6 +355,17 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+
+  scrollBehavior(to, from, savedPosition) {
+    // 瀏覽器上一頁 / 下一頁
+    if (savedPosition) {
+      return savedPosition
+    }
+
+    // 其他情況（router.push / router-link）
+    return { top: 0 }
+  },
 })
+
 
 export default router
