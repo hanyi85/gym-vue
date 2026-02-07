@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { watch } from 'vue'
 
 const router = useRouter()
 
@@ -14,6 +15,9 @@ const venues = {
   台中: ['公益館'],
   高雄: ['巨蛋館']
 }
+watch(city, () => {
+  venue.value = ''
+})
 
 function goSearch() {
   if (!city.value || !venue.value) return
@@ -22,52 +26,62 @@ function goSearch() {
 </script>
 
 <template>
-  
-  <section class="course-hero">
-    <div class="course-hero__inner">
-      <h1 class="course-hero__title">課程專區</h1>
-      <p class="course-hero__subtitle">
-        減輕您多餘的體重，降低您身體的負擔，打造完美動人曲線
-      </p>
-    </div>
-  </section>
+  <Banner
+    title="課程專區"
+    subtitle="找出最適合您的健身課程，開啟進化之旅"
+  />
 
  
-  <section class="course-search">
-    <div class="course-search__inner">
-      <h2 >選擇區域及場館</h2>
-      <p >請先選擇您要尋找的課程場館</p>
+<section class="search-section">
+  <div class="search-card">
+    <div class="search-title">
+      <i class="bi bi-geo-alt-fill"></i>
+      搜尋場館
+    </div>
 
-      <div class="course-search__box">
-        <select v-model="city" class="course-select">
-          <option value="">請選擇區域</option>
-          <option v-for="c in cities" :key="c" :value="c">{{ c }}</option>
+   
+    <div class="search-row">
+      <div class="search-group">
+        <label>選擇城市</label>
+        <select v-model="city" class="search-select">
+          <option value="">所有城市</option>
+          <option v-for="c in cities" :key="c" :value="c">
+            {{ c }}
+          </option>
         </select>
+      </div>
 
-        <select 
-          v-model="venue" 
-          class="course-select"
+      <div class="search-group">
+        <label>選擇場館</label>
+        <select
+          v-model="venue"
+          class="search-select"
           :disabled="!city"
         >
-          <option value="">請先選擇區域</option>
-          <option v-for="v in venues[city] || []" :key="v" :value="v">
+          <option value="">所有場館</option>
+          <option
+            v-for="v in venues[city] || []"
+            :key="v"
+            :value="v"
+          >
             {{ v }}
           </option>
         </select>
-
-        <button 
-          class="course-search__btn" 
-          @click="goSearch" 
-          :disabled="!city || !venue"
-        >
-          <i class="bi bi-search"></i>
-        </button>
       </div>
-    </div>
-  </section>
 
-  <!-- Stats -->
-  <section class="stats">
+      <button
+        class="search-btn"
+        @click="goSearch"
+        :disabled="!city || !venue"
+      >
+        <i class="bi bi-search"></i>
+        立即搜尋
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
     <div class="stat">
       <i class="bi bi-people"></i>
       <div class="num">10,000+</div>
@@ -90,104 +104,171 @@ function goSearch() {
     </div>
   </section>
 
-  <!-- Why Us -->
-  <section class="why-us">
-    <h2>為什麼選擇我們</h2>
-    <p class="why-sub">提供最專業的健身環境與服務</p>
+  <section class="why-section">
+    <div class="why-header">
+      <h3>為什麼選擇我們？</h3>
+     
+    </div>
 
     <div class="why-grid">
-      <div class="why-card blue">
-        <i class="bi bi-calendar"></i>
+      <div class="why-card purple">
+        <div class="icon"><i class="bi bi-calendar"></i></div>
         <h4>彈性預約</h4>
-        <p>24小時線上預約系統，隨時安排訓練時間</p>
+        <p>24 小時線上預約，隨時安排您的運動計畫</p>
       </div>
 
-      <div class="why-card purple">
-        <i class="bi bi-person-check"></i>
-        <h4>專業教練</h4>
-        <p>國際認證教練團隊，量身打造課程</p>
+      <div class="why-card lavender">
+        <div class="icon"><i class="bi bi-mortarboard"></i></div>
+        <h4>專業師資</h4>
+        <p>國際認證教練，提供最專業的指導</p>
       </div>
 
       <div class="why-card orange">
-        <i class="bi bi-patch-check"></i>
-        <h4>優質課程</h4>
-        <p>多元課程選擇，滿足不同需求</p>
+        <div class="icon"><i class="bi bi-people"></i></div>
+        <h4>多元課程</h4>
+        <p>瑜珈、重訓、HIIT 滿足不同需求</p>
       </div>
 
       <div class="why-card green">
-        <i class="bi bi-clock"></i>
-        <h4>彈性時段</h4>
-        <p>從早到晚提供多種時段</p>
+        <div class="icon"><i class="bi bi-star"></i></div>
+        <h4>頂級設備</h4>
+        <p>舒適空間與高品質健身器材</p>
       </div>
     </div>
-    
+  </section>
+
+
+  <section class="hot-section">
+    <div class="hot-header">
+      <h3>精選熱門課程</h3>
+      <span class="more-link">查看全部</span>
+    </div>
+
+    <div class="hot-list">
+      <div class="hot-card">
+        <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800" />
+        <div class="hot-body">
+          <span class="tag blue">瑜珈身心</span>
+          <h4>基礎哈達瑜珈</h4>
+        </div>
+      </div>
+
+      <div class="hot-card">
+        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800" />
+        <div class="hot-body">
+          <span class="tag orange">高強度</span>
+          <h4>核心燃脂 HIIT</h4>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
+
 <style scoped>
-.course-hero {
-  padding: 100px 20px;
-  text-align: center;
-  background: linear-gradient(135deg, #e0ecff, #f8fbff);
-}
 
-.course-hero__title {
-  font-size: 48px;
-  font-weight: 800;
-}
-
-
-.course-search {
-  background: #f5f7fa;
-  padding: 80px 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.course-search__box {
+.search-card {
   background: #fff;
-  padding: 32px;
-  border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.08);
+  border-radius: 28px;
+  padding: 32px 36px;
+  max-width: 720px;
+  margin: 0 auto;
+  box-shadow: 0 30px 60px rgba(0,0,0,.12);
   display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.search-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
   gap: 16px;
-   margin: 0 auto;          
-  justify-content: center; 
+  align-items: end;
 }
-.course-search__inner {
+
+.search-row .search-select {
   width: 100%;
-  max-width: 960px;
-  text-align: center;  
 }
 
-.course-select {
-  width: 240px;
+.search-row .search-btn {
+  margin-top: 22px; 
+  padding: 0 32px;
+  white-space: nowrap;
+}
+.search-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+   font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #1f2937;
+}
+
+.search-title i {
+  color: #ff9f1c;
+ font-size: 22px;
+}
+
+.search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.search-select {
   height: 56px;
-  border-radius: 30px;
-  
-  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  padding: 0 20px;
+  font-size: 15px;
+  background: #f9fafb;
+  transition: .2s;
 }
 
-.course-select:disabled {
-  background: #f1f3f5;
-  color: #adb5bd;
+.search-select:focus {
+  outline: none;
+  border-color: #ff9f1c;
+  box-shadow: 0 0 0 4px rgba(60,60,246,.15);
 }
 
-.course-search__btn {
-  width: 56px;
+.search-select:disabled {
+  background: #f1f5f9;
+  color: #9ca3af;
+}
+
+.search-btn {
+  margin-top: 10px;
   height: 56px;
-  border-radius: 50%;
-  background: #3b82f6;
-  color: #fff;
+  border-radius: 999px;
   border: none;
-  font-size: 20px;
+  background: #ff9f1c;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: .2s;
 }
 
-.course-search__btn:disabled {
-  background: #ced4da;
+.search-btn:hover {
+  background: #f38d00;
+  box-shadow: 0 10px 25px rgba(60,60,246,.35);
 }
 
-
+.search-btn:disabled {
+  background: #ffd8a8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 .stats {
   display: flex;
   justify-content: space-around;
@@ -205,46 +286,135 @@ function goSearch() {
   font-weight: 800;
 }
 
+.why-section {
+  padding: 80px 0;
+  background: #f8fafc;
+}
 
-.why-us {
-  padding: 100px 20px;
-  text-align: center;
+.why-header {
+  max-width: 1100px;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.why-header h3 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.more-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff9f1c;
+  cursor: pointer;
 }
 
 .why-grid {
   max-width: 1100px;
-  margin: auto;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-  gap: 32px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
 .why-card {
-  padding: 40px;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 15px 30px rgba(0,0,0,.08);
-  transition: .3s;
+  padding: 32px;
+  border-radius: 28px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.why-card i {
-  font-size: 28px;
-  color: #fff;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: inline-flex;
+.why-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+}
+
+
+.why-card.purple {
+  background: #eef0ff;
+}
+.why-card.purple .icon {
+  background: #d6dbff;
+  color: #3c3cf6;
+}
+
+.why-card.lavender {
+  background: #f3efff;
+}
+.why-card.lavender .icon {
+  background: #e3d9ff;
+  color: #8b5cf6;
+}
+
+.why-card.orange {
+  background: #fff3ea;
+}
+.why-card.orange .icon {
+  background: #ffe1cc;
+  color: #f97316;
+}
+
+.why-card.green {
+  background: #ecfdf3;
+}
+.why-card.green .icon {
+  background: #d1fae5;
+  color: #22c55e;
+}
+
+.why-card h4 {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.why-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.hot-section {
+  max-width: 1100px;
+  margin: 60px auto 0;
+}
+
+.hot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
 }
 
-.blue i { background: #0d6efd; }
-.purple i { background: #9b59b6; }
-.orange i { background: #fd7e14; }
-.green i { background: #20c997; }
-
-.why-card:hover {
-  transform: translateY(-10px);
+.hot-list {
+  display: flex;
+  gap: 20px;
 }
+
+.hot-card {
+  width: 220px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.hot-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.hot-body {
+  padding: 12px;
+}
+
 </style>

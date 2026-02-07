@@ -1,6 +1,7 @@
 <script setup>
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
+import Btn from '@/components/btn.vue'
 const route = useRoute()
 const router = useRouter()
 
@@ -13,9 +14,11 @@ const course = {
   price: 400,
   desc: '適合初學者的瑜珈課程，放鬆身心、提升柔軟度與核心穩定。',
   images: [
-    '/assets/img/courses/yoga1.jpg',
-    '/assets/img/courses/yoga2.jpg',
-    '/assets/img/courses/yoga3.jpg'
+
+  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
+  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200',
+  'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1200',
+ 
   ],
   content: [
     '基礎伸展與呼吸練習',
@@ -29,13 +32,29 @@ const course = {
     '課前 1 小時避免進食'
   ]
 }
+const currentImg = ref(0)
 
-let currentImg = 0
+const isFav = ref(false)
+
+function toggleFav() {
+  isFav.value = !isFav.value
+}
+
 
 function goBooking() {
   router.push({
     path: '/courses/booking',
     query: { id: course.id }
+  })
+}
+
+function goBack() {
+  router.push({
+    path: '/courses/list',
+    query: {
+      city: route.query.city,
+      venue: route.query.venue
+    }
   })
 }
 </script>
@@ -45,9 +64,9 @@ function goBooking() {
 
     <div class="detail-card">
 
-      <!-- 圖片區 -->
+      
       <div class="image-area">
-        <img :src="course.images[currentImg]" class="main-img" />
+       <img :src="course.images[currentImg]" class="main-img" />
 
         <div class="thumbs">
           <img
@@ -60,9 +79,17 @@ function goBooking() {
         </div>
       </div>
 
-      <!-- 資訊區 -->
       <div class="info-area">
-        <h2>{{ course.title }}</h2>
+       <div class="title-row">
+  <h2>{{ course.title }}</h2>
+
+  <span class="fav" @click="toggleFav">
+  <i
+    class="fa-heart"
+    :class="isFav ? 'fa-solid active' : 'fa-regular'"
+  ></i>
+</span>
+</div>
 
         <div class="tags">
           <span class="tag">{{ course.level }}</span>
@@ -74,13 +101,19 @@ function goBooking() {
 
         <p class="desc">{{ course.desc }}</p>
 
-        <button class="book-btn" @click="goBooking">
-          立即預約
-        </button>
+       <div class="action-group">
+  <Btn
+    addText="回到課程列表"
+    buyText="立即預約"
+    @add="goBack"
+    @buy="goBooking"
+  />
+</div>
+
       </div>
     </div>
 
-    <!-- 下方說明 -->
+    
     <div class="section">
       <h4>課程內容</h4>
       <ul>
@@ -150,7 +183,7 @@ function goBooking() {
 
 .thumbs img.active {
   opacity: 1;
-  border: 2px solid #2563eb;
+  border: 2px solid #f3722c;
 }
 
 .info-area h2 {
@@ -215,4 +248,25 @@ function goBooking() {
   margin-bottom: 8px;
   color: #444;
 }
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fav {
+  font-size: 26px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.fav:hover {
+  transform: scale(1.2);
+}
+
+.fav.active {
+  color: #f3722c;
+}
+
 </style>
