@@ -60,7 +60,7 @@ defineProps({
   z-index: 1;
 }
 
-/* 已完成 / 目前 */
+
 .step.done .circle,
 .step.active .circle {
   background: #ff8a00;
@@ -71,7 +71,6 @@ defineProps({
   transform: scale(1.15);
 }
 
-/* 文字 */
 .label {
   margin-top: 6px;
   font-size: 13px;
@@ -80,7 +79,7 @@ defineProps({
   white-space: nowrap;
 }
 
-/* 連線（關鍵） */
+
 .line {
   position: absolute;
   top: 18px;

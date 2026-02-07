@@ -1,6 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ref } from 'vue'
+import BookingStepper from '@/components/Course/BookingStepper.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,28 +40,12 @@ function goPay() {
       <p>請選擇付款方式</p>
     </div>
 
-    <div class="booking-steps mb-5">
-      <div class="step done">
-        <div class="circle">1</div>
-        <div class="label">選日期<br />及時段</div>
-      </div>
-      <div class="line done"></div>
-      <div class="step done">
-        <div class="circle">2</div>
-        <div class="label">確認資訊</div>
-      </div>
-      <div class="line done"></div>
-      <div class="step active">
-        <div class="circle">3</div>
-        <div class="label">付款</div>
-      </div>
-      <div class="line"></div>
-      <div class="step">
-        <div class="circle">4</div>
-        <div class="label">完成預約</div>
-      </div>
-    </div>
-
+  <BookingStepper :current-step="3">
+      <template #step-1>選日期<br />及時段</template>
+      <template #step-2>確認資訊</template>
+      <template #step-3>付款</template>
+      <template #step-4>完成預約</template>
+    </BookingStepper>
     <div class="payment-layout">
 
       <div class="confirm-card">
@@ -70,7 +55,11 @@ function goPay() {
         <div class="info-row"><span>時間</span><span>{{ time }}</span></div>
         <div class="info-row"><span>教練</span><span>{{ coach }}</span></div>
         <div class="info-row"><span>原價</span><span>NT$ {{ originPrice }}</span></div>
-        <div class="info-row"><span>折扣</span><span>- NT$ {{ discount }}</span></div>
+        <div class="info-row discount">
+  <span>折扣碼</span>
+  <span>{{ discountCode }} (-NT$100)</span>
+</div>
+
         <div class="info-row total">
           <span>應付金額</span>
           <span>NT$ {{ finalPrice }}</span>
@@ -128,58 +117,6 @@ function goPay() {
   font-size: 14px;
 }
 
-.booking-steps {
-  max-width: 700px;
-  margin: 0 auto 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.step {
-  text-align: center;
-  width: 80px;
-}
-
-.label {
-  font-size: 13px;
-  color: #666;
-}
-
-.circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  color: #555;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 6px;
-  font-weight: bold;
-}
-
-.step.done .circle {
-  background: #ff9f1c;
-  color: #fff;
-}
-
-.step.active .circle {
-  background: #ff9f1c;
-  color: #fff;
-  transform: scale(1.15);
-}
-
-.line {
-  flex: 1;
-  height: 2px;
-  background: #e5e7eb;
-  margin: 0 6px;
-}
-
-.line.done {
-  background: #ff9f1c;
-}
 
 .payment-layout {
   display: grid;
@@ -201,6 +138,13 @@ function goPay() {
   justify-content: space-between;
   margin-bottom: 10px;
 }
+
+
+.info-row.discount span:last-child {
+  color: #ef4444; 
+  font-weight: 600;
+}
+
 
 .total {
   font-weight: bold;

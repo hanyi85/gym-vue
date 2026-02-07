@@ -228,9 +228,9 @@ function submitReview() {
 }
 
 .tags span.active {
-  background: #2563eb;
+  background: #ff8a00;
   color: white;
-  border-color: #2563eb;
+  border-color: #ff8a00;
 }
 
 .btn-row {
@@ -247,7 +247,7 @@ function submitReview() {
 }
 
 .primary {
-  background: #2563eb;
+  background: #ff8a00;
   color: white;
   border: none;
   padding: 12px 28px;

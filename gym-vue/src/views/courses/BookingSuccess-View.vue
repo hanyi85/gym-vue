@@ -88,7 +88,7 @@ const qrValue = JSON.stringify({
 .success-icon {
   width: 56px;
   height: 56px;
-  background: #2563eb;
+  background: #ff8a00;
   color: white;
   border-radius: 50%;
   margin: 0 auto 12px;
@@ -156,7 +156,7 @@ const qrValue = JSON.stringify({
 
 .primary-btn {
   flex: 1;
-  background: #2563eb;
+  background: #ff8a00;
   color: white;
   border: none;
   padding: 10px;
