@@ -18,8 +18,17 @@ const showQr = ref(false)
       />
 
       <div class="flex-grow-1">
-        <h6 class="fw-bold">{{ item.fMealName }}</h6>
-        <div class="text-muted small">
+        <div class="d-flex justify-content-between align-items-center w-100">
+  <h6 class="fw-bold mb-0">{{ item.fMealName }}</h6>
+
+  <span
+    class="badge"
+    :class="item.isPickedUp ? 'bg-success' : 'bg-secondary'"
+  >
+    {{ item.isPickedUp ? '已領取' : '未領取' }}
+  </span>
+</div>
+        <div class="text-muted small mt-2">
           取餐日期：{{ item.fPickDate }} 
         </div>
         <div class="text-muted small">

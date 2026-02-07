@@ -12,6 +12,7 @@ defineProps({
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-6">訂單編號：{{ order.fOrderId }}</div>
+        <div class="col-md-6">訂單成立時間：{{ order.fOrderAt }}</div>
         <div class="col-md-6">訂購人：{{ order.fOrderName }}</div>
         <div class="col-md-6">電話：{{ order.fOrderPhone }}</div>
         <div class="col-md-6">Email：{{ order.fOrderEmail }}</div>

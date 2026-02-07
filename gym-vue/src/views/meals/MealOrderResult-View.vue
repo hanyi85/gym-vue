@@ -1,7 +1,9 @@
 <script setup>
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
+import Btn from '@/components/btn.vue'
+
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 // import { useOrderStore } from '@/stores/useOrderStore'
 
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
@@ -9,6 +11,7 @@ import OrderItemList from '@/components/Meals/OrderItemList.vue'
 
 const route = useRoute()
 // const orderStore = useOrderStore()
+const router = useRouter()
 
 const orderId = route.params.orderId || orderStore.orderId
 
@@ -67,6 +70,14 @@ const orderItems = ref([
   }
 ])
 
+const goshopping = () => {
+  router.push('/meals')
+}
+const allorder = () => {
+  router.push('/users/order-history')
+}
+
+
 
 </script>
 
@@ -79,7 +90,20 @@ const orderItems = ref([
     <OrderInfoCard :order="order" />
 
     <OrderItemList :items="orderItems" />
+    <div class=" d-flex justify-content-center mt-5 ">
+  <btn
+        addText="全部訂單"
+        @add="allorder"
+
+        buyText="再次訂餐"
+        @buy="goshopping"
+      >
+      </btn>
   </div>
+    
+  </div>
+   
+
 </template>
 
 <style scoped>
