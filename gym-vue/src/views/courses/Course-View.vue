@@ -261,7 +261,7 @@ function goSearch() {
 
 .search-btn:hover {
   background: #f38d00;
-  box-shadow: 0 10px 25px rgba(60,60,246,.35);
+
 }
 
 .search-btn:disabled {
