@@ -1,132 +1,122 @@
 <template>
-  <div class="flex min-h-screen bg-background-light dark:bg-background-dark text-[#181510] dark:text-white">
-    <!-- Sidebar -->
-    <aside class="w-72 bg-white dark:bg-[#1a140b] border-r border-gray-200 dark:border-gray-800 flex flex-col fixed h-full z-10">
-      <div class="p-6 flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
-          <span class="material-symbols-outlined">會員專區</span>
-        </div>
-        <h2 class="text-xl font-bold tracking-tight text-primary">練吧 Fitness Bar</h2>
+  <div class="flex min-h-screen bg-background-light dark:bg-background-dark">
+    <!-- 側邊欄 -->
+    <UserSidebar />
+
+    <!-- 主內容區 -->
+    <main class="flex-1 ml-72 p-8 max-w-[1400px] mx-auto w-full space-y-8">
+      <!-- 會員資訊 Header -->
+      <UserHeader />
+
+      <!-- 上方摘要數據（可之後接 API） -->
+      <DashboardSummary />
+
+      <!-- 飲食 / 體重卡片 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <DietRecordCard />
+        <BodyProgressCard />
       </div>
 
-      <nav class="flex-1 px-4 py-4 flex flex-col gap-2">
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-white">
-          <span class="material-symbols-outlined">dashboard</span>
-          <p class="text-sm font-medium">會員首頁</p>
+      <!-- 課程 + 會員方案區 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+          <CourseSection />
         </div>
+        <div class="space-y-8">
+          <MembershipStatusCard />
+          <div class="dashboard-card motivation">
+            <h5 class="title">今日動力 💪</h5>
 
-        <NavItem icon="exercise" label="我的課程" />
-        <NavItem icon="receipt_long" label="購買紀錄" />
-        <NavItem icon="person" label="個人資料" />
-      </nav>
+            <p class="quote">
+              「{{ quote }}」
+            </p>
 
-      <div class="p-4 mt-auto">
-        <div class="bg-primary/10 p-4 rounded-xl">
-          <p class="text-xs font-semibold text-primary uppercase mb-1">Help Center</p>
-          <p class="text-sm text-[#8d795e] mb-3">需要協助你的訓練計畫嗎？</p>
-          <button class="w-full py-2 bg-primary text-white rounded-lg text-sm font-bold">
-            聯絡客服
-          </button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <main class="flex-1 ml-72 p-8 max-w-[1400px] mx-auto w-full">
-      <!-- Header -->
-      <header class="bg-white dark:bg-[#2c2316] p-6 rounded-xl shadow-sm border mb-8 flex justify-between items-center">
-        <div class="flex items-center gap-6">
-          <img
-            class="w-20 h-20 rounded-full object-cover border-4 border-primary/20"
-            :src="user.avatar"
-          />
-          <div>
-            <h1 class="text-2xl font-bold">{{ user.name }}</h1>
-            <div class="flex gap-2 mt-1">
-              <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded-full">
-                {{ user.level }}
-              </span>
-              <span class="text-sm text-[#8d795e]">
-                加入於 {{ user.joinDate }}
-              </span>
-            </div>
+            <span class="author">
+              {{ author }}
+            </span>
           </div>
         </div>
-
-        <div class="flex gap-3">
-          <button class="px-4 py-2 border rounded-xl text-sm font-semibold">
-            編輯資料
-          </button>
-          <button class="px-4 py-2 bg-primary text-white rounded-xl font-bold">
-            預約課程
-          </button>
-        </div>
-      </header>
-
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatCard
-          icon="local_fire_department"
-          title="本月消耗熱量"
-          value="2,450 kcal"
-          color="text-primary"
-        />
-        <StatCard
-          icon="calendar_today"
-          title="本月上課次數"
-          value="8 次"
-          color="text-blue-500"
-        />
-        <StatCard
-          icon="monitoring"
-          title="目前體重"
-          value="72.5 kg"
-          color="text-green-500"
-        />
       </div>
-
-      <!-- Placeholder -->
-      <section class="bg-white dark:bg-[#2c2316] p-8 rounded-xl border text-center text-gray-400">
-        這裡之後可以放：飲食紀錄 / 體重圖表 / 課程列表（已保留結構）
-      </section>
     </main>
   </div>
 </template>
 
 <script setup>
-const user = {
-  name: '王小明',
-  level: 'Gold Member',
-  joinDate: '2023 / 01',
-  avatar: 'https://i.pravatar.cc/150?img=12',
-}
+// // Layout / 共用元件
+import UserSidebar from '@/components/Users/UserSidebar.vue'
+import UserHeaderHeader from '@/components/Users/UserHeader.vue'
+
+// // Dashboard 區塊
+// import DashboardSummary from '@/components/Users/DashboardSummary.vue'
+
+// // 卡片元件
+import DietRecordCard from '@/components/Users/DietRecordCard.vue'
+import BodyProgressCard from '@/components/Users/BodyProgressCard.vue'
+import UserHeader from '@/components/Users/UserHeader.vue';
+// import CourseSection from '@/components/member/CourseSection.vue'
+// import MembershipStatusCard from '@/components/member/MembershipStatusCard.vue'
+
+
+
+import { computed } from 'vue'
+
+const quotes = [
+  { text: '今天流的汗，都是明天的底氣', author: 'GYM+' },
+  { text: '慢慢來，也是一種前進', author: 'GYM+' },
+  { text: '不是每天都有狀態，但每天都能來一下', author: 'GYM+' },
+  { text: '你已經比昨天更靠近目標了', author: 'GYM+' },
+]
+
+const random = quotes[Math.floor(Math.random() * quotes.length)]
+
+const quote = computed(() => random.text)
+const author = computed(() => random.author)
 </script>
 
-<!-- Sidebar Item -->
-<script>
-export default {
-  components: {
-    NavItem: {
-      props: ['icon', 'label'],
-      template: `
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-gray-600 dark:text-gray-400">
-          <span class="material-symbols-outlined">{{ icon }}</span>
-          <p class="text-sm font-medium">{{ label }}</p>
-        </div>
-      `,
-    },
-    StatCard: {
-      props: ['icon', 'title', 'value', 'color'],
-      template: `
-        <div class="bg-white dark:bg-[#2c2316] p-6 rounded-xl border shadow-sm flex items-center gap-4">
-          <span class="material-symbols-outlined text-3xl" :class="color">{{ icon }}</span>
-          <div>
-            <p class="text-sm text-[#8d795e]">{{ title }}</p>
-            <p class="text-xl font-bold">{{ value }}</p>
-          </div>
-        </div>
-      `,
-    },
-  },
+
+<style scoped>
+.member-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f7f9;
 }
-</script>
+
+.member-main {
+  flex: 1;
+  padding: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+}
+
+.title {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.motivation {
+  background: linear-gradient(135deg, #f38d00, #ffb347);
+  color: #fff;
+}
+
+.quote {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.author {
+  font-size: 13px;
+  opacity: 0.9;
+}
+</style>
