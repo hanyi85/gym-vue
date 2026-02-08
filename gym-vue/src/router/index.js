@@ -24,6 +24,12 @@ const routes = [
     name: 'user-register',
     component: () => import('@/views/users/UserRegister.vue'),
   },
+// 會員首頁
+   {
+    path: '/users/home',
+    name: 'user-home',
+    component: () => import('@/views/users/UserHome.vue'),
+  },
 
   // 會員基本資料
   {
