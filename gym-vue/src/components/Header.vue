@@ -59,6 +59,11 @@
 
                     <template v-else>
                       <li class="user_info">{{ userName }} 您好</li>
+                                            <li>
+                        <router-link to="/users/home" class="dropdown-item-plain" @click="closeAccount">
+                          <i class="bi bi-egg-fried me-2"></i>會員首頁
+                        </router-link>
+                      </li>
                       <li>
                         <router-link to="/users/profile" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-person-vcard me-2"></i>基本資料
