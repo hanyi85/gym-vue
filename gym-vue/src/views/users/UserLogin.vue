@@ -8,24 +8,13 @@
 
       <form @submit.prevent="handleLogin">
         <div class="input-wrapper mb-4">
-          <input 
-            type="text" 
-            v-model="email" 
-            class="minimal-input" 
-            placeholder=" " 
-            required
-          >
+          <input type="text" v-model="email" class="minimal-input" placeholder=" " required>
           <label class="floating-label">電郵或手機號碼</label>
         </div>
 
         <div class="input-wrapper mb-2">
-          <input 
-            :type="showPassword ? 'text' : 'password'" 
-            v-model="password" 
-            class="minimal-input" 
-            placeholder=" " 
-            required
-          >
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" class="minimal-input" placeholder=" "
+            required>
           <label class="floating-label">密碼</label>
           <span class="eye-icon" @click="showPassword = !showPassword">
             <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
@@ -36,7 +25,8 @@
           <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
 
-        <button type="submit" class="btn-outline-tech w-100">登入</button>
+        <Btn add-text="登入" :single="true" @add="handleLogin" />
+
       </form>
 
       <div class="social-section">
@@ -63,6 +53,8 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import banner from '@/components/banner.vue';
+import Btn from '@/components/btn.vue';
 
 const router = useRouter();
 const email = ref('');
@@ -95,7 +87,9 @@ const socialLogin = (platform) => {
   padding: 40px;
 }
 
-.tech-blue-text { color: #4e73df; }
+.tech-blue-text {
+  color: #f38d00;
+}
 
 /* 極簡底線設計 */
 .input-wrapper {
@@ -114,7 +108,7 @@ const socialLogin = (platform) => {
 }
 
 .minimal-input:focus {
-  border-bottom: 2px solid #4e73df;
+  border-bottom: 2px solid #f38d00
 }
 
 /* 浮動標籤 */
@@ -127,11 +121,11 @@ const socialLogin = (platform) => {
   transition: all 0.3s ease;
 }
 
-.minimal-input:focus ~ .floating-label,
-.minimal-input:not(:placeholder-shown) ~ .floating-label {
+.minimal-input:focus~.floating-label,
+.minimal-input:not(:placeholder-shown)~.floating-label {
   top: -18px;
   font-size: 12px;
-  color: #4e73df;
+  color: #f38d00;
 }
 
 .eye-icon {
@@ -162,7 +156,7 @@ const socialLogin = (platform) => {
 }
 
 .btn-outline-tech:hover {
-  background: #4e73df;
+  background: #f38d00;
   color: #ffffff;
 }
 
@@ -172,10 +166,19 @@ const socialLogin = (platform) => {
   align-items: center;
   margin: 35px 0 25px;
 }
-.divider::before, .divider::after {
-  content: ""; flex: 1; border-bottom: 1px solid #eee;
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #eee;
 }
-.divider span { padding: 0 15px; font-size: 12px; color: #999; }
+
+.divider span {
+  padding: 0 15px;
+  font-size: 12px;
+  color: #999;
+}
 
 .social-circle {
   width: 50px;
@@ -188,6 +191,13 @@ const socialLogin = (platform) => {
   justify-content: center;
   transition: 0.3s;
 }
-.social-circle img { width: 24px; }
-.social-circle:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.social-circle img {
+  width: 24px;
+}
+
+.social-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
 </style>
