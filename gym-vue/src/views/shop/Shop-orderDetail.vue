@@ -231,7 +231,7 @@ const reAddToCart = () => {
 
 /* 📍 再次加入購物車按鈕樣式 */
 .btn-dark-gray {
-  background-color: #555; /* 深灰色背景 */
+  background-color: #f3722c; /* 深灰色背景 */
   color: white;
   border: none;
   border-radius: 4px;

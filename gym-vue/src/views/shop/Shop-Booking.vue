@@ -220,32 +220,7 @@ const goToBookingSuccess = () => {
             </div>
           </div>
 
-          <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-              <h5 class="fw-bold mb-0">付款資料</h5>
-              <span class="small text-secondary fw-bold">合計: NT${{ totalAmount }}</span>
-            </div>
-            <div class="card-body p-4">
-              <div class="mb-3 small text-secondary">已選擇的付款方式：信用卡</div>
-              <div class="payment-box p-3 rounded" style="background-color: #f8f9fa;">
-                <div class="form-group mb-3 position-relative">
-                  <input type="text" class="form-control border-0 bg-white" placeholder="卡號">
-                  <i class="bi bi-lock-fill position-absolute end-0 top-50 translate-middle-y me-3 text-muted"></i>
-                </div>
-                <div class="form-group mb-3">
-                  <input type="text" class="form-control border-0 bg-white" placeholder="持卡人姓名">
-                </div>
-                <div class="row g-2">
-                  <div class="col-7"><input type="text" class="form-control border-0 bg-white" placeholder="有效期限 (MM/YY)"></div>
-                  <div class="col-5"><input type="text" class="form-control border-0 bg-white" placeholder="安全碼"></div>
-                </div>
-              </div>
-              <div class="mt-3 x-small text-secondary d-flex align-items-start gap-2">
-                <i class="bi bi-shield-check-fill text-gym-green fs-5"></i>
-                <span>本金流服務由 SHOPLINE Payments 提供，通過 PCI-DSS 國際信用卡最高等級認證，提供安全交易服務。</span>
-              </div>
-            </div>
-          </div>
+          
 
           <button class="btn btn-gym-green w-100 py-3 fw-bold shadow-sm rounded" style="font-size: 1.1rem;" @click="goToBookingSuccess()">
             提交訂單
@@ -260,15 +235,15 @@ const goToBookingSuccess = () => {
 <style scoped>
 /* 📍 核心佈局樣式 */
 .btn-gym-green {
-  background-color: #62b562;
+  background-color: #f3722c;
   color: white;
   border: none;
 }
 .btn-gym-green:hover {
-  background-color: #52a452;
+  background-color: #f3722c;
   color: white;
 }
-.text-gym-green { color: #62b562; }
+.text-gym-green { color: #f3722c; }
 .x-small { font-size: 0.75rem; }
 
 /* 📍 自定義進度條 */
@@ -288,7 +263,7 @@ const goToBookingSuccess = () => {
 }
 .step-label { font-size: 0.85rem; margin-top: 8px; color: #adb5bd; }
 
-.step-item.active .step-circle { border-color: #62b562; color: #62b562; }
+.step-item.active .step-circle { border-color: #f3722c; color: #f3722c; }
 .step-item.active .step-label { color: #333; font-weight: bold; }
 
 .step-item.completed .step-circle { 
@@ -313,6 +288,6 @@ const goToBookingSuccess = () => {
 .form-control:focus {
   box-shadow: none;
   background-color: #fff !important;
-  border: 1px solid #62b562 !important;
+  border: 1px solid #f3722c !important;
 }
 </style>
