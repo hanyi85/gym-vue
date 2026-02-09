@@ -2,7 +2,7 @@
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import Btn from '@/components/btn.vue'
 
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRoute,useRouter } from 'vue-router'
 // import { useOrderStore } from '@/stores/useOrderStore'
 
@@ -47,7 +47,7 @@ const orderItems = ref([
     fPickDate: '2026-02-07',
     fPickTimeID: '12:00-13:00',
     fQrContent: 'ORDERITEM-001',
-    fPickupStatus: '未取餐',
+    fPickupStatus: false,
     showQr: false,
     fMealImage: '/assets/img/meals/1.jpg',
    
@@ -63,7 +63,7 @@ const orderItems = ref([
     fPickDate: '2026-02-07',
     fPickTimeID: '18:00-19:00',
     fQrContent: 'ORDERITEM-002',
-    fPickupStatus: '未取餐',
+    fPickupStatus: false,
     showQr: false,
     fMealImage: '/assets/img/meals/1.jpg',
     
@@ -84,6 +84,10 @@ const allorder = () => {
 
 
 <template>
+  <div>
+<StepIndicator :currentStep="3"/>
+
+</div>
   <div class="container py-4">
     <h2 class="text-center mb-4 order-title">訂單完成</h2>
 

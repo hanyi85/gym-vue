@@ -1,49 +1,99 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref} from 'vue'
 
-const orders = ref([])
-const expandedOrders = ref([])
 
-/* 展開 / 收合訂單 */
-function toggle(orderId) {
-  const index = expandedOrders.value.indexOf(orderId)
-  if (index === -1) {
-    expandedOrders.value.push(orderId)
-  } else {
-    expandedOrders.value.splice(index, 1)
+
+import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
+import HistoryltemList from '@/components/Meals/HistoryltemList.vue'
+
+
+
+
+
+/* ======================
+   假資料：訂單主檔
+====================== */
+const orders = ref([
+  {
+    info: {
+      fOrderId: 1,
+      fOrderName: '王小明',
+      fOrderPhone: '0912-345-678',
+      fOrderEmail: 'test@mail.com',
+      fCartCreateAt: '2026-02-06 10:30',
+      fOrderAt: '2026-02-06 10:45',
+      fVenueId: 1,
+      fTotalAmount: 980,
+      fOrderStatus: '已付款',
+      fPayMethod: '信用卡',
+      fVenueName: '大安館'
+    },
+    items: [
+      {
+        fOrderItemId: 1,
+        fOrderId: 1,
+        fMealId: 101,
+        fMealName: '高蛋白舒肥雞胸',
+        fQty: 2,
+        fUnitPrice: 180,
+        fSubtotal: 360,
+        fPickDate: '2026-02-07',
+        fPickTimeID: '12:00-13:00',
+        fQrContent: 'ORDERITEM-001',
+        fPickupStatus: false,
+        showQr: false,
+        fMealImage: '/assets/img/meals/1.jpg'
+      },
+      {
+        fOrderItemId: 2,
+        fOrderId: 1,
+        fMealId: 205,
+        fMealName: '低脂香煎鱸魚',
+        fQty: 2,
+        fUnitPrice: 310,
+        fSubtotal: 620,
+        fPickDate: '2026-02-07',
+        fPickTimeID: '18:00-19:00',
+        fQrContent: 'ORDERITEM-002',
+        fPickupStatus: false,
+        showQr: false,
+        fMealImage: '/assets/img/meals/1.jpg'
+      }
+    ]
+  },
+  {
+    info: {
+      fOrderId: 2,
+      fOrderName: '王小明',
+      fOrderPhone: '0912-345-678',
+      fOrderEmail: 'test@mail.com',
+      fCartCreateAt: '2026-01-31 09:20',
+      fOrderAt: '2026-01-31 09:45',
+      fVenueId: 2,
+      fTotalAmount: 310,
+      fOrderStatus: '已付款',
+      fPayMethod: '信用卡',
+      fVenueName: '信義館'
+    },
+    items: [
+      {
+        fOrderItemId: 3,
+        fOrderId: 2,
+        fMealId: 301,
+        fMealName: '低醣牛肉沙拉',
+        fQty: 1,
+        fUnitPrice: 310,
+        fSubtotal: 310,
+        fPickDate: '2026-02-01',
+        fPickTimeID: '12:00-13:00',
+        fQrContent: 'ORDERITEM-003',
+        fPickupStatus: true,
+        showQr: false,
+        fMealImage: '/assets/img/meals/1.jpg'
+      }
+    ]
   }
-}
-
-/* 模擬 API 資料（之後可換成 fetch / axios） */
-onMounted(() => {
-  orders.value = [
-    {
-      orderId: 1,
-      orderNo: 'OD20260201',
-      orderDate: '2026-02-01',
-      items: [
-        {
-          orderItemId: 101,
-          mealName: '舒肥雞胸健康餐',
-          calories: 520,
-          protein: 42,
-          pickupTime: '12:00–13:00',
-          isPickedUp: false,
-          qrCodeUrl: '/assets/img/meals/qrcode.jpg'
-        },
-        {
-          orderItemId: 102,
-          mealName: '低脂牛肉能量餐',
-          calories: 610,
-          protein: 45,
-          pickupTime: '18:00–19:00',
-          isPickedUp: true,
-          qrCodeUrl: '/assets/img/meals/qrcode.jpg'
-        }
-      ]
-    }
-  ]
-})
+]);
 
 </script>
 
@@ -52,74 +102,16 @@ onMounted(() => {
 <template>
 
 <div class="container py">
-    <h2 class="mb-4 fw-bold">我的健康餐訂單</h2>
+  <h2 class="text-center mb-4 order-title"><i class="bi bi-receipt order-title"></i> 全部健康餐訂單</h2>
+    <div v-for="order in orders" :key="order.info.fOrderId" class="orange-box mb-3 py-3">
+<!-- 單筆訂單主檔 -->
+<OrderInfoCard :order="order.info" />
+<!-- 單筆訂單明細 -->
+<HistoryltemList :items="order.items" />
+</div>
 
-    <div
-      v-for="order in orders"
-      :key="order.orderId"
-      class="card mb-3 shadow-sm"
-    >
-      <!-- 訂單主資訊 -->
-      <div
-        class="card-header d-flex justify-content-between align-items-center"
-        @click="toggle(order.orderId)"
-        style="cursor: pointer;"
-      >
-        <div>
-          <strong>訂單編號：</strong>{{ order.orderNo }}<br />
-          <small class="text-muted">
-            訂單日期：{{ order.orderDate }}
-          </small>
-        </div>
-
-        <span class="badge bg-primary">
-          共 {{ order.items.length }} 份餐點
-        </span>
-      </div>
-
-      <!-- 訂單明細 -->
-      <div v-show="expandedOrders.includes(order.orderId)">
-        <ul class="list-group list-group-flush">
-          <li
-            v-for="item in order.items"
-            :key="item.orderItemId"
-            class="list-group-item"
-          >
-            <div class="row align-items-center">
-              <div class="col-md-6">
-                <h6 class="mb-1">{{ item.mealName }}</h6>
-                <small class="text-muted">
-                  熱量:{{ item.calories }} kcal　
-                   蛋白質: {{ item.protein }} g
-                </small><br />
-                <small class="text-muted">
-                  取餐時段：{{ item.pickupTime }}
-                </small>
-              </div>
-
-              <div class="col-md-3 text-center">
-                <img
-                  :src="item.qrCodeUrl"
-                  alt="QR Code"
-                  class="img-fluid"
-                  style="max-width: 80px;"
-                />
-              </div>
-
-              <div class="col-md-3 text-end">
-                <span
-                  class="badge"
-                  :class="item.isPickedUp ? 'bg-success' : 'bg-secondary'"
-                >
-                  {{ item.isPickedUp ? '已領取' : '未領取' }}
-                </span>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
+ 
+</div>
 
 
 </template>
@@ -127,5 +119,15 @@ onMounted(() => {
 
 
 <style scoped>
+.orange-box  {
+  border-radius: 12px;
+  padding: 16px;
+  background-color: snow;
+}
 
+
+.order-title {
+  color: #f3722c;
+  font-weight: bold;
+}
 </style>

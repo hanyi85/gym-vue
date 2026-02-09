@@ -23,9 +23,9 @@ const showQr = ref(false)
 
   <span
     class="badge"
-    :class="item.isPickedUp ? 'bg-success' : 'bg-secondary'"
+    :class="item.fPickupStatus ? 'bg-success' : 'bg-secondary'"
   >
-    {{ item.isPickedUp ? '已領取' : '未領取' }}
+    {{ item.fPickupStatus ? '已領取' : '未領取' }}
   </span>
 </div>
         <div class="text-muted small mt-2">
