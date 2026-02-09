@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
-
+import CartItemCard from '@/components/Meals/CartItemCard.vue'
 
 const router = useRouter()
 
@@ -19,23 +19,34 @@ const mockCartData = {
       mealId: 101,
       mealName: '高蛋白雞胸餐',
       pickDate: '2026-02-10',
+      selectedTimeSlotId: 2,
       pickTime: '12:00 - 13:00',
       qty: 2,
       unitPrice: 120,
-      subtotal: 240
+      subtotal: 240,
+      imageUrl: '/assets/img/meals/1.jpg'
     },
     {
       orderItemId: 2,
       mealId: 102,
       mealName: '低脂鮭魚餐',
       pickDate: '2026-02-11',
+      selectedTimeSlotId: 1,
       pickTime: '18:00 - 19:00',
       qty: 1,
       unitPrice: 320,
-      subtotal: 320
+      subtotal: 320,
+      imageUrl: '/assets/img/meals/1.jpg',
     }
   ]
 }
+
+/* 取餐時段（之後 API 取代） */
+const timeSlots = ref([
+  { id: 1, label: '11:00 - 12:00' },
+  { id: 2, label: '12:00 - 13:00' },
+  { id: 3, label: '18:00 - 19:00' }
+])
 
 // 總金額
 const totalAmount = computed(() =>
@@ -59,6 +70,9 @@ const goConfirm = () => {
   router.push('/meals/confirm')
 }
 
+const goshopping = () => {
+  router.push('/meals')
+}
 
 onMounted(() => {
   getCart()
@@ -77,68 +91,100 @@ onMounted(() => {
 
 </div>
 
-  <section class="container my-4">
-    <h3 class="mb-3"> 我的購物車</h3>
+  <div class="container py-3">
+  <div class="d-flex align-items-center mb-4 cartheader">
+      <i class="bi bi-cart-fill text-orange fs-4 me-3"></i>
+    <h3 class="fw-bold mb-0">購物車內容</h3>
+  </div>
 
-    <table class="table table-bordered align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>餐點名稱</th>
-          <th>取餐日期</th>
-          <th>取餐時間</th>
-          <th>份數</th>
-          <th>單價</th>
-          <th>小計</th>
-          <th>操作</th>
-        </tr>
-      </thead>
+  <div
+    class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4"
+    v-if="cartItems.length > 0"
+  >
+    <CartItemCard
+      v-for="item in cartItems"
+      :key="item.orderItemId"
+      :item="item"
+      :timeSlots="timeSlots"
+      @update="handleUpdate"
+      @delete="deleteItem"
+    />
+  </div>
 
-      <tbody>
-        <tr v-for="item in cartItems" :key="item.orderItemId">
-          <td>{{ item.mealName }}</td>
-          <td>{{ item.pickDate }}</td>
-          <td>{{ item.pickTime }}</td>
-          <td>{{ item.qty }}</td>
-          <td>${{ item.unitPrice }}</td>
-          <td class="text-danger fw-bold">${{ item.subtotal }}</td>
-          <td>
-            <button
-              class="btn btn-sm btn-outline-danger"
-              @click="deleteItem(item.orderItemId)"
-            >
-              刪除
-            </button>
-          </td>
-        </tr>
+  <div v-else class="text-center py-5">
+        <i class="bi bi-cart-x display-1 text-muted"></i>
+        <p class="mt-3 text-muted">購物車目前沒有餐點</p>
+        <div class=" d-flex justify-content-center mt-5 ">
+          <btn
+        buyText="去選餐"
+        @buy="goshopping"
+      >
+      </btn>
+          
+        </div>
+        
+      </div>
+  <div
+    class="mt-5 p-4 amountblock rounded-4 shadow-sm d-flex justify-content-between align-items-center border-start border-orange border-5"
+  >
+    <div>
+      <span class="text-muted ">共 {{ cartItems.length }} 項餐點明細</span>
+      <h4 class="mb-0 fw-bold  ">總金額</h4>
+    </div>
+    <div class="text-end">
+      <h2 class="price-text fw-bold mb-2">${{ totalAmount }}</h2>
+      
+    </div>
+  </div>
+</div>
 
-        <tr v-if="cartItems.length === 0">
-          <td colspan="7" class="text-center text-muted">
-            購物車目前沒有餐點
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="d-flex justify-content-between align-items-center">
-      <h5>
-        總金額：
-        <span class="text-danger fw-bold">${{ totalAmount }}</span>
-      </h5>
-
-      <btn
+<div class="container d-flex justify-content-end mb-3">
+  <btn
         buyText="下一步"
         :disabled="cartItems.length === 0"
         @buy="goConfirm"
       >
       </btn>
-    </div>
-  </section>
+
+</div>
+      
+    
+ 
 </template>
 
 
 
 
 
-<style scoped>
+<style>
+.bg-orange {
+  background-color: #ff9f1c;
+}
+.price-text {
+  color: #f3722c;
+}
+.btn-orange-filled {
+  background-color: #ff9f1c;
+  color: white;
+  border: none;
+  transition: 0.3s;
+}
+.btn-orange-filled:hover {
+  background-color: #f3722c;
+  box-shadow: 0 4px 15px rgba(243, 114, 44, 0.3);
+  color: white;
+}
+.border-orange {
+  border-color: #ff9f1c !important;
+}
+
+.cartheader {
+  color:  #ff9f1c;
+}
+
+.amountblock {
+  background-color: #ffe0cc;
+}
+
 
 </style>
