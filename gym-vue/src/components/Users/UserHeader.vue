@@ -74,6 +74,7 @@ const user = {
 }
 
 /* 文字 */
+
 .name {
   font-size: 20px;
   font-weight: 600;

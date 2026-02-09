@@ -5,11 +5,7 @@
       <h2 class="brand">加入練吧</h2>
 
       <div class="steps">
-        <div
-          v-for="(step, i) in steps"
-          :key="i"
-          :class="['step', { active: currentStep === i }]"
-        >
+        <div v-for="(step, i) in steps" :key="i" :class="['step', { active: currentStep === i }]">
           <span class="dot">{{ i + 1 }}</span>
           <div class="step-text">
             <strong>{{ step.title }}</strong>
@@ -19,79 +15,85 @@
       </div>
     </aside>
 
-      <main class="content">
-    <!-- 標題 -->
-    <h2 class="page-title">建立你的基礎數據</h2>
-    <p class="page-desc">
-      輸入身高與體重，系統將自動計算 BMI，並幫助你安全追蹤進度。
-    </p>
+    <main class="content">
+       <div class="card">
+      <!-- 標題 -->
+      <h4 class="form-title">建立你的基礎數據</h4>
+      <p class="page-desc">
+        輸入身高與體重，系統將自動計算 BMI，並幫助你安全追蹤進度。
+      </p>
 
-    <!-- 身高 / 體重 -->
-    <div class="card-grid">
-      <div class="data-card">
-        <div class="card-label">身高 (cm)</div>
-        <div class="value-row">
-          <button @click="height--">−</button>
-          <span>{{ height }}</span>
-          <button @click="height++">＋</button>
+      <!-- 身高 / 體重 -->
+      <div class="card-grid">
+        <div class="data-card">
+          <div class="card-label">身高 (cm)</div>
+          <div class="value-row">
+            <button @click="changeHeight(-1)">−</button>
+            <span>{{ height }}</span>
+            <button @click="changeHeight(1)">＋</button>
+
+          </div>
+          <input type="range" min="140" max="200" v-model="height" />
         </div>
-        <input type="range" min="140" max="200" v-model="height" />
-      </div>
 
-      <div class="data-card">
-        <div class="card-label">體重 (kg)</div>
-        <div class="value-row">
-          <button @click="weight -= 0.5">−</button>
-          <span>{{ weight.toFixed(1) }}</span>
-          <button @click="weight += 0.5">＋</button>
+        <div class="data-card">
+          <div class="card-label">體重 (kg)</div>
+          <div class="value-row">
+            <button @click="changeWeight(-0.5)">−</button>
+            <span>{{ weight.toFixed(1) }}</span>
+            <button @click="changeWeight(0.5)">＋</button>
+
+          </div>
+          <input type="range" min="40" max="150" step="0.5" v-model="weight" />
         </div>
-        <input type="range" min="40" max="150" step="0.5" v-model="weight" />
-      </div>
-    </div>
-
-    <!-- BMI 提示 -->
-    <div class="bmi-card">
-      <div class="bmi-left">
-        <span class="bmi-label">BMI</span>
-        <div class="bmi-value">{{ bmi }}</div>
       </div>
 
-      <div class="bmi-right">
-        <strong>{{ bmiStatus.label }}</strong>
-        <p>{{ bmiStatus.desc }}</p>
+      <!-- BMI 提示 -->
+      <div class="bmi-card">
+        <div class="bmi-left">
+          <span class="bmi-label">BMI</span>
+          <div class="bmi-value">{{ bmi }}</div>
+        </div>
+
+        <div class="bmi-right">
+          <strong>{{ bmiStatus.label }}</strong>
+          <p>{{ bmiStatus.desc }}</p>
+        </div>
       </div>
-    </div>
 
-    <!-- 目標體重 -->
-    <h3 class="target-title">設定你的目標體重</h3>
+      <!-- 目標體重 -->
+      <h3 class="target-title">設定你的目標體重</h3>
 
-    <div class="target-card">
-      <div class="target-value">
-        {{ targetWeight.toFixed(1) }} <span>kg</span>
+      <div class="target-card">
+        <div class="target-value-row">
+          <button @click="changeTargetWeight(-0.5)">−</button>
+
+          <div class="target-value">
+            {{ targetWeightDisplay }} <span>kg</span>
+          </div>
+
+          <button @click="changeTargetWeight(0.5)">＋</button>
+        </div>
+
+        <input type="range" min="40" max="120" step="0.5" v-model="targetWeight" />
+
+        <div class="target-hint">
+          <span>快速減脂</span>
+          <span>維持</span>
+          <span>增肌</span>
+        </div>
       </div>
 
-      <input
-        type="range"
-        min="40"
-        max="120"
-        step="0.5"
-        v-model="targetWeight"
-      />
 
-      <div class="target-hint">
-        <span>快速減脂</span>
-        <span>維持</span>
-        <span>增肌</span>
+
+      <!-- CTA -->
+      <div class="footer-action">
+        <button class="btn-primary">
+          儲存並繼續 →
+        </button>
+        </div>
       </div>
-    </div>
-
-    <!-- CTA -->
-    <div class="footer-action">
-      <button class="btn-primary">
-        儲存並繼續 →
-      </button>
-    </div>
-</main>
+    </main>
   </div>
 </template>
 
@@ -112,6 +114,23 @@ const steps = [
 const height = ref(170)
 const weight = ref(70)
 const targetWeight = ref(65)
+const targetWeightDisplay = computed(() => {
+  return Number(targetWeight.value).toFixed(1)
+})
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
+const changeHeight = (delta) => {
+  height.value = clamp(height.value + delta, 140, 200)
+}
+
+const changeWeight = (delta) => {
+  weight.value = clamp(weight.value + delta, 40, 150)
+}
+
+const changeTargetWeight = (delta) => {
+  targetWeight.value = clamp(targetWeight.value + delta, 40, 120)
+}
 
 const bmi = computed(() => {
   return (weight.value / ((height.value / 100) ** 2)).toFixed(1)
@@ -143,6 +162,19 @@ const bmiStatus = computed(() => {
 
 
 <style scoped>
+input[type="range"] {
+  display: block;
+  width: 80%;
+  margin: 0 auto;
+}
+.form-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    color: #1f1f1f;
+}
+
 /* ===== 左側流程欄 ===== */
 .sidebar {
   width: 260px;
@@ -211,6 +243,7 @@ const bmiStatus = computed(() => {
   display: flex;
   min-height: 100vh;
 }
+
 .content {
   flex: 1;
   padding: 64px 72px;
@@ -220,6 +253,7 @@ const bmiStatus = computed(() => {
 .content-inner {
   max-width: 920px;
 }
+
 .page-title {
   font-size: 28px;
   font-weight: 800;
@@ -232,6 +266,16 @@ const bmiStatus = computed(() => {
 }
 
 /* 身高 / 體重卡片 */
+.card {
+    background: white;
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    border-radius: 22px;
+    padding: 48px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .08);
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -244,12 +288,16 @@ const bmiStatus = computed(() => {
   }
 }
 
+.data-card input[type="range"],
+.target-card input[type="range"] {
+  margin-top: 12px;
+}
 
 .data-card {
   background: #fff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
 }
 
 .card-label {
@@ -324,7 +372,7 @@ const bmiStatus = computed(() => {
   background: #fff;
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
 }
 
 .target-value {
@@ -348,6 +396,29 @@ const bmiStatus = computed(() => {
   margin-top: 8px;
 }
 
+.target-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.target-value-row button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.target-value-row button:hover {
+  background: #f9fafb;
+}
+
 /* CTA */
 .footer-action {
   display: flex;
@@ -366,5 +437,3 @@ const bmiStatus = computed(() => {
   cursor: pointer;
 }
 </style>
-
-
