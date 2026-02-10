@@ -1,265 +1,254 @@
 <template>
-  <div class="page-wrapper">
-    <nav class="breadcrumb-wrapper" aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item">
-      <RouterLink to="/users/profile-health">個人健康資訊</RouterLink>
-    </li>
-    <li class="breadcrumb-item active" aria-current="page">
-      體重紀錄
-    </li>
-  </ol>
-</nav>
-
-
-    <!-- 折線圖 -->
-    <div class="chart-card">
-      <h4 class="section-title">📈 體重趨勢</h4>
-      <p class="section-desc">追蹤最近的體重變化</p>
-      <canvas ref="chartEl"></canvas>
-    </div>
-
-    <!-- 表單卡片 -->
-    <div class="card wide">
-      <h2 class="card-title">體重紀錄</h2>
-
-      <div class="record-layout">
-        <!-- 左：輸入 -->
-        <div class="form-area">
-          <div class="form-item">
-            <label>紀錄日期</label>
-            <input type="date" />
+  <Banner title="體重記錄"></Banner>
+  <div class="container py-5 metrics-page">
+    <div class="card metric-card mb-4 border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-4">
+          <div class="icon-box-orange me-3">
+            <i class="fa fa-pencil-square-o"></i>
           </div>
-
-          <div class="form-item">
-            <label>體重（kg）</label>
-            <input type="number" placeholder="例如：65.4" />
+          <div>
+            <h6 class="mb-1 fw-bold text-dark-blue">快速紀錄</h6>
+            <small class="text-muted-custom">輸入今日量測數據以更新您的圖表</small>
           </div>
         </div>
 
-        <!-- 右：BMI 提示 -->
-        <div class="info-box">
-          <h4>目前 BMI</h4>
-          <p class="bmi-value good">22.5</p>
-          <p class="bmi-label">正常範圍</p>
-          <p class="hint">
-            維持在健康 BMI 區間，有助於降低慢性疾病風險。
-          </p>
+        <div class="row g-4 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-dark-blue">體重 (kg)</label>
+            <input type="number" step="0.1" class="form-control custom-input" placeholder="例如：75.4" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-dark-blue">體脂率 (%)</label>
+            <input type="number" step="0.1" class="form-control custom-input" placeholder="例如：15.2" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small text-dark-blue">肌肉量 (kg)</label>
+            <input type="number" step="0.1" class="form-control custom-input" placeholder="例如：34.1" />
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-save w-100 shadow-sm">
+              <i class="fa fa-floppy-o me-2"></i>儲存紀錄
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- 行動按鈕 -->
-      <div class="actions">
-        <button class="btn-primary-indigo">儲存紀錄</button>
-        <button class="btn-outline">取消</button>
       </div>
     </div>
 
+    <div class="row g-4 mb-5">
+      <div class="col-lg-8">
+        <div class="card metric-card h-100 border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h6 class="fw-bold text-dark-blue mb-0">體重變化趨勢</h6>
+              <div class="chart-filter-group p-1">
+                <button class="btn btn-filter active">30天</button>
+                <button class="btn btn-filter">3個月</button>
+                <button class="btn btn-filter">1年</button>
+              </div>
+            </div>
+            <div class="chart-area-mockup">
+              <div class="mockup-line"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-3 text-muted-custom small px-2">
+              <span>10月01日</span>
+              <span>10月08日</span>
+              <span>10月15日</span>
+              <span>10月22日</span>
+              <span>今日</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 d-flex flex-column gap-3">
+        <div class="stat-card p-4 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-start">
+            <small class="text-label fw-bold">目前體重</small>
+            <span class="badge badge-trend-up">每週 -0.4kg</span>
+          </div>
+          <h2 class="fw-bold mt-2 mb-0">75.4 <span class="unit-text">kg</span></h2>
+        </div>
+
+        <div class="stat-card p-4 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-start">
+            <small class="text-label fw-bold">累積減重</small>
+            <i class="fa fa-line-chart text-orange fs-5"></i>
+          </div>
+          <h2 class="fw-bold mt-2 mb-0 text-orange">4.2 <span class="unit-text text-orange">kg</span></h2>
+        </div>
+
+        <div class="stat-card p-4 border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <small class="text-label fw-bold">目標體重</small>
+            <span class="fw-bold text-dark-blue">70.0 kg</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+             <small class="text-orange fw-bold">已達成 65%</small>
+             <small class="text-muted-custom">尚差 5.4 kg</small>
+          </div>
+          <div class="progress custom-progress-bar">
+            <div class="progress-bar bg-orange" style="width: 65%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card metric-card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <div class="d-flex justify-content-between align-items-center p-4">
+          <h6 class="fw-bold text-dark-blue mb-0">最近量測紀錄</h6>
+          <a href="#" class="text-orange-link fw-bold small text-decoration-none">查看完整歷史</a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-header-custom">
+              <tr>
+                <th class="ps-4">日期</th>
+                <th>體重 (KG)</th>
+                <th>體脂率 (%)</th>
+                <th>肌肉量 (KG)</th>
+                <th class="text-end pe-4">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in history" :key="item.date" class="table-row-hover">
+                <td class="py-3 ps-4 text-dark-blue">{{ item.date }}</td>
+                <td class="py-3 fw-bold text-dark-blue">{{ item.weight }} kg</td>
+                <td class="py-3 text-muted-custom">{{ item.fat }}</td>
+                <td class="py-3 text-muted-custom">{{ item.muscle }} kg</td>
+                <td class="py-3 text-end pe-4">
+                  <button class="btn btn-icon-edit">
+                    <i class="fa fa-ellipsis-h"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-
 <script setup>
-import { onMounted, ref } from 'vue'
-// import Chart from 'chart.js/auto'
-
-const chartEl = ref(null)
-
-// onMounted(() => {
-//   new Chart(chartEl.value, {
-//     type: 'line',
-//     data: {
-//       labels: ['01/01', '01/05', '01/10', '01/15', '01/20'],
-//       datasets: [
-//         {
-//           label: '體重 (kg)',
-//           data: [66, 65.8, 65.5, 65.4, 65.2],
-//           tension: 0.4,
-//           fill: true,
-//           borderColor: '#3f51b5',
-//           backgroundColor: 'rgba(63,81,181,0.15)',
-//           pointRadius: 5,
-//           pointBackgroundColor: '#3f51b5'
-//         }
-//       ]
-//     },
-//     options: {
-//       plugins: {
-//         legend: { display: false }
-//       },
-//       scales: {
-//         y: {
-//           ticks: {
-//             color: '#666'
-//           }
-//         },
-//         x: {
-//           ticks: {
-//             color: '#666'
-//           }
-//         }
-//       }
-//     }
-//   })
-// })
+import { ref } from 'vue'
+import banner from '@/components/banner.vue';
+import Banner from '@/components/banner.vue';
+const history = ref([
+  { date: '2023年10月24日', weight: '75.4', fat: '15.2%', muscle: '34.1' },
+  { date: '2023年10月21日', weight: '75.8', fat: '15.4%', muscle: '34.0' },
+  { date: '2023年10月17日', weight: '76.2', fat: '15.7%', muscle: '33.8' },
+  { date: '2023年10月14日', weight: '76.5', fat: '15.9%', muscle: '33.8' },
+  { date: '2023年10月10日', weight: '77.0', fat: '16.2%', muscle: '33.6' }
+])
 </script>
 
 <style scoped>
-.page-wrapper {
-  background: linear-gradient(135deg, #f5f7fa, #e3e8f0);
+/* 樣式保持不變，與上個版本一致以維持圖片質感 */
+.metrics-page {
+  background-color: #f8fafc;
   min-height: 100vh;
-  padding: 50px 16px;
+  font-family: 'Noto Sans TC', sans-serif;
 }
 
-.breadcrumb-wrapper {
-  margin-bottom: 24px;
+.metric-card, .stat-card {
+  background: #ffffff;
+  border-radius: 16px;
 }
 
-.breadcrumb {
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  font-size: 14px;
-}
+.text-dark-blue { color: #1e293b; }
+.text-orange { color: #f59e0b; }
+.bg-orange { background-color: #f59e0b; }
+.text-muted-custom { color: #64748b; }
+.text-label { color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; }
+.unit-text { font-size: 0.9rem; color: #94a3b8; font-weight: normal; margin-left: 2px; }
 
-.breadcrumb-item a {
-  color: #6b7280; /* 灰藍 */
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.breadcrumb-item a:hover {
-  color: #4f46e5; /* 主色系藍紫 */
-}
-
-.breadcrumb-item.active {
-  color: #111827; /* 深色，表示目前頁 */
-  font-weight: 500;
-}
-
-.breadcrumb-item + .breadcrumb-item::before {
-  content: "›";
-  color: #9ca3af;
-  padding: 0 8px;
-}
-
-
-/* 折線圖卡片 */
-.chart-card {
-  max-width: 720px;
-  margin: 0 auto 40px;
-  background: #fff;
-  border-radius: 28px;
-  padding: 32px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-
-.section-title {
-  font-weight: 700;
-  color: #3f51b5;
-}
-
-.section-desc {
-  font-size: 14px;
-  color: #777;
-  margin-bottom: 20px;
-}
-
-/* 表單卡 */
-.card {
-  max-width: 720px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 36px;
-  border-radius: 28px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-
-.card-title {
-  margin-bottom: 24px;
-  font-weight: 700;
-}
-
-/* 表單區 */
-.record-layout {
+.icon-box-orange {
+  width: 40px;
+  height: 40px;
+  background-color: #fffbeb;
+  color: #f59e0b;
   display: flex;
-  gap: 32px;
-}
-
-.form-area {
-  flex: 1;
-}
-
-.form-item {
-  margin-bottom: 20px;
-}
-
-.form-item label {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 6px;
-  display: block;
-}
-
-.form-item input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-}
-
-/* BMI 卡 */
-.info-box {
-  width: 220px;
-  background: #f5f7ff;
-  border-radius: 20px;
-  padding: 20px;
-}
-
-.bmi-value {
-  font-size: 36px;
-  font-weight: 800;
-  color: #3f51b5;
-}
-
-.bmi-label {
-  font-size: 14px;
-  color: #3f51b5;
-  font-weight: 600;
-}
-
-.hint {
-  font-size: 13px;
-  color: #666;
-  margin-top: 12px;
-}
-
-/* 按鈕 */
-.actions {
-  margin-top: 36px;
-  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
+  border-radius: 10px;
+  font-size: 1.2rem;
 }
 
-.btn-primary-indigo {
-  background: linear-gradient(135deg, #3f51b5, #5c6bc0);
-  color: #fff;
+.custom-input {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background-color: #fcfcfc;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+.custom-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  outline: none;
+}
+
+.btn-save {
+  background-color: #f59e0b;
+  color: white;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 600;
   border: none;
-  padding: 14px 42px;
-  border-radius: 16px;
-  font-weight: 700;
-  box-shadow: 0 10px 25px rgba(63, 81, 181, 0.35);
 }
 
-.btn-outline {
+.chart-filter-group { background-color: #f1f5f9; border-radius: 10px; }
+.btn-filter {
+  border: none;
   background: transparent;
-  border: 1.5px solid #d6dbf5;
-  color: #3f51b5;
-  padding: 14px 36px;
-  border-radius: 16px;
+  padding: 5px 15px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+.btn-filter.active {
+  background-color: white;
+  color: #f59e0b;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
+.badge-trend-up {
+  background-color: #f0fdf4;
+  color: #166534;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
 
+.custom-progress-bar { height: 8px; background-color: #f1f5f9; border-radius: 10px; }
 
+.chart-area-mockup {
+  height: 200px;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  position: relative;
+  border-bottom: 2px solid #f1f5f9;
+}
+.mockup-line {
+  position: absolute;
+  bottom: 60px;
+  width: 100%;
+  height: 3px;
+  background-color: #f59e0b;
+  clip-path: polygon(0 50%, 20% 40%, 40% 60%, 60% 30%, 80% 45%, 100% 20%);
+}
+
+.table-header-custom th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 15px 12px;
+}
+.btn-icon-edit { border: none; background: transparent; color: #cbd5e1; }
+.text-orange-link { color: #f59e0b; }
 </style>

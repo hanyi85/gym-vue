@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="header">
       <div class="title-wrap">
-        <i class="fa fa-line-chart icon"></i>
+
         <div>
           <h5>體重紀錄 <span class="en">Body Progress</span></h5>
           <p class="sub">WEIGHT & BODY FAT TRENDS</p>
@@ -11,8 +11,13 @@
       </div>
 
       <div class="actions">
-        <i class="fa fa-calendar action-icon"></i>
-        <button class="add-btn">＋</button>
+        <router-link
+               to="/users/weight"
+               class="add-btn"
+             >
+               ＋
+             </router-link>
+
       </div>
     </div>
 
@@ -122,6 +127,12 @@ const bars = [80, 78, 75, 73, 70, 68]
   height: 36px;
   border-radius: 12px;
   font-size: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  text-decoration: none; 
 }
 
 /* current */

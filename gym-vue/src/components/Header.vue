@@ -1,6 +1,4 @@
 <template>
-
-
   <header class="header trans_300">
     <div class="top_nav">
       <div class="notice-container">
@@ -70,11 +68,11 @@
                         </router-link>
                       </li>
 
-                      <li>
+                      <!-- <li>
                         <router-link to="/users/diet" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-egg-fried me-2"></i>飲食紀錄
                         </router-link>
-                      </li>
+                      </li> -->
                       <li>
                         <RouterLink class="dropdown-item-plain" to="/courses/booking-history" @click="closeAccount">
                           <i class="fa fa-calendar-check-o me-2"></i> 課程訂單

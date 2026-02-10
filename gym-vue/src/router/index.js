@@ -64,6 +64,11 @@ const routes = [
     component: () => import('@/views/users/UserForgotPassword.vue'),
   },
 
+    {
+    path: '/users/profile-edit',
+    name: 'user-profile-edit',
+    component: () => import('@/views/users/UserProfileEdit.vue'),
+  },
   // 體重紀錄
   {
     path: '/users/weight',
