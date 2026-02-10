@@ -50,6 +50,12 @@ const routes = [
     name: 'user-profile-health',
     component: () => import('@/views/users/UserProfileHealth.vue'),
   },
+  // 會員註冊完成
+     {
+    path: '/users/profile-finished',
+    name: 'user-profile-finished',
+    component: () => import('@/views/users/UserProfileFinish.vue'),
+  },
 
   // 忘記密碼
   {

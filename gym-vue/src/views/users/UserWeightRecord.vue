@@ -61,47 +61,47 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import Chart from 'chart.js/auto'
+// import Chart from 'chart.js/auto'
 
 const chartEl = ref(null)
 
-onMounted(() => {
-  new Chart(chartEl.value, {
-    type: 'line',
-    data: {
-      labels: ['01/01', '01/05', '01/10', '01/15', '01/20'],
-      datasets: [
-        {
-          label: '體重 (kg)',
-          data: [66, 65.8, 65.5, 65.4, 65.2],
-          tension: 0.4,
-          fill: true,
-          borderColor: '#3f51b5',
-          backgroundColor: 'rgba(63,81,181,0.15)',
-          pointRadius: 5,
-          pointBackgroundColor: '#3f51b5'
-        }
-      ]
-    },
-    options: {
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        y: {
-          ticks: {
-            color: '#666'
-          }
-        },
-        x: {
-          ticks: {
-            color: '#666'
-          }
-        }
-      }
-    }
-  })
-})
+// onMounted(() => {
+//   new Chart(chartEl.value, {
+//     type: 'line',
+//     data: {
+//       labels: ['01/01', '01/05', '01/10', '01/15', '01/20'],
+//       datasets: [
+//         {
+//           label: '體重 (kg)',
+//           data: [66, 65.8, 65.5, 65.4, 65.2],
+//           tension: 0.4,
+//           fill: true,
+//           borderColor: '#3f51b5',
+//           backgroundColor: 'rgba(63,81,181,0.15)',
+//           pointRadius: 5,
+//           pointBackgroundColor: '#3f51b5'
+//         }
+//       ]
+//     },
+//     options: {
+//       plugins: {
+//         legend: { display: false }
+//       },
+//       scales: {
+//         y: {
+//           ticks: {
+//             color: '#666'
+//           }
+//         },
+//         x: {
+//           ticks: {
+//             color: '#666'
+//           }
+//         }
+//       }
+//     }
+//   })
+// })
 </script>
 
 <style scoped>

@@ -29,17 +29,17 @@
     </div>
 
     <!-- Fake bar chart -->
-    <div class="chart">
-     <div class="d-flex align-items-end gap-2 mb-4" style="height:80px">
-      <div
-        v-for="n in 10"
-        :key="n"
-        class="bg-warning rounded"
-        style="width: 12px; opacity: .3;"
-        :style="{ height: `${30 + n * 4}px` }"
-      />
-    </div>
-    </div>
+    <div class="chart mb-4">
+  <div class="bars">
+    <div
+      v-for="n in 10"
+      :key="n"
+      class="bar"
+      :style="{ height: `${30 + n * 4}px` }"
+    />
+  </div>
+</div>
+
 
 
     <!-- Bottom stats -->
@@ -164,21 +164,26 @@ const bars = [80, 78, 75, 73, 70, 68]
 
 /* chart */
 .chart {
-    overflow: hidden;
-  margin-top: 20px;
-  padding: 16px;
-  background: #fff7ec;
-  border-radius: 16px;
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 120px;
+  height: 80px;
+  position: relative;
+  overflow: hidden;
 }
 
+.bars {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+   right: 0; 
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
 .bar {
-  flex: 1;
-  background: #fde3c0;
-  border-radius: 8px;
+   flex: 0 0 auto;
+  width: 32px;
+  background-color: #f59e0b; /* 等同 bg-warning */
+  opacity: 0.3;
+  border-radius: 6px;
 }
 
 .bar.active {

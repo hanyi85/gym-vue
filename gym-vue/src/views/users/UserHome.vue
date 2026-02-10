@@ -1,9 +1,13 @@
 <template>
   <div class="d-flex min-vh-100 bg-light">
     <main class="flex-fill ms-5 px-4 py-4">
-      <Banner title="會員首頁" class="mb-4"  />
-      <UserHeader class="mb-4" />
-
+      <Banner title="會員首頁" class="mb-4" />
+      <div class="container-fluid">
+        <!-- 會員 Header -->
+        <div class="row mb-4">
+          <UserHeader class="mb-4" />
+        </div>
+      </div>
       <!-- Dashboard -->
       <div class="container-fluid">
         <div class="row g-4">
@@ -21,10 +25,6 @@
     </main>
   </div>
 </template>
-
-
-
-
 
 <script setup>
 // // Layout / 共用元件
@@ -61,12 +61,11 @@ const author = computed(() => random.author)
 
 
 <style scoped>
-
 .dashboard-card {
   background: #fff;
   border-radius: 16px;
   padding: 28px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
 }
 
 .title {
