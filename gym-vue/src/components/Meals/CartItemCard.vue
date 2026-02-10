@@ -93,9 +93,9 @@ const updateItem = () => {
   height: 200px;
   object-fit: cover;
 }
-i{
+/* i{
     color: #ff9f1c;
-}
+} */
 .price-text {
   color: #f3722c;
 }
