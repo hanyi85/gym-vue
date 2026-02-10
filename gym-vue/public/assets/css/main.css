@@ -1,18 +1,21 @@
+
 /* 確保最外層容器不會限制寬度 */
 #app {
-  display: block !important; /* 強制覆蓋任何 grid 佈局 */
+  display: block !important; 
+  /* 強制覆蓋任何 grid 佈局 */
   width: 100% !important;
   max-width: none !important;
   margin: 0 !important;
   padding: 0 !important;
-}
+} 
 
 html, body, #app {
   width: 100%;
   margin: 0;
   padding: 0;
-  display: block; /* 確保不是 grid 或 flex */
-}
+  display: block; 
+  /* 確保不是 grid 或 flex */
+ } 
 
 /* 如果你的模板有全域字體，可以在這裡設定 */
 body {

@@ -1,23 +1,22 @@
 <template>
-  <div class="flex min-h-screen bg-background-light">
-    <main
-      class="flex-1 ml-72 px-10 py-8 max-w-[1440px] mx-auto w-full space-y-10"
-    >
-      <!-- Header -->
-      <UserHeader />
+  <div class="d-flex min-vh-100 bg-light">
+    <main class="flex-fill ms-5 px-4 py-4">
+      <Banner title="會員首頁" class="mb-4"  />
+      <UserHeader class="mb-4" />
 
-      <!-- 主 Dashboard：飲食 + 體重（永遠並排） -->
-      <div class="grid grid-cols-3 gap-8">
-        <div class="col-span-2  min-w-0">
-          <DietRecordCard />
+      <!-- Dashboard -->
+      <div class="container-fluid">
+        <div class="row g-4">
+          <!-- 飲食卡 -->
+          <div class="col-lg-8 col-12">
+            <DietRecordCard />
+          </div>
+
+          <!-- 體重卡 -->
+          <div class="col-lg-4 col-12">
+            <BodyProgressCard />
+          </div>
         </div>
-
-        <BodyProgressCard />
-      </div>
-
-      <!-- 動力卡（你現在只有一張，也照樣用 grid） -->
-      <div class="grid grid-cols-3 gap-8">
-        <MotivationCard class="col-span-1" />
       </div>
     </main>
   </div>
@@ -26,10 +25,12 @@
 
 
 
+
 <script setup>
 // // Layout / 共用元件
 
 import UserHeader from '@/components/Users/UserHeader.vue'
+import Banner from '@/components/banner.vue'
 
 // // Dashboard 區塊
 // import DashboardSummary from '@/components/Users/DashboardSummary.vue'
@@ -60,22 +61,6 @@ const author = computed(() => random.author)
 
 
 <style scoped>
-.member-layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f6f7f9;
-}
-
-.member-main {
-  flex: 1;
-  padding: 24px;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
-}
 
 .dashboard-card {
   background: #fff;

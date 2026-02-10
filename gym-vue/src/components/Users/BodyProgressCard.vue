@@ -30,14 +30,17 @@
 
     <!-- Fake bar chart -->
     <div class="chart">
+     <div class="d-flex align-items-end gap-2 mb-4" style="height:80px">
       <div
-        v-for="(h, i) in bars"
-        :key="i"
-        class="bar"
-        :class="{ active: i === bars.length - 1 }"
-        :style="{ height: h + '%' }"
+        v-for="n in 10"
+        :key="n"
+        class="bg-warning rounded"
+        style="width: 12px; opacity: .3;"
+        :style="{ height: `${30 + n * 4}px` }"
       />
     </div>
+    </div>
+
 
     <!-- Bottom stats -->
     <div class="stats">
@@ -63,15 +66,15 @@
 </template>
 
 <script setup>
-const bars = [80, 78, 75, 73, 70, 68, 66, 64, 62, 58]
+const bars = [80, 78, 75, 73, 70, 68]
 </script>
 
 <style scoped>
 .weight-card {
   background: #fff;
   border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 
 /* header */
@@ -161,6 +164,7 @@ const bars = [80, 78, 75, 73, 70, 68, 66, 64, 62, 58]
 
 /* chart */
 .chart {
+    overflow: hidden;
   margin-top: 20px;
   padding: 16px;
   background: #fff7ec;

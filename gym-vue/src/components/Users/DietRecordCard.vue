@@ -84,8 +84,8 @@ const meals = [
 .diet-card {
   background: #fff;
   border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 
 /* header */
@@ -169,6 +169,7 @@ const meals = [
 
 /* meal list */
 .meal-list {
+  
   list-style: none;
   padding: 0;
   margin: 0;
@@ -185,6 +186,7 @@ const meals = [
 .meal-left {
   display: flex;
   gap: 12px;
+    min-width: 0;
 }
 
 .meal-icon {
@@ -205,6 +207,9 @@ const meals = [
 .meal-desc {
   font-size: 13px;
   color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .meal-right {

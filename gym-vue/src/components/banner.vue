@@ -20,7 +20,7 @@ defineProps({
 .banner {
   padding: 48px 20px; /*  縮小高度 */
   text-align: center;
-  background: linear-gradient(135deg, #e0ecff, #f8fbff);
+  background: linear-gradient(135deg, #fff7ec);
 }
 
 .banner__content {
@@ -30,13 +30,14 @@ defineProps({
 
 .banner__title {
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 12px;
+  color: #f1861b;
 }
 
 .banner__subtitle {
   font-size: 16px;
-  color: #5f6f86;
+  color: #a0783d;
 }
 
 
