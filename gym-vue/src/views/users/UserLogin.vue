@@ -64,7 +64,7 @@ const showPassword = ref(false);
 const handleLogin = () => {
   console.log('執行登入:', { email: email.value, password: password.value });
   // 登入成功後跳轉
-  router.push('/');
+  router.push('/users/home');
 };
 
 const socialLogin = (platform) => {

@@ -1,35 +1,30 @@
 <template>
   <div class="flex min-h-screen bg-background-light">
-    <main class="flex-1 ml-72 px-10 py-8 max-w-[1440px] mx-auto w-full">
-      
+    <main
+      class="flex-1 ml-72 px-10 py-8 max-w-[1440px] mx-auto w-full space-y-10"
+    >
       <!-- Header -->
-      <UserHeader class="mb-6" />
+      <UserHeader />
 
-      <!-- 主視覺：體重進度 -->
-      <section class="mb-10">
-        <BodyProgressCard />
-      </section>
-
-      <!-- 飲食 + 今日動力 -->
-      <section class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
-        <div class="xl:col-span-2">
+      <!-- 主 Dashboard：飲食 + 體重（永遠並排） -->
+      <div class="grid grid-cols-3 gap-8">
+        <div class="col-span-2  min-w-0">
           <DietRecordCard />
         </div>
 
-        <MotivationCard />
-      </section>
+        <BodyProgressCard />
+      </div>
 
-      <!-- 之後再接課程 / 方案 -->
-      <!--
-      <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <CourseSection class="lg:col-span-2" />
-        <MembershipStatusCard />
-      </section>
-      -->
-
+      <!-- 動力卡（你現在只有一張，也照樣用 grid） -->
+      <div class="grid grid-cols-3 gap-8">
+        <MotivationCard class="col-span-1" />
+      </div>
     </main>
   </div>
 </template>
+
+
+
 
 <script setup>
 // // Layout / 共用元件
