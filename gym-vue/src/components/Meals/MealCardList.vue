@@ -69,11 +69,11 @@ const toggleFavorite = () => {
   
   <div class="nutrition-info d-flex align-items-center text-muted">
     <span class="info-item">
-      <i class="bi bi-fire me-1"></i>{{ meal.calories }} kcal
+      <i class="bi bi-fire me-1"></i>熱量:{{ meal.calories }} kcal
     </span>
     <span class="mx-2 separator">|</span>
     <span class="info-item">
-      <i class="bi bi-egg-fried me-1"></i>{{ meal.protein }}g 蛋白質
+      <i class="bi bi-egg-fried me-1"></i>蛋白質:{{ meal.protein }}g 
     </span>
   </div>
 </div>

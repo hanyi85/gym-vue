@@ -54,16 +54,16 @@ const filteredMeals = computed(() => {
       </div>
 
       <main class="col-md-9 col-lg-10">
-        <div class="mb-4 ps-md-3">
+        <div class="mb-2 ps-md-3">
           <h3 class="fw-bold" style="color: #f3722c;">{{ currentCategory.name }}</h3>
           <h6 class="text-muted">{{ currentCategory.description }}</h6>
         </div>
         <!-- 餐點卡片 -->
-        <div class="row px-4">
+        <div class="row p-3">
           <div
             v-for="meal in filteredMeals"
             :key="meal.id"
-            class="col-12 col-sm-6 col-md-4 py-2"
+            class="col-12 col-sm-6 col-md-3 py-2"
           >
             <MealCard :meal="meal" />
           </div>
