@@ -97,7 +97,7 @@ const orders = ref([
 ]);
 
 const goQrcode = () => {
-  router.push('/users/favorite')
+  router.push('/users/meal-qrcode')
 }
 
 </script>
