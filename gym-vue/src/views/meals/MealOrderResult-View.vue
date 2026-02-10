@@ -89,7 +89,20 @@ const allorder = () => {
 
 </div>
   <div class="container py-4">
-    <h2 class="text-center mb-4 order-title">訂單完成</h2>
+    <div class="order-complete-container text-center">
+  <div class="success-checkmark">
+    <div class="check-icon">
+      <span class="icon-line line-tip"></span>
+      <span class="icon-line line-long"></span>
+      <div class="icon-circle"><i class="bi bi-check-lg"></i></div>
+      <div class="icon-fix"></div>
+    </div>
+  </div>
+
+  <h2 class="order-title mb-2">訂單已完成！</h2>
+  <p class="order-subtitle mb-4">感謝您的支持，我們將會準備好美味的餐點。</p>
+  
+</div>
 
     <OrderInfoCard :order="order" />
 
@@ -114,5 +127,60 @@ const allorder = () => {
 .order-title {
   color: #f3722c;
   font-weight: bold;
+}
+
+/* 標題美化 */
+.order-title {
+  color: #f3722c;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: 1px;
+  /* 增加一點進場動畫 */
+  animation: slideUp 0.5s ease-out;
+}
+
+.order-subtitle {
+  color: #6c757d;
+  font-size: 1.1rem;
+}
+
+
+
+/* 進場動畫 */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- 勾選動畫實作 (精簡版) --- */
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: #f3722c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 40px;
+  /* 這裡可以用真正的 SVG 或 Icon */
+  box-shadow: 0 4px 15px rgba(243, 114, 44, 0.3);
+}
+
+/* 給勾選框一個縮放動畫 */
+.success-checkmark {
+  animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }
 </style>
