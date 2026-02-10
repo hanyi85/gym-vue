@@ -141,7 +141,7 @@ function goSearch() {
   <section class="hot-section">
     <div class="hot-header">
       <h3>精選熱門課程</h3>
-      <span class="more-link">查看全部</span>
+   
     </div>
 
     <div class="hot-list">
@@ -160,6 +160,13 @@ function goSearch() {
           <h4>核心燃脂 HIIT</h4>
         </div>
       </div>
+      <div class="hot-card">
+        <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800" />
+        <div class="hot-body">
+          <span class="tag blue">瑜珈身心</span>
+          <h4>基礎哈達瑜珈</h4>
+        </div>
+    </div>
     </div>
   </section>
 </template>
@@ -278,7 +285,7 @@ function goSearch() {
 
 .stat i {
   font-size: 28px;
-  color: #3b82f6;
+  color: #ff9f1c;
 }
 
 .num {
@@ -382,39 +389,86 @@ function goSearch() {
   color: #6b7280;
 }
 
+
 .hot-section {
-  max-width: 1100px;
-  margin: 60px auto 0;
+  max-width:1080px;              
+  margin: 70px auto;
+  padding: 0 20px;
 }
 
-.hot-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+.hot-header h3 {
+  font-size: 24px;               
+  font-weight: 800;
+  margin-bottom: 24px;
 }
+
 
 .hot-list {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 300px)); 
+  justify-content: center;      
+  gap: 28px;
 }
 
 .hot-card {
-  width: 220px;
-  border-radius: 24px;
+  width: 100%;
+  border-radius: 20px;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
 }
+
+.hot-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.15);
+}
+
 
 .hot-card img {
   width: 100%;
-  height: 140px;
+  height: 165px;                
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .hot-body {
-  padding: 12px;
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+.tag {
+  align-self: flex-start;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.tag.blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+.tag.orange {
+  background: rgba(249, 115, 22, 0.14);
+  color: #ea580c;
+}
+
+
+.hot-body h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+  min-height: 2.6em;            
 }
 
 </style>
