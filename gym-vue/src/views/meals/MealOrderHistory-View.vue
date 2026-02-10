@@ -1,6 +1,7 @@
 <script setup>
 import { ref} from 'vue'
-
+import Btn from '@/components/Meals/nextbtn.vue'
+import router from '@/router'
 
 
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
@@ -95,6 +96,10 @@ const orders = ref([
   }
 ]);
 
+const goQrcode = () => {
+  router.push('/users/favorite')
+}
+
 </script>
 
 
@@ -103,6 +108,12 @@ const orders = ref([
 
 <div class="container py">
   <h2 class="text-center mb-4 order-title"><i class="bi bi-receipt order-title"></i> 全部健康餐訂單</h2>
+  <div class="justify-content-end d-flex align-items-center"><btn
+        buyText="取餐QR Code"
+        @buy="goQrcode"
+      >
+      </btn></div>
+  
     <div v-for="order in orders" :key="order.info.fOrderId" class="orange-box mb-3 py-3">
 <!-- 單筆訂單主檔 -->
 <OrderInfoCard :order="order.info" />
