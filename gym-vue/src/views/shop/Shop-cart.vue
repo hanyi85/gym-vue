@@ -206,6 +206,8 @@ const goToCheckout = () => {
                   <label class="form-label small fw-bold">送貨方式</label>
                   <select class="form-select bg-light border-0 py-2">
                     <option>宅配 (黑貓宅急便/新竹物流)</option>
+                    <option>超商 取貨不付款</option>
+                    <option>超商 取貨付款</option>
                   </select>
                   <div class="p-3 mt-2 rounded x-small text-secondary" style="background-color: #f8f9fa;">
                     採用黑貓宅急便、新竹物流等配送。本島未達門檻運費 NT$80。
@@ -213,7 +215,13 @@ const goToCheckout = () => {
                 </div>
                 <div class="col-12">
                   <label class="form-label small fw-bold">付款方式</label>
-                  <select class="form-select bg-light border-0 py-2"><option>信用卡 (一次付清)</option></select>
+                  <select class="form-select bg-light border-0 py-2">
+                    <option>貨到付款</option>
+                    <option>PayPal</option>
+                    <option>綠界</option>
+                    <option>LinePay</option>
+                    <option>藍新</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -262,7 +270,7 @@ const goToCheckout = () => {
   font-weight: bold; color: #dee2e6; z-index: 2;
 }
 .step-label { font-size: 0.85rem; margin-top: 8px; color: #adb5bd; }
-.step-item.active .step-circle { border-color: #62b562; color: #62b562; }
+.step-item.active .step-circle { border-color: #f3722c; color: #f3722c; }
 .step-item.active .step-label { color: #333; font-weight: bold; }
 
 .step-line { height: 2px; width: 100px; background: #dee2e6; margin-bottom: 25px; margin-left: -10px; margin-right: -10px; }
@@ -270,7 +278,7 @@ const goToCheckout = () => {
 /* 📍 統一標題與輸入框風格 */
 h5 { font-size: 1.15rem; }
 .form-select, .form-control { font-size: 0.9rem; }
-.form-select:focus { border: 1px solid #62b562 !important; box-shadow: none; background-color: #fff !important; }
+.form-select:focus { border: 1px solid #f3722c !important; box-shadow: none; background-color: #fff !important; }
 
 /* 📍 數量選擇器優化 */
 .qty-selector { width: 120px; }
@@ -278,8 +286,8 @@ h5 { font-size: 1.15rem; }
 .qty-selector button { background: #fff; border-color: #dee2e6; }
 
 /* 其他既有樣式... */
-.text-gym-green { color: #62b562; }
-.btn-gym-green { background-color: #62b562; color: white; border: none; }
+.text-gym-green { color: #f3722c; }
+.btn-gym-green { background-color: #f3722c; color: white; border: none; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .dot { width: 10px; height: 10px; background-color: #dee2e6; border-radius: 50%; cursor: pointer; }
 .dot.active { background-color: #ff8c00; }

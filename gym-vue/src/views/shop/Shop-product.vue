@@ -1,6 +1,7 @@
 <script setup>
 
 import { ref } from 'vue';
+import Banner from '@/components/banner.vue'
 
 
 
@@ -99,6 +100,7 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 
 <template>
+  <banner title="線上商城" subtitle="專業健身補給，助力你的每一個突破" />
 
   <div class="shop-page container py-4">
 

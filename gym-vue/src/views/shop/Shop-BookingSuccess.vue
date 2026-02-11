@@ -235,7 +235,7 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
 
 <style scoped>
 .btn-gym-green {
-  background-color: #62b562;
+  background-color: #f3722c;
   color: white;
   border: none;
 }
@@ -289,7 +289,7 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
   font-weight: bold; color: #dee2e6; z-index: 2;
 }
 .step-label { font-size: 0.85rem; margin-top: 8px; color: #adb5bd; }
-.step-item.active .step-circle { border-color: #62b562; color: #62b562; }
+.step-item.active .step-circle { border-color: #f3722c; color: #f3722c; }
 .step-item.active .step-label { color: #333; font-weight: bold; }
 .step-item.completed .step-circle { background-color: #8fa1b3; border-color: #8fa1b3; color: white; font-size: 0; }
 .step-item.completed .step-circle::after { content: '✓'; font-size: 16px; }
