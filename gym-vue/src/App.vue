@@ -17,6 +17,9 @@ import Footer from './components/Footer.vue'
 
 <style>
 /*  全域 / 版型 / layout 專用 */
+html {
+  --vueuse-safe-area-top: 0px;
+}
 
 .layout {
   min-height: 100vh;

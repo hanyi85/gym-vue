@@ -86,7 +86,7 @@ const handleResetRequest = () => {
   padding: 45px;
 }
 
-.tech-blue-text { color: #4e73df; }
+.tech-blue-text { color: #f38d00; }
 
 /* 底線輸入框 */
 .input-wrapper {
@@ -105,7 +105,7 @@ const handleResetRequest = () => {
 }
 
 .minimal-input:focus {
-  border-bottom: 2px solid #4e73df;
+  border-bottom: 2px solid #f38d00
 }
 
 /* 浮動標籤 */
@@ -122,14 +122,14 @@ const handleResetRequest = () => {
 .minimal-input:not(:placeholder-shown) ~ .floating-label {
   top: -18px;
   font-size: 12px;
-  color: #4e73df;
+  color: #f38d00;
 }
 
 /* 空心按鈕風格 */
 .btn-outline-tech {
   background: transparent;
-  border: 1.5px solid #4e73df;
-  color: #4e73df;
+  border: 1.5px solid #f38d00;
+  color: #f38d00;
   padding: 12px;
   border-radius: 8px;
   font-weight: 600;
@@ -138,7 +138,7 @@ const handleResetRequest = () => {
 }
 
 .btn-outline-tech:hover {
-  background: #4e73df;
+  background: #f38d00;
   color: #ffffff;
 }
 

@@ -136,10 +136,17 @@ const carouselItems = [
 }
 
 .carousel-caption {
+  position: absolute;
+  inset: 0;              /* top:0 right:0 bottom:0 left:0 */
   z-index: 2;
-  top: 0;
-  bottom: 0;
-  padding: 0 15%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  padding: 0 24px;       /* 不要再用 15% */
+  text-align: center;
 }
 
 /* --- 動畫設定 --- */
@@ -168,18 +175,25 @@ const carouselItems = [
 
 /* --- 文字與按鈕美化 --- */
 h2 {
-  font-size: clamp(2.5rem, 5vw, 4.5rem); /* 字體隨螢幕大小自動縮放 */
+  max-width: 1000px;
+  margin: 0 auto 20px;
+
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
   font-weight: 800;
   letter-spacing: 2px;
-  margin-bottom: 20px;
   color: #fff;
   text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.5);
 }
-
+@media (min-width: 992px) {
+  h2 {
+    white-space: nowrap;
+  }
+}
 p {
   font-size: 1.2rem;
   font-weight: 300;
   max-width: 600px;
+   margin: 0 auto 30px;
   margin-bottom: 30px;
   color: rgba(255, 255, 255, 0.9);
 }

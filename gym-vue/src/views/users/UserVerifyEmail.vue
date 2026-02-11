@@ -1,78 +1,222 @@
 <template>
-  <div class="verify-wrapper">
-    <div class="verify-card">
-      <h2 class="title">認證你的電子郵件</h2>
+  <div class="setup-page">
 
-      <!-- 驗證中 -->
-      <div v-if="status === 'loading'" class="state">
-        <div class="spinner"></div>
-        <p class="message">我們正在驗證你的電子郵件，請稍候…</p>
-      </div>
+    <!-- 左側流程欄 -->
+    <aside class="sidebar">
+      <h2 class="brand">加入練吧</h2>
 
-      <!-- 驗證成功 -->
-      <div v-else-if="status === 'success'" class="state success">
-        <div class="icon success">✓</div>
-        <p class="message">你的電子郵件已完成驗證</p>
-        <router-link to="/user/profile" class="btn primary">
-          前往會員中心
-        </router-link>
+      <div class="steps">
+        <div
+          v-for="(step, i) in steps"
+          :key="i"
+          :class="['step', { active: currentStep === i }]"
+        >
+          <span class="dot">{{ i + 1 }}</span>
+          <div class="step-text">
+            <strong>{{ step.title }}</strong>
+            <p>{{ step.desc }}</p>
+          </div>
+        </div>
       </div>
+    </aside>
 
-      <!-- 驗證失敗 -->
-      <div v-else class="state error">
-        <div class="icon error">!</div>
-        <p class="message">
-          驗證連結已失效或不正確
-        </p>
-        <button class="btn outline" @click="resend">
-          重新寄送驗證信
-        </button>
+    <!-- 右側內容 -->
+    <main class="content">
+      <div class="verify-card">
+        <h2 class="title">認證你的電子郵件</h2>
+
+        <div class="state success">
+          <div class="icon success">✓</div>
+          <p class="message">你的電子郵件已完成驗證</p>
+
+          <div class="actions">
+             <router-link
+               to="/users/profile-health"
+               class="next btn-next"
+             >
+               下一步
+             </router-link>
+
+                </div>
+        </div>
       </div>
-    </div>
+    </main>
+
   </div>
 </template>
 
+
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
 
-const route = useRoute()
-const status = ref('loading')
+const currentStep = ref(1) // 第二步：驗證電子信箱
 
-// 模擬驗證流程（之後接 API）
-onMounted(() => {
-  const token = route.query.token
+const steps = [
+  { title: '基本資料', desc: '填寫個人資訊' },
+  { title: '驗證電子信箱', desc: '' },
+  { title: '健康數據', desc: '身體狀態' },
+  { title: '完成', desc: '確認送出' }
+]
+// import { ref, onMounted } from 'vue'
+// import { useRoute } from 'vue-router'
 
-  setTimeout(() => {
-    if (token) {
-      status.value = 'success' // 模擬成功
-      // status.value = 'error' // 需要時切換測試
-    } else {
-      status.value = 'error'
-    }
-  }, 1500)
-})
+// const route = useRoute()
+// const status = ref('loading')
 
-const resend = () => {
-  alert('已重新寄送驗證信（前端模擬）')
-}
+// onMounted(() => {
+//   const token = route.query.token
+
+//   // 模擬 API 驗證
+//   setTimeout(() => {
+//     if (token) {
+//       status.value = 'success'
+//     } else {
+//       status.value = 'error'
+//     }
+//   }, 1500)
+// })
+
+// const resend = () => {
+//   alert('已重新寄送驗證信（前端模擬）')
+// }
 </script>
 
 <style scoped>
-.verify-wrapper {
-  min-height: 70vh;
+/* ===== 整頁版型 ===== */
+.setup-page {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f4f1;
+}
+
+/* ===== 左側流程欄 ===== */
+.sidebar {
+  width: 260px;
+  background: #121212;
+  color: white;
+  padding: 65px 28px;
+}
+
+.brand {
+  color: #f38d00;
+  margin-bottom: 40px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 100px;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  opacity: 0.35;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.step.active .dot {
+  background: #f38d00;
+  color: white;
+}
+
+/* 連接線 */
+.step::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 34px;
+  width: 2px;
+  height: 130px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.step:last-child::after {
+  display: none;
+}
+
+/* ===== 右側內容 ===== */
+.content {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f6f7;
+  padding: 60px;
 }
+
+/* ===== 驗證卡片 ===== */
+
+.title {
+  font-size: 20px;
+  margin-bottom: 32px;
+  color: #333;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.message {
+  color: #555;
+  font-size: 15px;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon.success {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.btn {
+  margin-top: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background-color: #f38d00;
+  color: #fff;
+  border: none;
+}
+
 
 .verify-card {
   width: 420px;
   background: #fff;
   border-radius: 8px;
   padding: 40px 32px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   text-align: center;
 }
 
@@ -94,23 +238,6 @@ const resend = () => {
   font-size: 15px;
 }
 
-/* spinner */
-.spinner {
-  width: 36px;
-  height: 36px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #409eff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* icon */
 .icon {
   width: 44px;
   height: 44px;
@@ -126,12 +253,6 @@ const resend = () => {
   color: #4caf50;
 }
 
-.icon.error {
-  background-color: #fdecea;
-  color: #f44336;
-}
-
-/* button */
 .btn {
   margin-top: 8px;
   padding: 10px 20px;
@@ -146,10 +267,18 @@ const resend = () => {
   color: #fff;
   border: none;
 }
+.actions {
+    text-align: right;
+}
 
-.btn.outline {
-  background-color: transparent;
-  border: 1px solid #ccc;
-  color: #555;
+.next {
+    background: #f38d00;
+    color: white;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 16px;
+    font-size: 16px;
+    cursor: pointer;
+     text-decoration: none;
 }
 </style>

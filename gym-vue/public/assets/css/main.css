@@ -255,10 +255,10 @@ h6 {
   line-height: 1;
 }
 
-.header .logo img {
+/* .header .logo img {
   max-height: 32px;
   margin-right: 8px;
-}
+} */
 
 .header .logo h1 {
   font-size: 30px;
@@ -534,7 +534,7 @@ h6 {
 }
 
 .footer .footer-about .logo span {
-  color: var(--heading-color);
+  /* color: var(--heading-color); */
   font-family: var(--heading-font);
   font-size: 26px;
   font-weight: 700;

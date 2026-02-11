@@ -656,7 +656,7 @@ const testimonials = ref([
   left: 0;
   bottom: -50px;
   width: 100%;
-  background: rgba(40, 167, 69, 0.9); /* 使用你最喜歡的綠色 */
+  background: #f38d00; 
   transition: 0.3s;
   padding: 10px 0;
 }
@@ -678,7 +678,7 @@ const testimonials = ref([
 }
 
 .single-team:hover h4 {
-  color: #28a745; /* 懸浮時名字變綠色 */
+  color: #f38d00; /* 懸浮時名字變色 */
 }
 
 .certifications {
@@ -707,6 +707,18 @@ const testimonials = ref([
   position: relative;
   overflow: hidden; /* 確保圖片不會超出邊框 */
 }
+
+.btn.text-primary,
+.text-primary {
+  color: #f38d00 !important;
+}
+
+.btn.border-secondary:hover {
+  background: #f38d00;
+  color: #fff !important;
+  border-color: #f38d00;
+}
+
 
 /* 課程 */
 .top-course-area {
@@ -814,7 +826,7 @@ const testimonials = ref([
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #f6214b;
+  border: 3px solid #f38d00;
 }
 
 .client-name {

@@ -1,10 +1,15 @@
 <template>
+
+
   <header class="header trans_300">
     <div class="top_nav">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-6">
-            <div class="top_nav_left">新會員首購現折 $100 | 加入官方 LINE 預約專業教練體驗課</div>
+      <div class="notice-container">
+        <div class="notice-wrapper">
+          <div class="notice-list" :style="listStyle">
+            <div v-for="(text, index) in messages" :key="index" class="notice-item">
+
+              {{ text }}
+            </div>
           </div>
         </div>
       </div>
@@ -54,6 +59,11 @@
 
                     <template v-else>
                       <li class="user_info">{{ userName }} 您好</li>
+                                            <li>
+                        <router-link to="/users/home" class="dropdown-item-plain" @click="closeAccount">
+                          <i class="bi bi-egg-fried me-2"></i>會員首頁
+                        </router-link>
+                      </li>
                       <li>
                         <router-link to="/users/profile" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-person-vcard me-2"></i>基本資料
@@ -142,9 +152,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import 練吧logo from '@/assets/練吧logo.png'
+
+/* =====================
+   廣告輪播
+===================== */
+const messages = [
+  '新會員首購現折 $100',
+  '加入官方 LINE 預約專業教練體驗課',
+  '限時體驗課程名額開放中'
+]
+
+const ITEM_HEIGHT = 50
+const currentIndex = ref(0)
+
+const listStyle = computed(() => ({
+  transform: `translateY(-${currentIndex.value * ITEM_HEIGHT}px)`,
+  transition: 'transform 0.6s ease-in-out'
+}))
+
+onMounted(() => {
+  setInterval(() => {
+    currentIndex.value =
+      (currentIndex.value + 1) % messages.length
+  }, 4000)
+})
+
+
 
 /* =====================
    基本狀態
@@ -229,6 +265,7 @@ const handleLogout = () => {
   position: sticky;
   top: 0;
   left: 0;
+  padding: 0;
   width: 100%;
   background: #ffffff;
   z-index: 1000;
@@ -237,18 +274,44 @@ const handleLogout = () => {
 }
 
 .top_nav {
-  width: 100%;
   height: 50px;
+  background: #1e1e27;
+  display: flex;
+  align-items: center;
   background: #1e1e27;
 }
 
-.top_nav_left {
-  line-height: 50px;
-  font-size: 13px;
-  color: #b5aec4;
-  text-transform: uppercase;
+
+
+/* 跑馬燈 */
+.notice-wrapper {
+  height: 50px;
+  overflow: hidden;
 }
 
+.notice-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notice-item {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbbbbb;
+  /* 字一定要亮 */
+  font-size: 13px;
+   line-height: 1;  
+}
+
+.notice-container {
+  width: 100%;
+    height: 100%;
+}
+
+
+/* 用戶 */
 .user-greeting {
   font-weight: bold;
   color: #f38d00;
@@ -260,9 +323,14 @@ const handleLogout = () => {
 /* 主導覽列 */
 .main_nav_container {
   width: 100%;
-  height: 80px;
+  padding: 12px 0;
   background: #ffffff;
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.15);
+}
+
+
+.col-lg-12 {
+  min-height: 130px;
 }
 
 .logo {
@@ -271,10 +339,17 @@ const handleLogout = () => {
 }
 
 .logo-img {
-  height: 64px;        /* 原本48 → 放大很有感 */
+  height: 120px;
   width: auto;
-  display: block;
+  max-height: none;
   object-fit: contain;
+}
+
+
+.logo_container {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 
@@ -379,7 +454,7 @@ a {
   gap: 14px;
 }
 
-/* 🎯 放大外層 Icon 按鈕 */
+/*  放大外層 Icon 按鈕 */
 .nav-icon-btn {
   color: #1e1e27 !important;
   min-height: 44px;
@@ -404,7 +479,7 @@ a {
 /* Icon 本體 */
 .nav-icon-btn i {
   font-size: 18px;
-  /* ✔ 跟搜尋、購物車一致 */
+  /* 跟搜尋、購物車一致 */
   line-height: 1;
 }
 
@@ -412,7 +487,6 @@ a {
 .user-label {
   font-size: 13px;
   margin-left: 12px;
-  /* ⭐ 稍微再拉開一點 */
   white-space: nowrap;
   color: #1e1e27;
   font-weight: 500;
@@ -451,6 +525,9 @@ a {
   background-color: #f5f5f7;
   color: #1e1e27 !important;
 }
+
+
+
 
 /* =====  強制 header icon 顏色 ===== */
 .header a,
@@ -508,6 +585,13 @@ a {
   /* 換成你的主題森林綠 */
 }
 
+
+@media (max-width: 768px) {
+  .logo-img {
+    height: 58px;
+  }
+}
+
 @media (max-width: 1200px) {
   .navbar_menu {
     display: none !important;
@@ -529,15 +613,15 @@ a {
 }
 
 html {
-  --s: 291px; /* control the size*/
+  --s: 291px;
+  /* control the size*/
   --c1: #f5f5f5;
   --c2: #f9dbc3;
-  
-  --g:#0000 45%,var(--c1) 46% 54%,#0000 55%;
+
+  --g: #0000 45%, var(--c1) 46% 54%, #0000 55%;
   background:
-    linear-gradient( 60deg,var(--g)),
-    linear-gradient(-60deg,var(--g)) var(--c2);
+    linear-gradient(60deg, var(--g)),
+    linear-gradient(-60deg, var(--g)) var(--c2);
   background-size: var(--s) calc(tan(60deg)*var(--s));
 }
-
 </style>

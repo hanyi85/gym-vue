@@ -1,22 +1,5 @@
 <template>
 
- <div class="stepper">
-  <!-- STEP 01 -->
-  <div class="step active">
-    <div class="step-circle">1</div>
-    <div class="step-label">建立帳號</div>
-  </div>
-
-  <div class="step-line"></div>
-
-  <!-- STEP 02 -->
-  <div class="step ">
-    <div class="step-circle">2</div>
-    <div class="step-label">個人資訊</div>
-  </div>
-</div>
-
-
   <div class="auth-page d-flex align-items-center justify-content-center">
     <div class="auth-card shadow">
       <div class="text-center mb-5">
@@ -27,7 +10,7 @@
       <form @submit.prevent="handleRegister">
         <div class="input-wrapper mb-4">
           <input type="text" v-model="form.account" class="minimal-input" placeholder=" " required>
-          <label class="floating-label">使用者帳號</label>
+          <label class="floating-label">電子信箱</label>
           <p v-if="errors.account" class="error-msg">{{ errors.account }}</p>
         </div>
 
@@ -97,7 +80,7 @@ const handleRegister = () => {
     return;
   }
   console.log('提交註冊:', form);
-  router.push('/user/login');
+  router.push('/users/profile');
 };
 
 const socialAuth = (platform) => {
@@ -106,78 +89,6 @@ const socialAuth = (platform) => {
 </script>
 
 <style scoped>
-
-
-.stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 36px;
-}
-
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  min-width: 90px;
-}
-
-.step-circle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 16px;
-  background: #e5e7eb;
-  color: #9ca3af;
-  transition: all 0.3s ease;
-}
-
-.step-label {
-  font-size: 13px;
-  color: #9ca3af;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* 中間連線 */
-.step-line {
-  width: 60px;
-  height: 2px;
-  background: #e5e7eb;
-  margin: 0 6px;
-}
-
-/* 已完成 */
-.step.done .step-circle {
-  background: linear-gradient(135deg, #f38d00, #5c6bc0);
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(63, 81, 181, 0.35);
-}
-
-.step.done .step-label {
-  color: #3f51b5;
-  font-weight: 600;
-}
-
-/* 目前進行中（發光） */
-.step.active .step-circle {
-  background: #ffffff;
-  color: #f38d00;
-  border: 2px solid #f38d00;
-  box-shadow:
-    0 0 0 6px rgba(63, 81, 181, 0.12),
-    0 10px 30px rgba(63, 81, 181, 0.35);
-}
-
-.step.active .step-label {
-  color: #1f2937;
-  font-weight: 700;
-}
 
 /* 頁面背景 */
 .auth-page {
@@ -195,7 +106,7 @@ const socialAuth = (platform) => {
   padding: 45px;
 }
 
-.indigo-text { color: #3f51b5; }
+.indigo-text { color: #f38d00; }
 
 /* 極簡底線輸入框 */
 .input-wrapper {
@@ -214,7 +125,7 @@ const socialAuth = (platform) => {
 }
 
 .minimal-input:focus {
-  border-bottom: 2px solid #3f51b5;
+  border-bottom: 2px solid #f38d00;
 }
 
 /* 浮動標籤 */
@@ -231,7 +142,7 @@ const socialAuth = (platform) => {
 .minimal-input:not(:placeholder-shown) ~ .floating-label {
   top: -15px;
   font-size: 12px;
-  color: #3f51b5;
+  color: #f38d00;
   font-weight: 500;
 }
 
@@ -247,8 +158,8 @@ const socialAuth = (platform) => {
 /* 按鈕樣式 */
 .btn-outline-indigo {
   background: transparent;
-  border: 1.5px solid #3f51b5;
-  color: #3f51b5;
+  border: 1.5px solid #f38d00;
+  color: #f38d00;
   padding: 12px;
   border-radius: 8px;
   font-weight: 600;
@@ -256,7 +167,7 @@ const socialAuth = (platform) => {
 }
 
 .btn-outline-indigo:hover {
-  background: #3f51b5;
+  background: #f38d00;
   color: #fff;
 }
 
@@ -289,5 +200,5 @@ const socialAuth = (platform) => {
 /* 錯誤訊息 */
 .error-msg { color: #f44336; font-size: 11px; margin-top: 5px; position: absolute; }
 
-.login-link { color: #3f51b5; text-decoration: none; margin-left: 5px; }
+.login-link { color: #f38d00; text-decoration: none; margin-left: 5px; }
 </style>
