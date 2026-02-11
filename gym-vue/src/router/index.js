@@ -305,71 +305,71 @@ const routes = [
 
   // 最新消息卡片
   {
-    path: '/post',
-    name: 'post-card',
+    path: '/post/card',
+    name: 'postCard',
     component: () => import('@/views/post/postCard.vue'),
   },
 
   // 最新消息列表
   {
     path: '/post/list',
-    name: 'post-list',
+    name: 'postList',
     component: () => import('@/views/post/postList.vue'),
   },
 
   // 最新消息詳細
   {
-    path: '/post/:id',
-    name: 'post-detail',
+    path: '/post/postDetail/:id',
+    name: 'postDetail',
     component: () => import('@/views/post/postDetail.vue'),
   },
 
   // 關於我們
   {
-    path: '/about/:id',
+    path: '/post/about/:id',
     name: 'about',
     component: () => import('@/views/post/postAbout.vue'),
   },
 
   // 常見問題
   {
-    path: '/faq',
+    path: '/post/faq',
     name: 'faq',
     component: () => import('@/views/post/postFaq.vue'),
   },
 
   // 門市地點
   {
-    path: '/store',
+    path: '/post/store',
     name: 'store',
     component: () => import('@/views/post/postStore.vue'),
   },
 
   // 客服回報
   {
-    path: '/customer-service',
-    name: 'customer-service',
+    path: '/post/customer-service',
+    name: 'customerService',
     component: () => import('@/views/post/postcustomerService.vue'),
   },
 
   // 報名表
   {
-    path: '/join/:id',
-    name: 'join-form',
+    path: '/post/join/:id',
+    name: 'joinForm',
     component: () => import('@/views/post/postJoinForm.vue'),
   },
 
   // 部落格
   {
-    path: '/blog',
+    path: '/post/blog',
     name: 'blog',
     component: () => import('@/views/post/postBlog.vue'),
   },
 
   // 部落格詳細
   {
-    path: '/blog/:id',
-    name: 'blog-detail',
+    path: '/post/blog/:id',
+    name: 'blogDetail',
     component: () => import('@/views/post/postBlogDetail.vue'),
   },
 

@@ -31,9 +31,9 @@
                 <li><router-link to="/courses">課程專區</router-link></li>
                 <li><router-link to="/shop/products">線上商城</router-link></li>
                 <li><router-link to="/meals">健康餐購買</router-link></li>
-                <li><router-link to="/postCard">資訊公告</router-link></li>
-                <li><router-link to="/store">場地資訊</router-link></li>
-                <li><router-link to="/faq">常見問題</router-link></li>
+                <li><router-link to="/post/card">資訊公告</router-link></li>
+                <li><router-link to="/post/store">場地資訊</router-link></li>
+                <li><router-link to="/post/faq">常見問題</router-link></li>
               </ul>
 
               <ul class="navbar_user d-flex align-items-center list-unstyled mb-0">
@@ -130,9 +130,9 @@
                   <li><router-link to="/">首頁</router-link></li>
                   <li><router-link to="/shop/products">線上商城</router-link></li>
                   <li><router-link to="/meals">健康餐購買</router-link></li>
-                  <li><router-link to="/postCard">資訊公告</router-link></li>
-                  <li><router-link to="/store">場地資訊</router-link></li>
-                  <li><router-link to="/faq">常見問題</router-link></li>
+                  <li><router-link to="/post/card">資訊公告</router-link></li>
+                  <li><router-link to="/post/store">場地資訊</router-link></li>
+                  <li><router-link to="/post/faq">常見問題</router-link></li>
                 </ul>
               </div>
             </nav>
