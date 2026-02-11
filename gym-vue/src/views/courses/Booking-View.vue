@@ -159,30 +159,33 @@ watch(
       </section>
 
       <!-- 日期 -->
-      <section class="date-section">
-        <div class="date-header">
-          <button class="nav-btn" @click="prevDates">‹</button>
+    <section class="date-section">
+  
+  <div class="month-title">
+    {{ currentMonth }}
+  </div>
 
-          <div class="date-center">
-            <div class="month-title">{{ currentMonth }}</div>
 
-            <div class="date-row">
-              <button
-                v-for="d in visibleDates"
-                :key="d.date"
-                class="date-card"
-                :class="{ active: d.date === selectedDate }"
-                @click="selectDate(d.date)"
-              >
-                <div class="date-day">{{ d.day }}</div>
-                <div class="date-num">{{ d.num }}</div>
-              </button>
-            </div>
-          </div>
+  <div class="date-header">
+    <button class="nav-btn" @click="prevDates">‹</button>
 
-          <button class="nav-btn" @click="nextDates">›</button>
-        </div>
-      </section>
+    <div class="date-row">
+      <button
+        v-for="d in visibleDates"
+        :key="d.date"
+        class="date-card"
+        :class="{ active: d.date === selectedDate }"
+        @click="selectDate(d.date)"
+      >
+        <div class="date-day">{{ d.day }}</div>
+        <div class="date-num">{{ d.num }}</div>
+      </button>
+    </div>
+
+    <button class="nav-btn" @click="nextDates">›</button>
+  </div>
+</section>
+
 
       <!-- 時段 -->
       <section class="slot-section">
@@ -215,7 +218,7 @@ watch(
     回到課程列表
   </button>
 
-  <!-- 下一步 -->
+  
   <button
     class="next-btn"
     :disabled="!selectedSlot"
@@ -310,7 +313,8 @@ watch(
 }
 
 .course-card img {
-  width: 140px;
+ 
+  width: 250px;
   border-radius: 12px;
   object-fit: cover;
 }
@@ -320,31 +324,33 @@ watch(
   font-weight: 800;
 }
 
-
-.date-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
+.date-section {
+  margin-top: 32px;
+  text-align: center;
 }
 
-.date-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
 .month-title {
   font-size: 16px;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   color: #111827;
 }
+
+
+.date-header {
+  display: flex;
+  align-items: center;      
+  justify-content: center;
+  gap: 24px;
+}
+
 
 .date-row {
   display: flex;
   gap: 12px;
 }
+
 
 .nav-btn {
   width: 32px;
@@ -355,6 +361,7 @@ watch(
   font-size: 20px;
   cursor: pointer;
 }
+
 
 .nav-btn:hover {
   border-color: #ff8a00;
