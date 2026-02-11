@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { watch } from 'vue'
+import Banner from '@/components/banner.vue'
+
 
 const router = useRouter()
 
