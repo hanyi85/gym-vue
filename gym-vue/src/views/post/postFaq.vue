@@ -24,7 +24,11 @@
             <div class="bg-orange-light rounded-4 p-4 mt-4 text-center border-orange-subtle">
               <h6 class="fw-bold text-dark mb-2">還有其他疑問嗎？</h6>
               <p class="x-small text-muted mb-3">我們的客服團隊很樂意為您服務</p>
-              <button class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold">聯繫我們</button>
+              <button class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold"><router-link
+                  to="/post/customer-service"
+                  class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold text-decoration-none">
+                  聯繫我們
+                </router-link></button>
             </div>
           </div>
         </div>
