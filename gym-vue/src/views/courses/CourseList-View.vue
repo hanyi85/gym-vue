@@ -98,6 +98,9 @@ function goDetail(id) {
   router.push(`/courses/detail/${id}`)
 }
 
+function goCoachDetail(id) {
+  router.push(`/courses/coach-detail/${id}`)
+}
 function goBooking(id) {
   router.push({
     path: '/courses/booking',
@@ -281,7 +284,7 @@ function goBooking(id) {
 
               <div class="time"><i class="bi bi-clock"></i> {{ c.time }}</div>
              <div class="course-actions">
-  <button class="btn-outline" @click="goDetail(c.id)">
+  <button class="btn-outline" @click="goCoachDetail(c.id)">
     查看課程
   </button>
 

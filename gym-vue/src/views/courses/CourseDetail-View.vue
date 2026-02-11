@@ -83,12 +83,9 @@ function goBack() {
        <div class="title-row">
   <h2>{{ course.title }}</h2>
 
-  <span class="fav" @click="toggleFav">
-  <i
-    class="fa-heart"
-    :class="isFav ? 'fa-solid active' : 'fa-regular'"
-  ></i>
-</span>
+ 
+ 
+
 </div>
 
         <div class="tags">
@@ -198,11 +195,13 @@ function goBack() {
 }
 
 .tag {
-  background: #eef2ff;
-  color: #2563eb;
+
+  background: #fff4ea;
+   color: #9a3412;
   padding: 4px 12px;
   border-radius: 999px;
-  font-size: 12px;
+font-size: 12px;
+
 }
 
 .coach {
@@ -255,18 +254,6 @@ function goBack() {
   align-items: center;
 }
 
-.fav {
-  font-size: 26px;
-  cursor: pointer;
-  transition: .2s;
-}
 
-.fav:hover {
-  transform: scale(1.2);
-}
-
-.fav.active {
-  color: #f3722c;
-}
 
 </style>
