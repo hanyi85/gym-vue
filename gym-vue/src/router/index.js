@@ -292,11 +292,11 @@ const routes = [
     component: () => import('@/views/meals/MealOrderDetail-View.vue'),
   },
 
-  // 我喜愛的健康餐
+  // 取餐QRcode
   {
-    path: '/users/favorite',
-    name: 'meals-favorite',
-    component: () => import('@/views/meals/MealFavorite-View.vue'),
+    path: '/users/meal-qrcode',
+    name: 'meals-qrcode',
+    component: () => import('@/views/meals/MealQrCode-View.vue'),
   },
 
   /* =========================

@@ -1,19 +1,7 @@
 <script setup>
-import { ref} from 'vue'
-import Btn from '@/components/Meals/nextbtn.vue'
-import router from '@/router'
+import { ref } from 'vue'
+import OrderQrcode from '@/components/Meals/OrderQrcode.vue'
 
-
-import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
-import HistoryltemList from '@/components/Meals/HistoryltemList.vue'
-
-
-
-
-
-/* ======================
-   假資料：訂單主檔
-====================== */
 const orders = ref([
   {
     info: {
@@ -95,47 +83,48 @@ const orders = ref([
     ]
   }
 ]);
-
-const goQrcode = () => {
-  router.push('/users/meal-qrcode')
-}
-
 </script>
 
 
 
 <template>
 
-<div class="container py">
-  <h2 class="text-center mt-4 order-title"><i class="bi bi-receipt order-title"></i> 全部健康餐訂單</h2>
-  <div class="justify-content-end d-flex  container pb-3"><btn
-        buyText="取餐QR Code"
-        @buy="goQrcode"
-      >
-      </btn></div>
-  
-    <div v-for="order in orders" :key="order.info.fOrderId" class="orange-box mb-3 py-3">
-<!-- 單筆訂單主檔 -->
-<OrderInfoCard :order="order.info" />
-<!-- 單筆訂單明細 -->
-<HistoryltemList :items="order.items" />
-</div>
-
- 
-</div>
-
-
+<div class="card border-0  container py-3">
+  <h2 class="text-center mb-4 order-title"><i class="bi bi-qr-code order-title"></i> 取餐QR Code</h2>
+    <div class="card-header header-orange text-white">
+      
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <template v-for="order in orders" :key="order.info.fOrderId">
+          <div 
+            class="col-12  col-lg-4" 
+            v-for="item in order.items" 
+            :key="item.fOrderItemId"
+          >
+            <OrderQrcode 
+              :item="item" 
+              :venue-name="order.info.fVenueName"
+              :order-status="order.info.fOrderStatus"
+            />
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
 </template>
 
 
-
 <style scoped>
-.orange-box  {
-  border-radius: 12px;
-  padding: 16px;
-  background-color: snow;
+.header-orange {
+  background: linear-gradient(90deg, #f3722c, #ff9f1c);
+  border-radius: 12px 12px 0 0;
+  height: 40px;
 }
-
+.card-body {
+  background-color: #fffaf4;
+  border-radius: 12px;
+}
 
 .order-title {
   color: #f3722c;
