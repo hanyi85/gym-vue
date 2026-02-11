@@ -156,6 +156,12 @@ const routes = [
     name: 'courses-review',
     component: () => import('@/views/courses/Review-View.vue'),
   },
+  //  評論成功
+  {
+  path: '/courses/review-success',
+  name: 'courses-review-success',
+  component: () => import('@/views/courses/ReviewSuccess-View.vue'),
+},
 
   /* =========================
    * 商城 Shop
