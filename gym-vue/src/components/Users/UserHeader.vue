@@ -10,7 +10,6 @@
       <div class="info">
         <h2 class="name">{{ user.name }}</h2>
         <div class="meta">
-          <span class="badge">黃金會員</span>
           <span class="joined">加入於 {{ user.joined }}</span>
         </div>
       </div>
@@ -18,9 +17,10 @@
 
     <!-- 右側：操作 -->
     <div class="actions">
-      <button class="btn outline">
-        ✏️ 編輯資料
-      </button>
+      <router-link to="/users/profile-edit" class="btn outline">
+        編輯會員資料
+      </router-link>
+
     </div>
   </header>
 </template>
@@ -41,7 +41,7 @@ const user = {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
 }
 
 /* 左側 */
@@ -89,14 +89,7 @@ const user = {
   color: #777;
 }
 
-.badge {
-  background: #fff7ed;
-  color: #f38d00;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 12px;
-}
+
 
 /* 右側按鈕 */
 .actions {

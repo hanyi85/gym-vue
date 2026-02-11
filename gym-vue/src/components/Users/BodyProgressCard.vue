@@ -1,238 +1,217 @@
 <template>
-  <div class="weight-card">
-    <!-- Header -->
-    <div class="header">
-      <div class="title-wrap">
-        <i class="fa fa-line-chart icon"></i>
-        <div>
-          <h5>體重紀錄 <span class="en">Body Progress</span></h5>
-          <p class="sub">WEIGHT & BODY FAT TRENDS</p>
-        </div>
-      </div>
+  <div class="row g-4 weight-card">
+    <!-- 左側：體重趨勢 -->
+    <div class="col-lg-8">
+      <div class="card metric-card h-100 border-0 shadow-sm">
+        <div class="card-body p-4">
+          <!-- 標題列 -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-dark-blue mb-0">體重變化趨勢</h6>
 
-      <div class="actions">
-        <i class="fa fa-calendar action-icon"></i>
-        <button class="add-btn">＋</button>
+            <RouterLink
+              to="/users/weight"
+              class="btn btn-go-weight"
+              title="前往體重專區"
+            >
+              +
+            </RouterLink>
+          </div>
+
+          <!-- 篩選 -->
+          <div class="chart-filter-group p-1 mb-3">
+            <button class="btn btn-filter active">30天</button>
+            <button class="btn btn-filter">3個月</button>
+            <button class="btn btn-filter">1年</button>
+          </div>
+
+          <!-- 圖表 -->
+          <div class="chart-area-mockup">
+            <div class="mockup-line"></div>
+          </div>
+
+          <!-- 底部日期 -->
+          <div class="d-flex justify-content-between mt-3 text-muted-custom small px-2">
+            <span>10月01日</span>
+            <span>10月08日</span>
+            <span>10月15日</span>
+            <span>10月22日</span>
+            <span>今日</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Current weight -->
-    <div class="current">
-      <div>
-        <p class="label">Current Weight</p>
-        <p class="weight">72.5 <span>kg</span></p>
-      </div>
-      <div class="diff down">
-        ↓ -1.2kg
-        <small>VS LAST MONTH</small>
-      </div>
-    </div>
-
-    <!-- Fake bar chart -->
-    <div class="chart">
-      <div
-        v-for="(h, i) in bars"
-        :key="i"
-        class="bar"
-        :class="{ active: i === bars.length - 1 }"
-        :style="{ height: h + '%' }"
-      />
-    </div>
-
-    <!-- Bottom stats -->
-    <div class="stats">
-      <div class="stat">
-        <p class="stat-title">BODY FAT</p>
-        <p class="stat-value">18.2%</p>
-        <div class="progress">
-          <span class="green" style="width: 40%"></span>
+    <!-- 右側：數據卡 -->
+    <div class="col-lg-4 d-flex flex-column gap-3">
+      <!-- 目前體重 -->
+      <div class="stat-card p-4 border-0 shadow-sm">
+        <div class="d-flex justify-content-between align-items-start">
+          <small class="text-label fw-bold">目前體重</small>
+          <span class="badge badge-trend-up">每週 -0.4kg</span>
         </div>
-        <small class="green-text">-0.4%</small>
+        <h2 class="fw-bold mt-2 mb-0">
+          75.4 <span class="unit-text">kg</span>
+        </h2>
       </div>
 
-      <div class="stat">
-        <p class="stat-title">MUSCLE MASS</p>
-        <p class="stat-value">56.4 <span>kg</span></p>
-        <div class="progress">
-          <span class="blue" style="width: 60%"></span>
+      <!-- 累積減重 -->
+      <div class="stat-card p-4 border-0 shadow-sm">
+        <div class="d-flex justify-content-between align-items-start">
+          <small class="text-label fw-bold">累積減重</small>
+          <i class="fa fa-line-chart text-orange fs-5"></i>
         </div>
-        <small class="blue-text">+0.2kg</small>
+        <h2 class="fw-bold mt-2 mb-0 text-orange">
+          4.2 <span class="unit-text text-orange">kg</span>
+        </h2>
+      </div>
+
+      <!-- 目標體重 -->
+      <div class="stat-card p-4 border-0 shadow-sm">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <small class="text-label fw-bold">目標體重</small>
+          <span class="fw-bold text-dark-blue">70.0 kg</span>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+          <small class="text-orange fw-bold">已達成 65%</small>
+          <small class="text-muted-custom">尚差 5.4 kg</small>
+        </div>
+
+        <div class="progress custom-progress-bar">
+          <div class="progress-bar bg-orange" style="width: 65%"></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
+
+
 <script setup>
-const bars = [80, 78, 75, 73, 70, 68, 66, 64, 62, 58]
+const bars = [80, 78, 75, 73, 70, 68]
 </script>
 
 <style scoped>
+
+.btn-go-weight {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #fffbeb;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  text-decoration: none;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.btn-go-weight:hover {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
 .weight-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  margin-bottom: 2rem;
 }
 
-/* header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.metric-card,
+.stat-card {
+  background: #ffffff;
+  border-radius: 16px;
 }
 
-.title-wrap {
-  display: flex;
-  gap: 12px;
+/* 色彩系統 */
+.text-dark-blue {
+  color: #1e293b;
 }
 
-.icon {
-  color: #f38d00;
-  font-size: 20px;
+.text-orange {
+  color: #f59e0b;
 }
 
-.en {
-  font-size: 13px;
-  color: #999;
-  margin-left: 6px;
+.bg-orange {
+  background-color: #f59e0b;
 }
 
-.sub {
-  font-size: 12px;
-  color: #bbb;
+.text-muted-custom {
+  color: #64748b;
 }
 
-.actions {
-  display: flex;
-  gap: 10px;
+.text-label {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
 }
 
-.action-icon {
-  color: #999;
+.unit-text {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: normal;
+  margin-left: 2px;
 }
 
-.add-btn {
-  background: #f38d00;
-  color: #fff;
+/* 篩選按鈕 */
+.chart-filter-group {
+  background-color: #f1f5f9;
+  border-radius: 10px;
+}
+
+.btn-filter {
   border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  font-size: 20px;
-}
-
-/* current */
-.current {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.label {
-  font-size: 13px;
-  color: #999;
-}
-
-.weight {
-  font-size: 32px;
-  font-weight: bold;
-}
-
-.weight span {
-  font-size: 18px;
-  color: #999;
-}
-
-.diff {
-  text-align: right;
-  font-size: 14px;
-}
-
-.diff.down {
-  color: #2ecc71;
-}
-
-.diff small {
-  display: block;
-  font-size: 11px;
-  color: #999;
-}
-
-/* chart */
-.chart {
-  margin-top: 20px;
-  padding: 16px;
-  background: #fff7ec;
-  border-radius: 16px;
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 120px;
-}
-
-.bar {
-  flex: 1;
-  background: #fde3c0;
+  background: transparent;
+  padding: 6px 16px;
   border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
 }
 
-.bar.active {
-  background: #f38d00;
+.btn-filter.active {
+  background-color: white;
+  color: #f59e0b;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-/* stats */
-.stats {
-  margin-top: 20px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+/* 圖表假樣式 */
+.chart-area-mockup {
+  height: 200px;
+  width: 100%;
+  background: linear-gradient(180deg,
+      rgba(245, 158, 11, 0.08) 0%,
+      rgba(255, 255, 255, 0) 100%);
+  position: relative;
+  border-bottom: 2px solid #f1f5f9;
 }
 
-.stat {
-  background: #fafafa;
-  border-radius: 16px;
-  padding: 14px;
+.mockup-line {
+  position: absolute;
+  bottom: 60px;
+  width: 100%;
+  height: 3px;
+  background-color: #f59e0b;
+  clip-path: polygon(0 50%,
+      20% 40%,
+      40% 60%,
+      60% 30%,
+      80% 45%,
+      100% 20%);
 }
 
-.stat-title {
-  font-size: 12px;
-  color: #999;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: bold;
-  margin: 6px 0;
-}
-
-.progress {
-  height: 6px;
-  background: #eaeaea;
+/* Badge */
+.badge-trend-up {
+  background-color: #f0fdf4;
+  color: #166534;
+  font-size: 0.75rem;
+  padding: 5px 10px;
   border-radius: 6px;
-  overflow: hidden;
 }
 
-.progress span {
-  display: block;
-  height: 100%;
-}
-
-.green {
-  background: #2ecc71;
-}
-
-.blue {
-  background: #3b82f6;
-}
-
-.green-text {
-  color: #2ecc71;
-  font-size: 12px;
-}
-
-.blue-text {
-  color: #3b82f6;
-  font-size: 12px;
+/* Progress */
+.custom-progress-bar {
+  height: 8px;
+  background-color: #f1f5f9;
+  border-radius: 10px;
 }
 </style>

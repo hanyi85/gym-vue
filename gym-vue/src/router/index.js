@@ -50,6 +50,12 @@ const routes = [
     name: 'user-profile-health',
     component: () => import('@/views/users/UserProfileHealth.vue'),
   },
+  // 會員註冊完成
+     {
+    path: '/users/profile-finished',
+    name: 'user-profile-finished',
+    component: () => import('@/views/users/UserProfileFinish.vue'),
+  },
 
   // 忘記密碼
   {
@@ -58,11 +64,22 @@ const routes = [
     component: () => import('@/views/users/UserForgotPassword.vue'),
   },
 
+    {
+    path: '/users/profile-edit',
+    name: 'user-profile-edit',
+    component: () => import('@/views/users/UserProfileEdit.vue'),
+  },
   // 體重紀錄
   {
     path: '/users/weight',
+    name: 'user-weight',
+    component: () => import('@/views/users/UserWeightHome.vue'),
+  },
+
+    {
+    path: '/users/weight-records',
     name: 'user-weight-record',
-    component: () => import('@/views/users/UserWeightRecord.vue'),
+    component: () => import('@/views/users/UserWeightRecords.vue'),
   },
 
   // 飲食紀錄

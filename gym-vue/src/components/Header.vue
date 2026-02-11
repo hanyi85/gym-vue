@@ -1,6 +1,4 @@
 <template>
-
-
   <header class="header trans_300">
     <div class="top_nav">
       <div class="notice-container">
@@ -61,26 +59,20 @@
                       <li class="user_info">{{ userName }} 您好</li>
                                             <li>
                         <router-link to="/users/home" class="dropdown-item-plain" @click="closeAccount">
-                          <i class="bi bi-egg-fried me-2"></i>會員首頁
+                          <i class="bi bi-person-vcard me-2"></i>會員首頁
                         </router-link>
                       </li>
-                      <li>
-                        <router-link to="/users/profile" class="dropdown-item-plain" @click="closeAccount">
-                          <i class="bi bi-person-vcard me-2"></i>基本資料
-                        </router-link>
-                      </li>
-
                       <li>
                         <router-link to="/users/weight" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-speedometer2 me-2"></i>體重紀錄
                         </router-link>
                       </li>
 
-                      <li>
+                      <!-- <li>
                         <router-link to="/users/diet" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-egg-fried me-2"></i>飲食紀錄
                         </router-link>
-                      </li>
+                      </li> -->
                       <li>
                         <RouterLink class="dropdown-item-plain" to="/courses/booking-history" @click="closeAccount">
                           <i class="fa fa-calendar-check-o me-2"></i> 課程訂單

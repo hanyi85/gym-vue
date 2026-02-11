@@ -16,81 +16,81 @@
     </aside>
 
     <main class="content">
-       <div class="card">
-      <!-- 標題 -->
-      <h4 class="form-title">建立你的基礎數據</h4>
-      <p class="page-desc">
-        輸入身高與體重，系統將自動計算 BMI，並幫助你安全追蹤進度。
-      </p>
+      <div class="card">
+        <!-- 標題 -->
+        <h4 class="form-title">建立你的基礎數據</h4>
+        <p class="page-desc">
+          輸入身高與體重，系統將自動計算 BMI，並幫助你安全追蹤進度。
+        </p>
 
-      <!-- 身高 / 體重 -->
-      <div class="card-grid">
-        <div class="data-card">
-          <div class="card-label">身高 (cm)</div>
-          <div class="value-row">
-            <button @click="changeHeight(-1)">−</button>
-            <span>{{ height }}</span>
-            <button @click="changeHeight(1)">＋</button>
+        <!-- 身高 / 體重 -->
+        <div class="card-grid">
+          <div class="data-card">
+            <div class="card-label">身高 (cm)</div>
+            <div class="value-row">
+              <button @click="changeHeight(-1)">−</button>
+              <span>{{ height }}</span>
+              <button @click="changeHeight(1)">＋</button>
 
-          </div>
-          <input type="range" min="140" max="200" v-model="height" />
-        </div>
-
-        <div class="data-card">
-          <div class="card-label">體重 (kg)</div>
-          <div class="value-row">
-            <button @click="changeWeight(-0.5)">−</button>
-            <span>{{ weight.toFixed(1) }}</span>
-            <button @click="changeWeight(0.5)">＋</button>
-
-          </div>
-          <input type="range" min="40" max="150" step="0.5" v-model="weight" />
-        </div>
-      </div>
-
-      <!-- BMI 提示 -->
-      <div class="bmi-card">
-        <div class="bmi-left">
-          <span class="bmi-label">BMI</span>
-          <div class="bmi-value">{{ bmi }}</div>
-        </div>
-
-        <div class="bmi-right">
-          <strong>{{ bmiStatus.label }}</strong>
-          <p>{{ bmiStatus.desc }}</p>
-        </div>
-      </div>
-
-      <!-- 目標體重 -->
-      <h3 class="target-title">設定你的目標體重</h3>
-
-      <div class="target-card">
-        <div class="target-value-row">
-          <button @click="changeTargetWeight(-0.5)">−</button>
-
-          <div class="target-value">
-            {{ targetWeightDisplay }} <span>kg</span>
+            </div>
+            <input type="range" min="140" max="200" v-model="height" />
           </div>
 
-          <button @click="changeTargetWeight(0.5)">＋</button>
+          <div class="data-card">
+            <div class="card-label">體重 (kg)</div>
+            <div class="value-row">
+              <button @click="changeWeight(-0.5)">−</button>
+              <span>{{ weight.toFixed(1) }}</span>
+              <button @click="changeWeight(0.5)">＋</button>
+
+            </div>
+            <input type="range" min="40" max="150" step="0.5" v-model="weight" />
+          </div>
         </div>
 
-        <input type="range" min="40" max="120" step="0.5" v-model="targetWeight" />
+        <!-- BMI 提示 -->
+        <div class="bmi-card">
+          <div class="bmi-left">
+            <span class="bmi-label">BMI</span>
+            <div class="bmi-value">{{ bmi }}</div>
+          </div>
 
-        <div class="target-hint">
-          <span>快速減脂</span>
-          <span>維持</span>
-          <span>增肌</span>
+          <div class="bmi-right">
+            <strong>{{ bmiStatus.label }}</strong>
+            <p>{{ bmiStatus.desc }}</p>
+          </div>
         </div>
-      </div>
+
+        <!-- 目標體重 -->
+        <h3 class="target-title">設定你的目標體重</h3>
+
+        <div class="target-card">
+          <div class="target-value-row">
+            <button @click="changeTargetWeight(-0.5)">−</button>
+
+            <div class="target-value">
+              {{ targetWeightDisplay }} <span>kg</span>
+            </div>
+
+            <button @click="changeTargetWeight(0.5)">＋</button>
+          </div>
+
+          <input type="range" min="40" max="120" step="0.5" v-model="targetWeight" />
+
+          <div class="target-hint">
+            <span>快速減脂</span>
+            <span>維持</span>
+            <span>增肌</span>
+          </div>
+        </div>
 
 
 
-      <!-- CTA -->
-      <div class="footer-action">
-        <button class="btn-primary">
-          儲存並繼續 →
-        </button>
+        <!-- CTA -->
+        <div class="footer-action">
+          <router-link to="/users/profile-finished" class="btn-primary">
+            儲存並繼續 →
+          </router-link>
         </div>
       </div>
     </main>
@@ -167,12 +167,13 @@ input[type="range"] {
   width: 80%;
   margin: 0 auto;
 }
+
 .form-title {
-    text-align: center;
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 32px;
-    color: #1f1f1f;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #1f1f1f;
 }
 
 /* ===== 左側流程欄 ===== */
@@ -267,13 +268,13 @@ input[type="range"] {
 
 /* 身高 / 體重卡片 */
 .card {
-    background: white;
-    width: 100%;
-    max-width: 880px;
-    margin: 0 auto;
-    border-radius: 22px;
-    padding: 48px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, .08);
+  background: white;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  border-radius: 22px;
+  padding: 48px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .08);
 }
 
 .card-grid {
@@ -435,5 +436,6 @@ input[type="range"] {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 </style>

@@ -1,28 +1,12 @@
 <template>
     <div class="setup-page">
 
-        <!-- 左側流程欄 -->
-        <aside class="sidebar">
-            <h2 class="brand">加入練吧</h2>
-
-            <div class="steps">
-                <div v-for="(step, i) in steps" :key="i" :class="['step', { active: currentStep === i }]">
-                    <span class="dot">{{ i + 1 }}</span>
-                    <div class="step-text">
-                        <strong>{{ step.title }}</strong>
-                        <p>{{ step.desc }}</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
         <!-- 右側內容 -->
         <main class="content">
             <div class="card">
-
                 <!-- 基本資料區塊 -->
                 <div class="form-section">
-                    <h4 class="form-title">會員基本資料</h4>
+                    <h4 class="fw-bold form-title">修改基本資料</h4>
 
 
                     <!-- 頭像上傳 -->
@@ -84,9 +68,14 @@
                         </div>
 
                         <div class="field">
-                            <label class="field-label">電子信箱</label>
-                            <input placeholder="example@email.com" />
+                            <label class="field-label email-group">電子信箱</label>
+                            <input type="email" disabled v-model="form.email" />
+                            <!-- 驗證完成 -->
+                            <span class="email-verified">
+                                <i class="fa fa-icon fa-check"></i> 驗證完成
+                            </span>
                         </div>
+
                     </div>
                 </div>
 
@@ -119,10 +108,38 @@
                     </div>
                 </div>
 
+                <!-- 修改密碼 -->
+                <div class="form-section">
+                    <h4 class="form-title">修改密碼</h4>
+
+                    <div class="grid">
+                        <div class="field">
+                            <label class="field-label">目前密碼</label>
+                            <input type="password" v-model="password.current" placeholder="請輸入目前密碼" />
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label">新密碼</label>
+                            <input type="password" v-model="password.new" placeholder="請輸入新密碼" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">確認新密碼</label>
+                        <input type="password" v-model="password.confirm" placeholder="再次輸入新密碼" />
+                    </div>
+
+                    <!-- 密碼錯誤提示 -->
+                    <p v-if="passwordError" class="error-text">
+                        {{ passwordError }}
+                    </p>
+                </div>
+
+
                 <!-- 操作按鈕 -->
                 <div class="actions">
-                    <router-link to="/users/verifyEmail" class="next btn-next">
-                        下一步
+                    <router-link to="/users/home" class="next btn-next">
+                        儲存並返回會員首頁<i class="fa fa-long-arrow-right" aria-hidden="true"></i>
                     </router-link>
                 </div>
 
@@ -138,17 +155,24 @@ import { ref } from 'vue'
 
 const currentStep = ref(0)
 const gender = ref('男')
+const form = ref({
+    email: 'test@example.com', // 之後可改成 API 帶入
+    name: '',
+    phone: '',
+    birthday: '',
+    address: ''
+})
 
 const city = ref('')
 const area = ref('')
 
-const steps = [
-    { title: '基本資料', desc: '填寫個人資訊' },
-    { title: '驗證電子信箱', desc: '' },
-    { title: '健康數據', desc: '身體狀態' },
-    // { title: '方案選擇', desc: '會員方案' },
-    { title: '完成', desc: '確認送出' }
-]
+const password = ref({
+    current: '',
+    new: '',
+    confirm: ''
+})
+
+const passwordError = ref('')
 
 const avatar = ref(null)
 
@@ -175,72 +199,6 @@ const triggerUpload = () => {
 }
 
 /* ===== 左側欄 ===== */
-.sidebar {
-    width: 260px;
-    background: #121212;
-    color: white;
-    padding: 65px 28px;
-}
-
-.brand {
-    color: #f38d00;
-    margin-bottom: 40px;
-    margin-top: 8px;
-}
-
-.steps {
-    display: flex;
-    flex-direction: column;
-    gap: 100px;
-}
-
-.step {
-    position: relative;
-    display: flex;
-    gap: 16px;
-    opacity: .35;
-}
-
-.step.active {
-    opacity: 1;
-}
-
-.dot {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #2a2a2a;
-    color: #aaa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    z-index: 1;
-}
-
-.step.active .dot {
-    background: #f38d00;
-    color: white;
-}
-
-/* 連接線 */
-.step::after {
-    content: '';
-    position: absolute;
-    left: 14px;
-    /* 對齊圓點中心 */
-    top: 34px;
-    /* 圓點下方 */
-    width: 2px;
-    height: 130px;
-    /* 連線長度 */
-    background: rgba(255, 255, 255, .15);
-}
-
-/* 最後一個不要線 */
-.step:last-child::after {
-    display: none;
-}
 
 .avatar-section {
     text-align: center;
@@ -322,10 +280,10 @@ const triggerUpload = () => {
 
 .form-title {
     text-align: center;
-    font-size: 22px;
-    font-weight: 600;
+    /* font-size: 22px;
+    font-weight: 600; */
     margin-bottom: 32px;
-    color: #1f1f1f;
+    color:  #f38d00;;
 }
 
 
@@ -421,7 +379,6 @@ select:focus {
 .gender {
     display: flex;
     gap: 12px;
-
 }
 
 .gender button {
@@ -447,6 +404,18 @@ select:focus {
     padding: 6px;
 }
 
+/* Email 驗證完成 */
+.email-group {
+    position: relative;
+}
+
+.email-verified {
+
+    right: 12px;
+    bottom: -20px;
+    font-size: 13px;
+    color: #4caf50;
+}
 
 .actions {
     text-align: right;
@@ -460,6 +429,12 @@ select:focus {
     border-radius: 16px;
     font-size: 16px;
     cursor: pointer;
-     text-decoration: none;
+    text-decoration: none;
+}
+
+.error-text {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #e74c3c;
 }
 </style>
