@@ -32,7 +32,7 @@
                             <div v-else class="avatar-placeholder">+</div>
 
                             <label class="avatar-edit">
-                                ✎
+                                <i class="fa fa-pencil" aria-hidden="true"></i>
                                 <input type="file" accept="image/*" hidden @change="onUpload" />
                             </label>
                         </div>

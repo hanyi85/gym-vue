@@ -16,7 +16,7 @@
                             <div v-else class="avatar-placeholder">+</div>
 
                             <label class="avatar-edit">
-                                ✎
+                                <i class="fa fa-pencil" aria-hidden="true"></i>
                                 <input type="file" accept="image/*" hidden @change="onUpload" />
                             </label>
                         </div>
@@ -138,8 +138,8 @@
 
                 <!-- 操作按鈕 -->
                 <div class="actions">
-                    <router-link to="/users/verifyEmail" class="next btn-next">
-                        下一步
+                    <router-link to="/users/home" class="next btn-next">
+                        儲存並返回會員首頁<i class="fa fa-long-arrow-right" aria-hidden="true"></i>
                     </router-link>
                 </div>
 

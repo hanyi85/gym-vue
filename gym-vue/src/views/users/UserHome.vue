@@ -30,7 +30,7 @@
     <!-- 每日激勵語 -->
     <div class="col-lg-6 col-12">
       <div class="motivation-card">
-        <div class="quote-mark">“</div>
+        <div class="quote-mark"><i class="fa fa-quote-right" aria-hidden="true"></i></div>
         <p class="motivation-text">
           每一次撐下去的瞬間，都是你變強的證據！
         </p>
@@ -45,14 +45,15 @@
 
         <div class="resource-item">
           <div class="resource-left">
-            <i class="fa-solid fa-utensils"></i>
             <span>課程安排</span>
+            <i class="fa fa-chevron-right" aria-hidden="true"></i>
           </div>
         </div>
 
         <div class="resource-item">
           <div class="resource-left">
             <span>健康餐點</span>
+            <i class="fa fa-chevron-right "  aria-hidden="true"></i>
           </div>
 
         </div>

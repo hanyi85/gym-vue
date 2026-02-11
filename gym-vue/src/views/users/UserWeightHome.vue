@@ -1,5 +1,5 @@
 <template>
-  <Banner title="體重記錄"></Banner>
+  <Banner title="體重專區"></Banner>
   <div class="container py-5 metrics-page">
     <div class="card metric-card mb-4 border-0 shadow-sm">
       <div class="card-body p-4">
@@ -98,7 +98,13 @@
       <div class="card-body p-0">
         <div class="d-flex justify-content-between align-items-center p-4">
           <h6 class="fw-bold text-dark-blue mb-0">最近量測紀錄</h6>
-          <a href="#" class="text-orange-link fw-bold small text-decoration-none">查看完整歷史</a>
+<RouterLink
+              to="/users/weight-records"
+              class="text-orange-link fw-bold small text-decoration-none"
+              title="查看完整歷史"
+            >
+              +
+            </RouterLink>
         </div>
 
         <div class="table-responsive">

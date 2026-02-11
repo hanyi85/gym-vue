@@ -436,5 +436,6 @@ input[type="range"] {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 </style>
