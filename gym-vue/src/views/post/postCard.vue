@@ -1,7 +1,7 @@
 <template>
   <div class="news-wrapper bg-light min-vh-100 pb-5">
     <div class="container py-4">
-      
+      <banner title="資訊公告" subtitle="立即取得我們的最新資訊活動" />
       <div class="row g-3 mb-5">
         <div class="col-md-6">
           <div class="banner-box d-flex align-items-center justify-content-center rounded-4 bg-white shadow-sm text-secondary fw-bold border-top border-orange border-4">
@@ -126,7 +126,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-
+import Banner from '@/components/banner.vue'
 const router = useRouter();
 
 // 模式與篩選狀態
