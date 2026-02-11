@@ -31,11 +31,14 @@
 
             <div class="article-body text-secondary line-height-lg mb-5">
               <p class="fs-5">這是在此顯示的公告內容範例。果果能量提供專業的健身與營養諮詢，本篇公告詳細說明了關於「{{ currentPost.title }}」的相關資訊。</p>
-              <p>內容將會根據後端抓取的資料進行呈現，目前為前端樣板展示。您可以點擊下方的按鈕進行後續操作，如報名活動或收藏此文章。</p>
+              <p>內容將會根據後端抓取的資料進行呈現，目前為前端樣板展示。您可以點擊下方的按鈕進行報名，系統將會帶入此活動編號。</p>
             </div>
 
             <div class="d-flex flex-column align-items-center gap-4 border-top pt-5">
-              <button class="btn btn-orange text-white rounded-pill px-5 py-3 fw-bold shadow-sm transition-scale">
+              <button 
+                @click="goToJoinForm(currentPost.id)"
+                class="btn btn-orange text-white rounded-pill px-5 py-3 fw-bold shadow-sm transition-scale"
+              >
                 立即報名活動
               </button>
               
@@ -83,7 +86,7 @@ import { useRoute, useRouter } from 'vue-router';
 const route = useRoute();
 const router = useRouter();
 
-// 模擬所有資料庫資料
+// 模擬資料庫
 const allNews = [
   { id: 1, tag: '課程', date: '2026/02/06', title: '夏季增肌特訓班報名開始' },
   { id: 2, tag: '活動', date: '2026/02/01', title: '會員週年慶：入會費 0 元' },
@@ -92,29 +95,31 @@ const allNews = [
   { id: 5, tag: '其他', date: '2026/01/15', title: '飲水機維護公告' },
 ];
 
-// 根據 URL 的 id 取得當前顯示資料
 const currentPost = computed(() => {
   const id = parseInt(route.params.id);
   return allNews.find(item => item.id === id) || allNews[0];
 });
 
-// 過濾出相關公告（排除當前這篇）
 const relatedPosts = computed(() => {
   return allNews.filter(item => item.id !== currentPost.value.id).slice(0, 4);
 });
+
+// 跳轉到報名表單
+const goToJoinForm = (id) => {
+  router.push(`/post/join/${id}`);
+};
 
 const goToOtherDetail = (id) => {
   router.push(`/post/postDetail/${id}`);
 };
 
 onMounted(() => {
-  // 每次進入頁面自動滾動到最上方
   window.scrollTo(0, 0);
 });
 </script>
 
 <style scoped>
-/* --- 沿用 postList 品牌配色 --- */
+/* 樣式部分保持不變，維持與 postList 一致的橘色系 */
 .text-orange { color: #f3722c !important; }
 .btn-orange { background-color: #f3722c; border-color: #f3722c; }
 .btn-orange:hover { background-color: #d65a1a; transform: translateY(-2px); }
@@ -123,44 +128,25 @@ onMounted(() => {
 .bg-orange-light { background-color: rgba(243, 114, 44, 0.1); }
 .border-orange { border-color: #f3722c !important; }
 
-/* --- 麵包屑 --- */
 .breadcrumb-link { transition: color 0.2s; }
 .breadcrumb-link:hover { color: #f3722c !important; text-decoration: underline !important; }
 
-/* --- 主內容區 --- */
-.main-content-card {
-  min-height: 600px;
-}
-.detail-image-box {
-  width: 100%;
-  aspect-ratio: 16 / 7;
-}
-.line-height-lg {
-  line-height: 2;
-  letter-spacing: 0.5px;
-}
+.main-content-card { min-height: 600px; }
+.detail-image-box { width: 100%; aspect-ratio: 16 / 7; }
+.line-height-lg { line-height: 2; letter-spacing: 0.5px; }
+
 .transition-scale {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.transition-scale:active {
-  transform: scale(0.95);
-}
+.transition-scale:active { transform: scale(0.95); }
 
-/* --- 側邊欄相關公告 --- */
-.related-card {
-  transition: all 0.3s;
-}
-.related-img-sm {
-  width: 100%;
-  height: 100px;
-}
+.related-card { transition: all 0.3s; }
+.related-img-sm { width: 100%; height: 100px; }
 .hover-up:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
 }
 .pointer { cursor: pointer; }
 .x-small { font-size: 0.75rem; }
-
-/* --- 字體粗度微調 --- */
 .fw-bold { font-weight: 700 !important; }
 </style>
