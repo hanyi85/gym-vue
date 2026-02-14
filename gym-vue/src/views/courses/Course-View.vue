@@ -1,31 +1,53 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { watch } from 'vue'
 import Banner from '@/components/banner.vue'
-
+import axios from 'axios'
 
 const router = useRouter()
 
 const city = ref('')
 const venue = ref('')
 
-const cities = ['台北', '新北', '台中', '高雄']
-const venues = {
-  台北: ['信義館', '板橋館'],
-  新北: ['新莊館'],
-  台中: ['公益館'],
-  高雄: ['巨蛋館']
-}
-watch(city, () => {
-  venue.value = ''
+const cities = ref([])   // CityDto[]
+const venues = ref([])   // VenueDto[]
+
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api' 
 })
 
+
+
+onMounted(async () => {
+  const res = await api.get('/CCities')
+  cities.value = res.data
+})
+
+watch(city, async (newCityId) => {
+  venue.value = ''
+  venues.value = []
+
+  if (!newCityId) return
+
+  const res = await api.get('/CVenues', {
+    params: { cityId: newCityId }
+  })
+  venues.value = res.data
+})
+
+
 function goSearch() {
-  if (!city.value || !venue.value) return
-  router.push(`/courses/list?city=${city.value}&venue=${venue.value}`)
+  const selectedCity = cities.value.find(c => c.CityId === city.value)
+  const selectedVenue = venues.value.find(v => v.VenueId === venue.value)
+
+  if (!selectedCity || !selectedVenue) return
+
+  router.push(
+    `/courses/list?city=${encodeURIComponent(selectedCity.CityName)}&venue=${encodeURIComponent(selectedVenue.VenueName)}`
+  )
 }
 </script>
+
 
 <template>
   <Banner
@@ -45,30 +67,36 @@ function goSearch() {
     <div class="search-row">
       <div class="search-group">
         <label>選擇城市</label>
-        <select v-model="city" class="search-select">
-          <option value="">所有城市</option>
-          <option v-for="c in cities" :key="c" :value="c">
-            {{ c }}
-          </option>
-        </select>
+       <select v-model="city" class="search-select">
+  <option value="">所有城市</option>
+  <option
+    v-for="c in cities"
+    :key="c.CityId"
+    :value="c.CityId"
+  >
+    {{ c.CityName }}
+  </option>
+</select>
+
       </div>
 
       <div class="search-group">
         <label>選擇場館</label>
         <select
-          v-model="venue"
-          class="search-select"
-          :disabled="!city"
-        >
-          <option value="">所有場館</option>
-          <option
-            v-for="v in venues[city] || []"
-            :key="v"
-            :value="v"
-          >
-            {{ v }}
-          </option>
-        </select>
+  v-model="venue"
+  class="search-select"
+  :disabled="!city"
+>
+  <option value="">所有場館</option>
+  <option
+    v-for="v in venues"
+    :key="v.VenueId"
+    :value="v.VenueId"
+  >
+    {{ v.VenueName }}
+  </option>
+</select>
+
       </div>
 
       <button

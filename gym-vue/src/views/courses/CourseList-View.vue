@@ -1,13 +1,27 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import axios from 'axios'
+
 
 const router = useRouter()
 const route = useRoute()
 
+
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api'
+})
+
+
+const citySlug = decodeURIComponent(route.query.city || '')
+const venueSlug = decodeURIComponent(route.query.venue || '')
+
+
+const cityName = ref('')
+const venueName = ref('')
+
+
 const tab = ref('course')
-const city = route.query.city || '台北市'
-const venue = route.query.venue || '信義館'
 
 const keyword = ref('')
 const category = ref('')
@@ -15,76 +29,40 @@ const duration = ref('')
 const level = ref('')
 const price = ref('')
 
-const fakeCourses = [
-  { id: 1, title: '瑜珈基礎課程', category: '瑜珈', coach: '張老師', level: '初級', duration: 60, price: 400,maxPeople: 12 ,remain: 4},
-  { id: 2, title: '重量訓練入門', category: '重訓', coach: '李教練', level: '中級', duration: 60, price: 500, maxPeople: 8 },
-  { id: 3, title: '燃脂 HIIT', category: '有氧', coach: 'Amy', level: '中級', duration: 45, price: 450 , maxPeople: 20},
-  { id: 4, title: '核心訓練', category: '核心', coach: 'John', level: '初級', duration: 45, price: 450, maxPeople: 10},
-  { id: 5, title: '瑜珈伸展', category: '瑜珈', coach: 'Linda', level: '初級', duration: 60, price: 400 , maxPeople: 12},
-  { id: 6, title: '進階重訓', category: '重訓', coach: 'Mike', level: '高級', duration: 90, price: 600, maxPeople: 15}
-]
+const courses = ref([])
 
-const coaches = [
-  {
-    id: 1,
-    name: 'Alex',
-    title: '重量訓練專家',
-    rating: 4.9,
-    reviews: 127,
-    years: 8,
-    desc: '專注於重量訓練與肌肉增長，曾指導多位健美選手獲得佳績。',
-    certs: ['NASM-CPT', 'CSCS'],
-    time: '週一至週五 14:00-21:00',
-    image:
-      'https://images.unsplash.com/photo-1696563996353-214a3690bb11?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-  },
-  {
-    id: 2,
-    name: 'Annie',
-    title: '瑜珈導師',
-    rating: 4.8,
-    reviews: 98,
-    years: 6,
-    desc: '擁有國際瑜珈聯盟認證，專精哈達瑜珈與流動瑜珈。',
-    certs: ['RYT-500', 'E-RYT'],
-    time: '週二、週四、週六 09:00-18:00',
-    image:
-      'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-  },
-  {
-    id: 3,
-    name: 'John',
-    title: '有氧運動教練',
-    rating: 4.7,
-    reviews: 85,
-    years: 5,
-    desc: '高能量教學風格深受學員喜愛，擅長燃脂 HIIT。',
-    certs: ['ACE-CPT', 'Spinning'],
-    time: '週二至週五 06:00-12:00、18:00-21:00',
-    image:
-      'https://images.unsplash.com/photo-1619361728853-2542f3864532?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+
+onMounted(async () => {
+  if (!citySlug || !venueSlug) return
+
+  try {
+    const res = await api.get('/CCourses/search', {
+      params: {
+        city: citySlug,
+        venue: venueSlug
+      }
+    })
+
+    courses.value = res.data.courses
+    cityName.value = res.data.city.name
+    venueName.value = res.data.venue.name
+  } catch (err) {
+    console.error('載入課程失敗', err)
   }
-]
+})
 
-const fakeCourseImages = [
-  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800',
-  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800',
-  'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800',
-  'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=800',
-  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
-  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800'
-]
 
 const filteredCourses = computed(() => {
-  return fakeCourses.filter((c) => {
-    const k = !keyword.value || c.title.includes(keyword.value)
-    const cat = !category.value || c.category === category.value
+  return courses.value.filter((c) => {
+    const k = !keyword.value || c.courseName?.includes(keyword.value)
+    const cat = !category.value || c.categoryName === category.value
     const l = !level.value || c.level === level.value
     const d = !duration.value || c.duration == duration.value
     const p = !price.value || c.price <= price.value
     return k && cat && l && d && p
   })
 })
+
 
 function resetAll() {
   keyword.value = ''
@@ -101,13 +79,53 @@ function goDetail(id) {
 function goCoachDetail(id) {
   router.push(`/courses/coach-detail/${id}`)
 }
+
 function goBooking(id) {
   router.push({
     path: '/courses/booking',
     query: { id }
   })
 }
+
+
+const fakeCourseImages = [
+  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800',
+  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800',
+  'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800',
+  'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=800',
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800'
+]
+
+
+const coaches = [
+  {
+    id: 1,
+    name: 'Alex',
+    title: '重量訓練專家',
+    rating: 4.9,
+    reviews: 127,
+    years: 8,
+    desc: '專注於重量訓練與肌肉增長。',
+    certs: ['NASM-CPT', 'CSCS'],
+    time: '週一至週五 14:00-21:00',
+    image: 'https://images.unsplash.com/photo-1696563996353-214a3690bb11?q=80&w=687'
+  },
+  {
+    id: 2,
+    name: 'Annie',
+    title: '瑜珈導師',
+    rating: 4.8,
+    reviews: 98,
+    years: 6,
+    desc: '專精哈達瑜珈與流動瑜珈。',
+    certs: ['RYT-500', 'E-RYT'],
+    time: '週二、週四、週六 09:00-18:00',
+    image: 'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=687'
+  }
+]
 </script>
+
 
 <template>
   <div class="page-wrapper">
@@ -118,7 +136,7 @@ function goBooking(id) {
 
         <p class="page-subtitle">
           <i class="bi bi-geo-alt"></i>
-          目前場館：{{ city }} · {{ venue }}
+          目前場館：{{ cityName }} · {{ venueName }}
         </p>
 
         <div class="stats-bubbles">
