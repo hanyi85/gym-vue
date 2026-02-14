@@ -7,10 +7,10 @@ import Btn from '@/components/btn.vue'
 const route = useRoute()
 const router = useRouter()
 
-
 const course = ref(null)
-
 const currentImg = ref(0)
+const activeTab = ref('content')
+
 
 const displayImages = [
   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
@@ -31,7 +31,6 @@ const displayNotice = [
   '課前 1 小時避免進食'
 ]
 
-/* ================= API ================= */
 onMounted(async () => {
   const res = await axios.get(
     `https://localhost:7218/api/CCourses/${route.params.id}/detail`
@@ -39,11 +38,10 @@ onMounted(async () => {
   course.value = res.data
 })
 
-/* ================= Actions ================= */
 function goBooking() {
   router.push({
     path: '/courses/booking',
-    query: { id: course.value.id }
+    query: { id: course.value.Id }
   })
 }
 
@@ -56,20 +54,30 @@ function goBack() {
     }
   })
 }
+
+function goHome() {
+  router.push('/')
+}
 </script>
 
 <template>
-  
   <div class="page-wrapper">
 
+    <!-- ✅ Breadcrumb 一定要擋 -->
+    <nav class="breadcrumb" v-if="course">
+      <span class="link" @click="goHome">首頁</span>
+      <span class="sep">/</span>
+      <span class="link" @click="goBack">課程專區</span>
+      <span class="sep">/</span>
+      <span class="current">{{ course.Title }}</span>
+    </nav>
+
+    <!-- 主卡片 -->
     <div class="detail-card" v-if="course">
 
-      <!-- 圖片區 -->
+      <!-- 圖片 -->
       <div class="image-area">
-        <img
-          :src="displayImages[currentImg]"
-          class="main-img"
-        />
+        <img :src="displayImages[currentImg]" class="main-img" />
 
         <div class="thumbs">
           <img
@@ -82,7 +90,7 @@ function goBack() {
         </div>
       </div>
 
-      <!-- 資訊區 -->
+      <!-- 資訊 -->
       <div class="info-area">
         <h2 class="title">{{ course.Title }}</h2>
 
@@ -107,30 +115,96 @@ function goBack() {
       </div>
     </div>
 
-    <!-- 課程內容 -->
-    <div class="section" v-if="course">
-      <h4>課程內容</h4>
-      <ul>
-        <li v-for="item in displayContent" :key="item">
-          {{ item }}
-        </li>
-      </ul>
-    </div>
+    <!-- Tabs -->
+<!-- Tabs -->
+<div class="tabs" v-if="course">
+  <div
+    class="tab"
+    :class="{ active: activeTab === 'content' }"
+    @click="activeTab = 'content'"
+  >
+    課程內容
+  </div>
+  <div
+    class="tab"
+    :class="{ active: activeTab === 'notice' }"
+    @click="activeTab = 'notice'"
+  >
+    注意事項
+  </div>
+  <div
+    class="tab"
+    :class="{ active: activeTab === 'payment' }"
+    @click="activeTab = 'payment'"
+  >
+    付款方式
+  </div>
+</div>
 
-    <!-- 注意事項 -->
-    <div class="section" v-if="course">
-      <h4>注意事項</h4>
-      <ul>
-        <li v-for="item in displayNotice" :key="item">
-          {{ item }}
-        </li>
-      </ul>
-    </div>
+<!-- 課程內容 -->
+<div class="tab-content center" v-if="activeTab === 'content' && course">
+  <h4>課程內容</h4>
+  <ul>
+    <li v-for="item in displayContent" :key="item">
+      {{ item }}
+    </li>
+  </ul>
+</div>
+
+<!-- 注意事項 -->
+<div class="tab-content center" v-if="activeTab === 'notice' && course">
+  <h4>注意事項</h4>
+  <ul>
+    <li v-for="item in displayNotice" :key="item">
+      {{ item }}
+    </li>
+  </ul>
+</div>
+
+<!-- 付款方式 -->
+<div class="tab-content center" v-if="activeTab === 'payment' && course">
+  <h4>付款方式</h4>
+  <ul>
+    <li>信用卡（VISA / Master）</li>
+    <li>ATM轉帳</li>
+  </ul>
+
+  <p class="hint">
+    完成預約後，請於上課時間提前至場館報到。
+  </p>
+</div>
 
   </div>
 </template>
 
+
 <style scoped>
+/* ===== Breadcrumb ===== */
+.breadcrumb {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.breadcrumb .link {
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.breadcrumb .link:hover {
+  color: #ff7a00;
+}
+
+.breadcrumb .sep {
+  margin: 0 6px;
+}
+
+.breadcrumb .current {
+  color: #f3722c;
+  font-weight: 600;
+}
+
+/* ===== Page ===== */
 .page-wrapper {
   margin-top: 100px;
   max-width: 1100px;
@@ -139,6 +213,7 @@ function goBack() {
   padding-bottom: 100px;
 }
 
+/* ===== Detail Card ===== */
 .detail-card {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -149,6 +224,7 @@ function goBack() {
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
+/* ===== Images ===== */
 .image-area {
   display: flex;
   flex-direction: column;
@@ -181,6 +257,7 @@ function goBack() {
   border: 2px solid #f3722c;
 }
 
+/* ===== Info ===== */
 .info-area h2 {
   font-size: 30px;
   font-weight: 700;
@@ -193,13 +270,11 @@ function goBack() {
 }
 
 .tag {
-
   background: #fff4ea;
-   color: #9a3412;
+  color: #9a3412;
   padding: 4px 12px;
   border-radius: 999px;
-font-size: 12px;
-
+  font-size: 12px;
 }
 
 .coach {
@@ -220,38 +295,82 @@ font-size: 12px;
   line-height: 1.7;
 }
 
-.book-btn {
-  margin-top: 24px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 14px 36px;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.section {
+/* ===== Tabs ===== */
+.tabs {
+  display: flex;
+   justify-content: center;
+  gap: 32px;
+  border-bottom: 1px solid #e5e7eb;
   margin-top: 48px;
 }
 
-.section h4 {
-  font-size: 22px;
-  margin-bottom: 12px;
+.tab {
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
 }
 
-.section li {
-  margin-bottom: 8px;
+.tab.active {
+  color: #f3722c;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 2px;
+  background: #f3722c;
+}
+
+
+.tab-content {
+   
+  padding: 32px 0;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.tab-content.center {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 32px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;   }
+
+.tab-content.center h4 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 18px;
+}
+
+
+.tab-content.center ul {
+  width: 100%;
+  max-width: 520px;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.tab-content.center li {
+  margin-bottom: 10px;
+  line-height: 1.8;
   color: #444;
 }
 
-.title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 
+.hint {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
 
 
 </style>
