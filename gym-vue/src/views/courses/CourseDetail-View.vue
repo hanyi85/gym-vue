@@ -1,50 +1,49 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import Btn from '@/components/btn.vue'
+
 const route = useRoute()
 const router = useRouter()
 
-const course = {
-  id: route.params.id,
-  title: '瑜珈基礎課程',
-  coach: '張老師',
-  level: '初級',
-  duration: 60,
-  price: 400,
-  desc: '適合初學者的瑜珈課程，放鬆身心、提升柔軟度與核心穩定。',
-  images: [
 
-  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
-  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200',
-  'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1200',
- 
-  ],
-  content: [
-    '基礎伸展與呼吸練習',
-    '簡易體位法（貓牛式、下犬式）',
-    '核心穩定訓練',
-    '課後放鬆冥想'
-  ],
-  notice: [
-    '請穿著運動服裝',
-    '建議自備毛巾與水',
-    '課前 1 小時避免進食'
-  ]
-}
+const course = ref(null)
+
 const currentImg = ref(0)
 
-const isFav = ref(false)
+const displayImages = [
+  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
+  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200',
+  'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1200'
+]
 
-function toggleFav() {
-  isFav.value = !isFav.value
-}
+const displayContent = [
+  '基礎伸展與呼吸練習',
+  '簡易體位法（貓牛式、下犬式）',
+  '核心穩定訓練',
+  '課後放鬆冥想'
+]
 
+const displayNotice = [
+  '請穿著運動服裝',
+  '建議自備毛巾與水',
+  '課前 1 小時避免進食'
+]
 
+/* ================= API ================= */
+onMounted(async () => {
+  const res = await axios.get(
+    `https://localhost:7218/api/CCourses/${route.params.id}/detail`
+  )
+  course.value = res.data
+})
+
+/* ================= Actions ================= */
 function goBooking() {
   router.push({
     path: '/courses/booking',
-    query: { id: course.id }
+    query: { id: course.value.id }
   })
 }
 
@@ -60,17 +59,21 @@ function goBack() {
 </script>
 
 <template>
+  
   <div class="page-wrapper">
 
-    <div class="detail-card">
+    <div class="detail-card" v-if="course">
 
-      
+      <!-- 圖片區 -->
       <div class="image-area">
-       <img :src="course.images[currentImg]" class="main-img" />
+        <img
+          :src="displayImages[currentImg]"
+          class="main-img"
+        />
 
         <div class="thumbs">
           <img
-            v-for="(img, idx) in course.images"
+            v-for="(img, idx) in displayImages"
             :key="idx"
             :src="img"
             :class="{ active: idx === currentImg }"
@@ -79,51 +82,46 @@ function goBack() {
         </div>
       </div>
 
+      <!-- 資訊區 -->
       <div class="info-area">
-       <div class="title-row">
-  <h2>{{ course.title }}</h2>
-
- 
- 
-
-</div>
+        <h2 class="title">{{ course.Title }}</h2>
 
         <div class="tags">
-          <span class="tag">{{ course.level }}</span>
-          <span class="tag">{{ course.duration }} 分鐘</span>
+          <span class="tag">{{ course.Category }}</span>
+          <span class="tag">{{ course.Duration }} 分鐘</span>
         </div>
 
-        <div class="coach">教練：{{ course.coach }}</div>
-        <div class="price">NT$ {{ course.price }}</div>
+        <div class="coach">教練：{{ course.CoachName }}</div>
+        <div class="price">NT$ {{ course.Price }}</div>
 
-        <p class="desc">{{ course.desc }}</p>
+        <p class="desc">{{ course.Description }}</p>
 
-       <div class="action-group">
-  <Btn
-    addText="回到課程列表"
-    buyText="立即預約"
-    @add="goBack"
-    @buy="goBooking"
-  />
-</div>
-
+        <div class="action-group">
+          <Btn
+            addText="回到課程列表"
+            buyText="立即預約"
+            @add="goBack"
+            @buy="goBooking"
+          />
+        </div>
       </div>
     </div>
 
-    
-    <div class="section">
+    <!-- 課程內容 -->
+    <div class="section" v-if="course">
       <h4>課程內容</h4>
       <ul>
-        <li v-for="item in course.content" :key="item">
+        <li v-for="item in displayContent" :key="item">
           {{ item }}
         </li>
       </ul>
     </div>
 
-    <div class="section">
+    <!-- 注意事項 -->
+    <div class="section" v-if="course">
       <h4>注意事項</h4>
       <ul>
-        <li v-for="item in course.notice" :key="item">
+        <li v-for="item in displayNotice" :key="item">
           {{ item }}
         </li>
       </ul>
@@ -211,7 +209,7 @@ font-size: 12px;
 
 .price {
   font-size: 26px;
-  color: #2563eb;
+  color: #f3722c;
   font-weight: bold;
   margin: 14px 0;
 }

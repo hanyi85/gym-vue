@@ -33,6 +33,7 @@ const selectedCategoryId = ref('')   // ← 字串（來自 select）
 const level = ref('')
 const duration = ref('')
 const price = ref('')
+const coaches = ref([])
 
 /* ================= 初始化 ================= */
 onMounted(async () => {
@@ -59,9 +60,10 @@ onMounted(async () => {
 /* ================= 篩選後課程 ================= */
 const filteredCourses = computed(() => {
   return courses.value.filter(c => {
-    const k =
-      !keyword.value ||
-      c.courseName?.includes(keyword.value)
+    
+const k =
+  !keyword.value ||
+  c.name?.includes(keyword.value)
 
     const cat =
       !selectedCategoryId.value ||
@@ -230,10 +232,10 @@ function goBooking(id) {
     <div class="course-card">
       <!-- 圖片區 -->
       <div class="card-img">
-        <!--<img
+        <img
           :src="`https://localhost:7218${c.imageUrl}`"
           alt="課程圖片"
-        />-->
+        />
     
       </div>
 
@@ -274,6 +276,36 @@ function goBooking(id) {
 </div>
 </div>
 </div>
+<!-- ================= 教練 ================= -->
+<div v-if="tab === 'coach'" class="row g-4 mt-3">
+  <div class="col-lg-4 col-md-6" v-for="c in coaches" :key="c.id">
+    <div class="coach-card">
+      <div class="coach-img">
+        <img :src="c.imageUrl" />
+        <div class="coach-name">
+          <h4>{{ c.name }}</h4>
+          <span>{{ c.specialty }}</span>
+        </div>
+      </div>
+
+      <div class="coach-body">
+        <div class="coach-meta">
+          <span class="rating">⭐ {{ c.rating }}</span>
+          <span>{{ c.experience }} 年經驗</span>
+        </div>
+
+        <p class="desc">{{ c.description }}</p>
+
+        <div class="actions">
+          <button class="btn-primary">
+            查看教練
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </template>
 
 
