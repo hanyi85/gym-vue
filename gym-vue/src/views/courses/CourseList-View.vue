@@ -107,49 +107,60 @@ function goBooking(id) {
 </script>
 
 
-
 <template>
 
   <div class="page-wrapper">
+<div class="page-header">
+  <div class="header-bg"></div>
 
-    <div class="page-header">
-      <div class="content-wrapper header-inner">
-        <h2 class="page-title">課程 / 教練搜尋</h2>
+  <div class="content-wrapper header-inner">
+    <h2 class="page-title">課程與教練一站式搜尋</h2>
 
-        <p class="page-subtitle">
-          <i class="bi bi-geo-alt"></i>
-          目前場館：{{ cityName }} · {{ venueName }}
-        </p>
 
-        <div class="stats-bubbles">
-          <div class="bubble">
-            <div class="bubble-num">10k+</div>
-            <div class="bubble-label">活躍會員</div>
-          </div>
-          <div class="bubble">
-            <div class="bubble-num">50+</div>
-            <div class="bubble-label">專業教練</div>
-          </div>
-          <div class="bubble">
-            <div class="bubble-num">200+</div>
-            <div class="bubble-label">精選課程</div>
-          </div>
-          <div class="bubble">
-            <div class="bubble-num">95%</div>
-            <div class="bubble-label">滿意度</div>
-          </div>
-        </div>
+    <p class="page-subtitle">
+      <i class="bi bi-geo-alt"></i>
+      目前場館：{{ cityName }} · {{ venueName }}
+    </p>
 
-        <div class="pill-tabs">
-          <button class="pill" :class="{ active: tab === 'course' }" @click="tab = 'course'">
-            找課程
-          </button>
-          <button class="pill" :class="{ active: tab === 'coach' }" @click="tab = 'coach'">
-            找教練
-          </button>
-        </div>
+    <!-- 統計泡泡 -->
+    <div class="stats-bubbles">
+      <div class="bubble">
+        <div class="bubble-num">10k+</div>
+        <div class="bubble-label">活躍會員</div>
+      </div>
+      <div class="bubble">
+        <div class="bubble-num">50+</div>
+        <div class="bubble-label">專業教練</div>
+      </div>
+      <div class="bubble">
+        <div class="bubble-num">200+</div>
+        <div class="bubble-label">精選課程</div>
+      </div>
+      <div class="bubble">
+        <div class="bubble-num">95%</div>
+        <div class="bubble-label">滿意度</div>
       </div>
     </div>
+
+    <!-- 找課程 / 找教練 -->
+    <div class="pill-tabs">
+      <button
+        class="pill"
+        :class="{ active: tab === 'course' }"
+        @click="tab = 'course'"
+      >
+        找課程
+      </button>
+      <button
+        class="pill"
+        :class="{ active: tab === 'coach' }"
+        @click="tab = 'coach'"
+      >
+        找教練
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- ================= Content ================= -->
     <div class="content-wrapper">
@@ -311,7 +322,6 @@ function goBooking(id) {
 
 <style scoped>
 .page-wrapper {
- 
   padding-bottom: 80px;
 }
 
@@ -323,47 +333,61 @@ function goBooking(id) {
 }
 
 .page-header {
-  padding: 40px 0 28px;
- 
+  position: relative;
+  padding: 100px 20px 80px;
+  background: linear-gradient(
+    180deg,
+    #fff7ed 0%,
+    #ffedd5 40%,
+    #ffffff 100%
+  );
 }
+
 
 
 .header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 56px 20px 48px;
   text-align: center;
-}
-.page-title {
-   font-size: 32px;        
-  font-weight: 900;       
-  color: #000000;         
-  letter-spacing: 0.02em; 
-  margin: 0 0 10px;
-  text-shadow: 0 1px 0 rgba(0,0,0,.04);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
 }
 
+.page-title {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+  color: #ea580c; 
+}
+
+
 .page-subtitle {
-  margin: 0 0 22px;
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 32px;
 }
 
-
+/* ===== 統計泡泡 ===== */
 .stats-bubbles {
   display: flex;
   justify-content: center;
-  gap: 18px;
+  gap: 22px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
+  margin-bottom: 36px;
 }
 
 .bubble {
-  width: 72px;
-  height: 72px;
+  width: 86px;
+  height: 86px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 18px 40px rgba(0,0,0,.12);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -371,45 +395,44 @@ function goBooking(id) {
 }
 
 .bubble-num {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   color: #f97316;
-  line-height: 1.1;
 }
 
 .bubble-label {
-  font-size: 11px;
+  font-size: 12px;
   color: #6b7280;
   margin-top: 4px;
 }
 
-
+/* ===== Pill Tabs ===== */
 .pill-tabs {
   display: inline-flex;
-  background: #fff;
-  border-radius: 999px;
+  gap: 8px;
   padding: 6px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(0,0,0,.14);
 }
 
 .pill {
   border: none;
   background: transparent;
-  padding: 10px 26px;
+  padding: 12px 34px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   color: #6b7280;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all .25s ease;
 }
 
 .pill.active {
- background: linear-gradient(135deg, #ff8a00, #ff6a00);
+  background: linear-gradient(135deg, #ff8a00, #ff6a00);
   color: #fff;
-  
+  box-shadow: 0 6px 18px rgba(255,122,0,.45);
 }
-
 
 .quick-tags {
   display: flex;
