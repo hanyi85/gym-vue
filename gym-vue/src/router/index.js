@@ -121,18 +121,19 @@ const routes = [
   },
 
   // 場館內課程列表（找課 / 找教練）
-  {
-    path: '/courses/list',
-    name: 'courses-list',
-    component: () => import('@/views/courses/CourseList-View.vue'),
-  },
+ {
+  path: '/courses/:city/:venue',
+  name: 'courses-list',
+  component: () => import('@/views/courses/CourseList-View.vue'),
+},
+
 
   // 課程詳細
-  {
-    path: '/courses/detail/:id',
-    name: 'courses-detail',
-    component: () => import('@/views/courses/CourseDetail-View.vue'),
-  },
+ {
+  path: '/courses/:slug',
+  name: 'courses-detail',
+  component: () => import('@/views/courses/CourseDetail-View.vue')
+},
 
   // 教練詳細
   {

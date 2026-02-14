@@ -42,10 +42,15 @@ function goSearch() {
 
   if (!selectedCity || !selectedVenue) return
 
-  router.push(
-    `/courses/list?city=${encodeURIComponent(selectedCity.CityName)}&venue=${encodeURIComponent(selectedVenue.VenueName)}`
-  )
+  router.push({
+    name: 'courses-list',
+    params: {
+      city: selectedCity.CityName,
+      venue: selectedVenue.VenueName
+    }
+  })
 }
+
 </script>
 
 

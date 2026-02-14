@@ -13,8 +13,9 @@ const api = axios.create({
 })
 
 /* ================= URL Query ================= */
-const city = decodeURIComponent(route.query.city || '')
-const venue = decodeURIComponent(route.query.venue || '')
+const city = decodeURIComponent(route.params.city || route.query.city || '')
+const venue = decodeURIComponent(route.params.venue || route.query.venue || '')
+
 
 /* ================= UI ================= */
 const tab = ref('course')
@@ -94,8 +95,13 @@ function resetAll() {
   price.value = ''
 }
 
-function goDetail(id) {
-  router.push(`/courses/detail/${id}`)
+function goDetail(course) {
+  router.push({
+    name: 'courses-detail',
+    params: {
+      slug: course.name
+    }
+  })
 }
 
 function goBooking(id) {
@@ -274,9 +280,10 @@ function goBooking(id) {
         </div>
 
         <div class="course-actions">
-          <button class="btn-outline" @click="goDetail(c.id)">
-            查看課程
-          </button>
+          <button class="btn-outline" @click="goDetail(c)">
+  查看課程
+</button>
+
           <button class="btn-primary" @click="goBooking(c.id)">
             立即預約
           </button>

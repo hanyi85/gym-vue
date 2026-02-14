@@ -6,6 +6,7 @@ import Btn from '@/components/btn.vue'
 
 const route = useRoute()
 const router = useRouter()
+const courseSlug = route.params.slug
 
 const course = ref(null)
 const currentImg = ref(0)
@@ -33,7 +34,7 @@ const displayNotice = [
 
 onMounted(async () => {
   const res = await axios.get(
-    `https://localhost:7218/api/CCourses/${route.params.id}/detail`
+    `https://localhost:7218/api/CCourses/by-name/${courseSlug}`
   )
   course.value = res.data
 })
@@ -63,7 +64,6 @@ function goHome() {
 <template>
   <div class="page-wrapper">
 
-    <!-- ✅ Breadcrumb 一定要擋 -->
     <nav class="breadcrumb" v-if="course">
       <span class="link" @click="goHome">首頁</span>
       <span class="sep">/</span>
@@ -72,10 +72,10 @@ function goHome() {
       <span class="current">{{ course.Title }}</span>
     </nav>
 
-    <!-- 主卡片 -->
+
     <div class="detail-card" v-if="course">
 
-      <!-- 圖片 -->
+   
       <div class="image-area">
         <img :src="displayImages[currentImg]" class="main-img" />
 
@@ -90,7 +90,7 @@ function goHome() {
         </div>
       </div>
 
-      <!-- 資訊 -->
+     
       <div class="info-area">
         <h2 class="title">{{ course.Title }}</h2>
 
@@ -115,8 +115,7 @@ function goHome() {
       </div>
     </div>
 
-    <!-- Tabs -->
-<!-- Tabs -->
+ 
 <div class="tabs" v-if="course">
   <div
     class="tab"
