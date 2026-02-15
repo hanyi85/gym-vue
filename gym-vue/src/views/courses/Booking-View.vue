@@ -1,8 +1,12 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
+
 const router = useRouter()
+const route = useRoute()
 
 const courseInfo = {
  name: '燃脂體能課程',
@@ -62,25 +66,18 @@ function nextDates() {
   }
 }
 
-const allSchedules = computed(() => [
-  {
-    date: rawDates.value[0]?.date,
-    slots: [
-      { time: '09:00', full: false },
-      { time: '10:30', full: true },
-      { time: '14:00', full: false },
-      { time: '16:00', full: false },
-    ],
-  },
-  {
-    date: rawDates.value[1]?.date,
-    slots: [
-      { time: '10:00', full: false },
-      { time: '13:00', full: false },
-      { time: '15:30', full: true },
-    ],
-  },
-])
+const allSchedules = ref([])
+
+async function fetchSchedules() {
+  try {
+    const res = await axios.get(
+      'https://localhost:7218/api/CCourses/1/schedules'
+    )
+    allSchedules.value = res.data
+  } catch (err) {
+    console.error('取得課程時段失敗', err)
+  }
+}
 
 
 const selectedDate = ref('')
@@ -90,33 +87,46 @@ const selectedSlot = ref(null)
 function selectDate(date) {
   selectedDate.value = date
 
-  const result = allSchedules.value.find(d => d.date === date)
-  todaySlots.value = result ? result.slots : []
+ const result = allSchedules.value.find(d => d.date === date)
+todaySlots.value = result ? result.slots : []
+
   selectedSlot.value = null
 }
 
 function selectSlot(slot) {
-  if (slot.full) return
-  selectedSlot.value = slot.time
+  if (slot.full || !slot.canEnroll) return
+  selectedSlot.value = slot.scheduleId
 }
-
-
 function goNext() {
   if (!selectedSlot.value) return
+
+  const slot = todaySlots.value.find(
+    s => s.scheduleId === selectedSlot.value
+  )
 
   router.push({
     name: 'courses-booking-confirm',
     query: {
       date: selectedDate.value,
-      time: selectedSlot.value,
+      time: slot.time,
+      scheduleId: slot.scheduleId,
     },
   })
 }
+
 function goBack() {
-  router.push({ name: 'courses-list' })
+  const { city, venue } = route.query
+
+  if (city && venue) {
+    router.push({
+      name: 'courses-list',
+      params: { city, venue }
+    })
+  } else {
+    router.push('/courses')
+  }
 }
 
-/* 預設選第一天 */
 watch(
   visibleDates,
   (list) => {
@@ -126,6 +136,9 @@ watch(
   },
   { immediate: true }
 )
+onMounted(() => {
+  fetchSchedules()
+})
 
 </script>
 
@@ -194,16 +207,23 @@ watch(
         <div v-if="todaySlots.length" class="slot-grid">
         <button
   v-for="slot in todaySlots"
-  :key="slot.time"
+  :key="slot.scheduleId"
   class="slot-card"
-  :class="{ active: selectedSlot === slot.time, full: slot.full }"
-  :disabled="slot.full"
+  :class="{
+    active: selectedSlot === slot.scheduleId,
+    full: slot.full || !slot.canEnroll
+  }"
+  :disabled="slot.full || !slot.canEnroll"
   @click="selectSlot(slot)"
 >
   <span class="slot-time">{{ slot.time }}</span>
 
   <span v-if="slot.full" class="slot-status">
     已額滿
+  </span>
+
+  <span v-else-if="!slot.canEnroll" class="slot-status">
+    已截止
   </span>
 </button>
 
@@ -450,26 +470,27 @@ watch(
 }
 
 .slot-card.full {
- background: #f8fafc;
-  border-color: #e5e7eb;
-  color: #94a3b8;
+  position: relative;
+  color: #9ca3af;
+  background: #f9fafb;
   cursor: not-allowed;
 }
 .slot-time {
-font-size: 15px;
+  font-size: 15px;
   font-weight: 700;
   position: relative;
   display: inline-block;
 }
+
 .slot-card.full .slot-time::after {
   content: '';
   position: absolute;
-  top: 50%;
   left: -6px;
-  width: calc(100% + 12px);
-  height: 1.5px;
-  background: #cbd5e1;
-  transform: rotate(-15deg);
+  right: -6px;
+  top: 50%;
+  height: 2px;
+  background-color: #d1d5db;
+  transform: translateY(-50%);
 }
 
 

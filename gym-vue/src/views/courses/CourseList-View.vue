@@ -3,40 +3,39 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
-/* ================= Router ================= */
+
 const router = useRouter()
 const route = useRoute()
 
-/* ================= API ================= */
+
 const api = axios.create({
   baseURL: 'https://localhost:7218/api'
 })
 
-/* ================= URL Query ================= */
+
 const city = decodeURIComponent(route.params.city || route.query.city || '')
 const venue = decodeURIComponent(route.params.venue || route.query.venue || '')
 
 
-/* ================= UI ================= */
+
 const tab = ref('course')
 
-/* ================= 顯示 ================= */
+
 const cityName = ref('')
 const venueName = ref('')
 
-/* ================= 資料 ================= */
 const courses = ref([])
 const categories = ref([])
 
-/* ================= 篩選狀態 ================= */
+
 const keyword = ref('')
-const selectedCategoryId = ref('')   // ← 字串（來自 select）
+const selectedCategoryId = ref('')   
 const level = ref('')
 const duration = ref('')
 const price = ref('')
 const coaches = ref([])
 
-/* ================= 初始化 ================= */
+
 onMounted(async () => {
   try {
     if (!city || !venue) return
@@ -86,7 +85,7 @@ const k =
   })
 })
 
-/* ================= Actions ================= */
+
 function resetAll() {
   keyword.value = ''
   selectedCategoryId.value = ''
@@ -107,9 +106,14 @@ function goDetail(course) {
 function goBooking(id) {
   router.push({
     path: '/courses/booking',
-    query: { id }
+    query: {
+      id,
+      city,
+      venue
+    }
   })
 }
+
 </script>
 
 

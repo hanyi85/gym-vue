@@ -47,14 +47,9 @@ function goBooking() {
 }
 
 function goBack() {
-  router.push({
-    path: '/courses/list',
-    query: {
-      city: route.query.city,
-      venue: route.query.venue
-    }
-  })
+  router.back()
 }
+
 
 function goHome() {
   router.push('/')
