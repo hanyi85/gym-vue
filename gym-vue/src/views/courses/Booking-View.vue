@@ -1,53 +1,39 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
 
 const router = useRouter()
 const route = useRoute()
 
-const courseInfo = {
- name: '燃脂體能課程',
-  coach: '張老師',
-  level: '初級',
-  duration: 60,
-  price: 400,
-}
+const courseId = computed(() => Number(route.query.id) || null)
+const courseInfo = ref(null)
 
-/* 日期處理*/
 const VISIBLE_COUNT = 7
 const visibleStart = ref(0)
 
 const rawDates = computed(() => {
-  const result = []
   const today = new Date()
-
-  for (let i = 0; i < 14; i++) {
+  return Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
-
-    result.push({
+    return {
       date: d.toISOString().slice(0, 10),
       day: d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
       num: String(d.getDate()).padStart(2, '0'),
-    })
-  }
-  return result
+    }
+  })
 })
 
 const visibleDates = computed(() =>
-  rawDates.value.slice(
-    visibleStart.value,
-    visibleStart.value + VISIBLE_COUNT
-  )
+  rawDates.value.slice(visibleStart.value, visibleStart.value + VISIBLE_COUNT)
 )
 
 const currentMonth = computed(() => {
-  const d = visibleDates.value[0]
-  return d
-    ? new Date(d.date).toLocaleDateString('en-US', {
+  const first = visibleDates.value[0]
+  return first
+    ? new Date(first.date).toLocaleDateString('en-US', {
         month: 'long',
         year: 'numeric',
       })
@@ -55,9 +41,7 @@ const currentMonth = computed(() => {
 })
 
 function prevDates() {
-  if (visibleStart.value > 0) {
-    visibleStart.value -= VISIBLE_COUNT
-  }
+  visibleStart.value = Math.max(0, visibleStart.value - VISIBLE_COUNT)
 }
 
 function nextDates() {
@@ -65,48 +49,62 @@ function nextDates() {
     visibleStart.value += VISIBLE_COUNT
   }
 }
-
+/*課程時段*/
 const allSchedules = ref([])
-
-async function fetchSchedules() {
-  try {
-    const res = await axios.get(
-      'https://localhost:7218/api/CCourses/1/schedules'
-    )
-    allSchedules.value = res.data
-  } catch (err) {
-    console.error('取得課程時段失敗', err)
-  }
-}
-
-
 const selectedDate = ref('')
 const todaySlots = ref([])
-const selectedSlot = ref(null)
+const selectedSlotId = ref(null)
+
+async function fetchSchedules() {
+  if (!courseId.value) return
+  const res = await axios.get(
+    `https://localhost:7218/api/CCourses/${courseId.value}/schedules`
+  )
+  allSchedules.value = res.data
+}
 
 function selectDate(date) {
   selectedDate.value = date
-
- const result = allSchedules.value.find(d => d.date === date)
-todaySlots.value = result ? result.slots : []
-
-  selectedSlot.value = null
+  const day = allSchedules.value.find(d => d.date === date)
+  todaySlots.value = day ? day.slots : []
+  selectedSlotId.value = null
 }
 
 function selectSlot(slot) {
   if (slot.full || !slot.canEnroll) return
-  selectedSlot.value = slot.scheduleId
+  selectedSlotId.value = slot.scheduleId
 }
-function goNext() {
-  if (!selectedSlot.value) return
 
-  const slot = todaySlots.value.find(
-    s => s.scheduleId === selectedSlot.value
+/* 課程資料*/
+async function fetchCourseDetail() {
+  if (!courseId.value) return
+
+  const res = await axios.get(
+    `https://localhost:7218/api/CCourses/${courseId.value}`
   )
+
+  const d = res.data
+  courseInfo.value = {
+    name: d.CourseName,
+    level: d.Courselevel,
+    duration: d.Duration,
+    price: d.Price,
+    description: d.Description,
+    imageUrl: d.ImageUrl,
+  }
+
+  console.log('[courseInfo]', courseInfo.value)
+}
+
+function goNext() {
+  if (!selectedSlotId.value) return
+
+  const slot = todaySlots.value.find(s => s.scheduleId === selectedSlotId.value)
 
   router.push({
     name: 'courses-booking-confirm',
     query: {
+      courseId: courseId.value,
       date: selectedDate.value,
       time: slot.time,
       scheduleId: slot.scheduleId,
@@ -116,197 +114,143 @@ function goNext() {
 
 function goBack() {
   const { city, venue } = route.query
-
   if (city && venue) {
-    router.push({
-      name: 'courses-list',
-      params: { city, venue }
-    })
+    router.push({ name: 'courses-list', params: { city, venue } })
   } else {
     router.push('/courses')
   }
 }
 
-watch(
-  visibleDates,
-  (list) => {
-    if (list.length) {
-      selectDate(list[0].date)
-    }
-  },
-  { immediate: true }
-)
-onMounted(() => {
-  fetchSchedules()
-})
+watch(visibleDates, list => {
+  if (list.length) selectDate(list[0].date)
+}, { immediate: true })
 
+onMounted(async () => {
+  await fetchCourseDetail()
+  await fetchSchedules()
+})
 </script>
 
 <template>
   <div class="booking-wrapper">
     <div class="container">
+
+      <!-- 標題 -->
       <header class="booking-title">
         <h2>課程預約</h2>
         <p>選擇日期與時段</p>
       </header>
 
-    <BookingStepper :current-step="1">
+      <!-- 步驟條 -->
+      <BookingStepper :current-step="1">
         <template #step-1>選日期<br />及時段</template>
         <template #step-2>確認資訊</template>
         <template #step-3>付款</template>
         <template #step-4>完成預約</template>
       </BookingStepper>
-      <!-- 課程卡 -->
-      <section class="course-card">
+
+      <!-- 課程資訊卡 -->
+      <section v-if="courseInfo" class="course-card">
         <img
-          src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400"
+          :src="courseInfo.imageUrl || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400'"
           alt="course"
         />
-        <div>
+
+        <div class="course-info">
           <h3>{{ courseInfo.name }}</h3>
-          <p><i class="bi bi-person"></i> {{ courseInfo.coach }}</p>
-          <p><i class="bi bi-star"></i> {{ courseInfo.level }}</p>
-           <p><i class="bi bi-clock"></i> {{ courseInfo.duration }}分鐘</p>
-              <span class="price">NT$ {{ courseInfo.price }}</span>
+
+          <p class="meta">
+            <i class="bi bi-star"></i>
+            {{ courseInfo.level}}
+          </p>
+
+          <p class="meta">
+            <i class="bi bi-clock"></i>
+            {{ courseInfo.duration }} 分鐘
+          </p>
+
+          <p class="price"> <i class="bi bi-cash-stack"></i> NT$ {{ courseInfo.price }}</p>
+
+        <p class="course-desc subtle">
+  {{ courseInfo.description }}
+</p>
+
         </div>
       </section>
 
-      <!-- 日期 -->
-    <section class="date-section">
-  
-  <div class="month-title">
-    {{ currentMonth }}
-  </div>
+      <section v-else class="course-card loading">
+        載入課程資料中…
+      </section>
 
+      <!-- 日期選擇 -->
+      <section class="date-section">
+        <div class="month-title">{{ currentMonth }}</div>
 
-  <div class="date-header">
-    <button class="nav-btn" @click="prevDates">‹</button>
+        <div class="date-header">
+          <button class="nav-btn" @click="prevDates">‹</button>
 
-    <div class="date-row">
-      <button
-        v-for="d in visibleDates"
-        :key="d.date"
-        class="date-card"
-        :class="{ active: d.date === selectedDate }"
-        @click="selectDate(d.date)"
-      >
-        <div class="date-day">{{ d.day }}</div>
-        <div class="date-num">{{ d.num }}</div>
-      </button>
-    </div>
+          <div class="date-row">
+            <button
+              v-for="d in visibleDates"
+              :key="d.date"
+              class="date-card"
+              :class="{ active: d.date === selectedDate }"
+              @click="selectDate(d.date)"
+            >
+              <div class="date-day">{{ d.day }}</div>
+              <div class="date-num">{{ d.num }}</div>
+            </button>
+          </div>
 
-    <button class="nav-btn" @click="nextDates">›</button>
-  </div>
-</section>
-
+          <button class="nav-btn" @click="nextDates">›</button>
+        </div>
+      </section>
 
       <!-- 時段 -->
       <section class="slot-section">
         <h4 class="slot-title">可預約時段</h4>
 
         <div v-if="todaySlots.length" class="slot-grid">
-        <button
-  v-for="slot in todaySlots"
-  :key="slot.scheduleId"
-  class="slot-card"
-  :class="{
-    active: selectedSlot === slot.scheduleId,
-    full: slot.full || !slot.canEnroll
-  }"
-  :disabled="slot.full || !slot.canEnroll"
-  @click="selectSlot(slot)"
->
-  <span class="slot-time">{{ slot.time }}</span>
+          <button
+            v-for="slot in todaySlots"
+            :key="slot.scheduleId"
+            class="slot-card"
+            :class="{
+              active: selectedSlotId === slot.scheduleId,
+              full: slot.full || !slot.canEnroll
+            }"
+            :disabled="slot.full || !slot.canEnroll"
+            @click="selectSlot(slot)"
+          >
+            <span class="slot-time">{{ slot.time }}</span>
 
-  <span v-if="slot.full" class="slot-status">
-    已額滿
-  </span>
-
-  <span v-else-if="!slot.canEnroll" class="slot-status">
-    已截止
-  </span>
-</button>
-
-
+            <span v-if="slot.full" class="slot-status">已額滿</span>
+            <span v-else-if="!slot.canEnroll" class="slot-status">已截止</span>
+          </button>
         </div>
 
         <p v-else class="slot-empty">此日期尚無可預約時段</p>
       </section>
-     <div class="booking-actions">
-  <!-- 回到課程列表 -->
-  <button class="back-btn" @click="goBack">
-    回到課程列表
-  </button>
 
-  
-  <button
-    class="next-btn"
-    :disabled="!selectedSlot"
-    @click="goNext"
-  >
-    下一步
-  </button>
-</div>
+      <!-- 底部操作 -->
+      <div class="booking-actions">
+        <button class="back-btn" @click="goBack">回到課程列表</button>
 
+        <button
+          class="next-btn"
+          :disabled="!selectedSlotId"
+          @click="goNext"
+        >
+          下一步
+        </button>
+      </div>
 
     </div>
   </div>
 </template>
 
+
 <style scoped>
-.booking-steps {
-  max-width: 700px;
-  margin: 0 auto 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.step {
-  text-align: center;
-  width: 80px;
-}
-
-.label {
-  font-size: 13px;
-  color: #666;
-}
-
-.circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  color: #555;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 6px;
-  font-weight: bold;
-}
-
-.step.done .circle {
-  background: #000000;
-  color: #fff;
-}
-
-.step.active .circle {
-  background: #ff9f1c;
-  color: #fff;
-  transform: scale(1.15);
-}
-
-.line {
-  flex: 1;
-  height: 2px;
-  background: #e5e7eb;
-  margin: 0 6px;
-}
-
-.line.done {
-  background: #ff9f1c;
-}
-
 .booking-wrapper {
   background: #f8fafc;
   min-height: 100vh;
@@ -318,11 +262,22 @@ onMounted(() => {
   margin: auto;
 }
 
+/* ===== 標題 ===== */
 .booking-title {
   text-align: center;
   margin-bottom: 32px;
 }
 
+.booking-title h2 {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.booking-title p {
+  color: #64748b;
+}
+
+/* ===== 課程卡 ===== */
 .course-card {
   display: flex;
   gap: 20px;
@@ -332,91 +287,74 @@ onMounted(() => {
   margin-bottom: 32px;
 }
 
+.course-card.loading {
+  justify-content: center;
+  color: #64748b;
+}
+
 .course-card img {
- 
   width: 250px;
   border-radius: 12px;
   object-fit: cover;
 }
 
-.price {
-  color: #ff8a00;
+.course-info h3 {
+  font-size: 22px;
   font-weight: 800;
 }
 
-.date-section {
-  margin-top: 32px;
-  text-align: center;
+.meta {
+  margin: 6px 0;
+  color: #374151;
 }
 
+.price {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ff8a00;
+}
+
+.course-desc.subtle {
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 3px solid #e5e7eb;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* ===== 日期 ===== */
+.date-section {
+  text-align: center;
+  margin-top: 40px;
+}
 
 .month-title {
-  font-size: 16px;
   font-weight: 800;
   margin-bottom: 16px;
-  color: #111827;
 }
-
 
 .date-header {
   display: flex;
-  align-items: center;      
+  align-items: center;
   justify-content: center;
   gap: 24px;
 }
-
 
 .date-row {
   display: flex;
   gap: 12px;
 }
 
-
-.nav-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-
-.nav-btn:hover {
-  border-color: #ff8a00;
-  color: #ff8a00;
-}
-
 .date-card {
-  min-width: 72px;
+  width: 72px;
   height: 86px;
   border-radius: 16px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
   cursor: pointer;
-  transition: .25s;
-}
-
-.date-day {
-  font-size: 12px;
-  font-weight: 700;
-  color: #94a3b8;
-}
-
-.date-num {
-  font-size: 22px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.date-card:hover {
-  border-color: #ff8a00;
+  transition: .2s;
 }
 
 .date-card.active {
@@ -424,19 +362,21 @@ onMounted(() => {
   border-color: #ff8a00;
 }
 
-.date-card.active .date-day {
-  color: #7c2d12;
+.date-day {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 700;
 }
 
+.date-num {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+/* ===== 時段 ===== */
 .slot-section {
   margin-top: 40px;
   text-align: center;
-}
-
-.slot-title {
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 20px;
 }
 
 .slot-grid {
@@ -454,32 +394,22 @@ onMounted(() => {
   background: #fff;
   font-weight: 700;
   cursor: pointer;
-  transition: .25s;
-  position: relative;
-}
-
-.slot-card:hover {
-  border-color: #ff8a00;
-  color: #ff8a00;
+  transition: .2s;
 }
 
 .slot-card.active {
   background: #ffedd5;
   border-color: #ff8a00;
-  color: #7c2d12;
 }
 
 .slot-card.full {
-  position: relative;
-  color: #9ca3af;
   background: #f9fafb;
+  color: #9ca3af;
   cursor: not-allowed;
 }
+
 .slot-time {
-  font-size: 15px;
-  font-weight: 700;
   position: relative;
-  display: inline-block;
 }
 
 .slot-card.full .slot-time::after {
@@ -489,88 +419,72 @@ onMounted(() => {
   right: -6px;
   top: 50%;
   height: 2px;
-  background-color: #d1d5db;
+  background: #d1d5db;
   transform: translateY(-50%);
 }
 
-
 .slot-status {
   display: block;
-  margin-top: 6px;
   font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
+  margin-top: 6px;
 }
 
-.slot-card.full:hover {
-  border-color: #e5e7eb;
-  color: #94a3b8;
-}
-.slot-empty {
-  color: #64748b;
-}
-.next-btn {
-  margin-top: 32px;
-  padding: 14px 48px;
-  border-radius: 999px;
-  border: none;
-  background: #ff8a00;
-  color: white;
-  font-size: 16px;
-  font-weight: 800;
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50px;        
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: .25s;
+  transition: all .2s ease;
 }
 
-.next-btn:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
+/* hover 狀態 */
+.nav-btn:hover {
+  border-color: #ff8a00;
+  color: #ff8a00;
+  background: #fff7ed;
+}
+
+/* disabled（如果之後有用） */
+.nav-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* 底部操作列 */
+/* ===== 底部 ===== */
 .booking-actions {
   margin-top: 48px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
-/* 回到列表 */
 .back-btn {
   padding: 12px 28px;
   border-radius: 999px;
   border: 1px solid #e5e7eb;
   background: #fff;
-  color: #374151;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
-  transition: .2s;
 }
 
-.back-btn:hover {
-  border-color: #ff8a00;
-  color: #ff8a00;
-}
-
-/* 下一步（主行動） */
 .next-btn {
   padding: 14px 48px;
   border-radius: 999px;
   border: none;
   background: #ff8a00;
   color: white;
-  font-size: 16px;
   font-weight: 800;
-  cursor: pointer;
-  transition: .25s;
 }
 
 .next-btn:disabled {
   background: #e5e7eb;
   color: #9ca3af;
-  cursor: not-allowed;
 }
 
 </style>
