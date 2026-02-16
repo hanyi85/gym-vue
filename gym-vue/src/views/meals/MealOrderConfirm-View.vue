@@ -3,6 +3,11 @@ import Btn from '@/components/Meals/submitbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+
+const apiUrl="https://localhost:7193/api/"
+
+
+
 const router = useRouter()
 //訂單編號已在資料庫  要改
 

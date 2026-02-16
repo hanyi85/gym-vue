@@ -5,6 +5,8 @@ import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
 
+const apiUrl="https://localhost:7193/api/"
+
 const router = useRouter()
 
 const orderId = ref(null)

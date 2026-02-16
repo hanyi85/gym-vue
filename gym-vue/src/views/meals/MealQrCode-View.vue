@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import OrderQrcode from '@/components/Meals/OrderQrcode.vue'
 
+const apiUrl="https://localhost:7193/api/"
+
 const orders = ref([
   {
     info: {

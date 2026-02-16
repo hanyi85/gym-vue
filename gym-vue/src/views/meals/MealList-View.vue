@@ -4,6 +4,7 @@ import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
 import MealSidebar from '@/components/Meals/MealSidebar.vue'
 
+const apiUrl="https://localhost:7193/api/"
 
 // 分類
 const categories = [
