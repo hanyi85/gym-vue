@@ -52,7 +52,7 @@ const toggleFavorite = () => {
 
     <div class="img-container">
       <img
-        :src="meal.imageUrl"
+        :src="'https://localhost:7218' + meal.imageUrl"
         class="card-img-top"
         alt="meal image"
       />
@@ -97,7 +97,7 @@ const toggleFavorite = () => {
 /* 圖片縮放效果 */
 .img-container {
   overflow: hidden;
-  aspect-ratio: 4 / 4; /* 固定比例，避免圖片高矮不一導致卡片不齊 */
+  aspect-ratio: 10 / 9.5; /* 固定比例，避免圖片高矮不一導致卡片不齊 */
 }
 
 /* 愛心位置 */
