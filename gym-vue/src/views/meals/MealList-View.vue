@@ -1,40 +1,85 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted} from 'vue'
+import axios from 'axios'
 import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
 import MealSidebar from '@/components/Meals/MealSidebar.vue'
 
-const apiUrl="https://localhost:7193/api/"
+const apiUrl="https://localhost:7218/api"
 
-// 分類
-const categories = [
-  { id: 1, name: '高蛋白增肌餐', description: '適合健身與增肌族群，高蛋白、低精製澱粉' },
-  { id: 2, name: '低脂減脂餐', description: '低熱量、低脂肪，幫助體脂控制' },
-  { id: 3, name: '均衡健康餐', description: '營養均衡，適合日常健康飲食' }
-]
+// ====== 狀態 ======
+const categories = ref([])
+const meals = ref([])
+const currentCategory = ref({})
 
-// 預設分類
-const currentCategory = ref(categories[0])
+// ====== 取得分類 ======
+const fetchCategories = async () => {
+  try {
+    const res = await axios.get(`${apiUrl}/TMealCategories`)
 
-// 餐點（之後改成 API 回傳）
-const meals = ref([
-  { id: 1, name: '雞胸餐', categoryId: 1, calories: 520, protein: 45, imageUrl: '/assets/img/meals/1.jpg', price:160},
-  { id: 2, name: '牛肉增肌餐', categoryId: 1, calories: 650, protein: 50, imageUrl: '/assets/img/meals/1.jpg' , price:160},
-  { id: 3, name: '舒肥鯛魚餐', categoryId: 2, calories: 420, protein: 38, imageUrl: '/assets/img/meals/1.jpg', price:160 },
-  { id: 4, name: '均衡雞腿餐', categoryId: 3, calories: 580, protein: 40, imageUrl: '/assets/img/meals/1.jpg', price:160}
-])
+    // 把後端欄位轉成前端格式
+    categories.value = res.data
+      .filter(c => c.FIsActive)
+      .map(c => ({
+        id: c.FCategoryId,
+        name: c.FCategoryName,
+        description: c.FDescription
+      }))
 
-// 切分類
+    // 預設選第一個分類
+    if (categories.value.length > 0) {
+      currentCategory.value = categories.value[0]
+    }
+
+  } catch (err) {
+    console.error('分類取得失敗', err)
+  }
+}
+
+// ====== 取得餐點 ======
+const fetchMeals = async () => {
+  try {
+    const res = await axios.get(`${apiUrl}/TMeals`)
+
+    meals.value = res.data
+      .filter(m => m.FIsActive)
+      .map(m => ({
+        id: m.FMealId,
+        categoryId: m.FCategoryId,
+        name: m.FMealName,
+        description: m.FDescription,
+        imageUrl: m.FImageUrl,
+        calories: m.FCalories,
+        protein: m.FProtein,
+        price: m.FPrice
+      }))
+
+  } catch (err) {
+    console.error('餐點取得失敗', err)
+  }
+}
+
+// ====== 切分類 ======
 const selectCategory = (cat) => {
   currentCategory.value = cat
 }
 
-// 🔥 關鍵：依分類過濾餐點
+// ====== 依分類過濾 ======
 const filteredMeals = computed(() => {
+  if (!currentCategory.value.id) return []
   return meals.value.filter(
     m => m.categoryId === currentCategory.value.id
   )
 })
+
+// ====== 進頁面載入 ======
+onMounted(async () => {
+  await fetchCategories()
+  await fetchMeals()
+})
+
+
+
 </script>
 
 <template>
