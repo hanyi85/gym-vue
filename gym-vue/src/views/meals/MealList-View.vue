@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted} from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
@@ -10,72 +10,109 @@ const apiUrl="https://localhost:7218/api"
 // ====== 狀態 ======
 const categories = ref([])
 const meals = ref([])
-const currentCategory = ref({})
+const currentCategory = ref({ id: 0, type: 'all', name: '全部餐點' })
 
 // ====== 取得分類 ======
 const fetchCategories = async () => {
-  try {
     const res = await axios.get(`${apiUrl}/TMealCategories`)
 
-    // 把後端欄位轉成前端格式
-    categories.value = res.data
+const apiCategories = res.data
       .filter(c => c.FIsActive)
       .map(c => ({
         id: c.FCategoryId,
         name: c.FCategoryName,
-        description: c.FDescription
+        description: c.FDescription,
+        type:'normal'
       }))
 
-    // 預設選第一個分類
-    if (categories.value.length > 0) {
-      currentCategory.value = categories.value[0]
+      // 🔥 加入自訂分類
+  categories.value = [
+    {
+      id: 0,
+      name: '全部餐點',
+      description: '所有健康美味餐點',
+      type: 'all'
+    },
+    ...apiCategories,
+    {
+      id: -1,
+      name: '我喜愛的餐點',
+      description: '你收藏的專屬餐點',
+      type: 'favorite'
     }
+  ]
 
-  } catch (err) {
-    console.error('分類取得失敗', err)
+   currentCategory.value = categories.value[0]
+ 
+
   }
-}
+
 
 // ====== 取得餐點 ======
-const fetchMeals = async () => {
-  try {
+const fetchMeals = async (category) => {
+  // 1️⃣ 全部餐點
+  if (category.type === 'all') {
     const res = await axios.get(`${apiUrl}/TMeals`)
-
-    meals.value = res.data
-      .filter(m => m.FIsActive)
-      .map(m => ({
-        id: m.FMealId,
-        categoryId: m.FCategoryId,
-        name: m.FMealName,
-        description: m.FDescription,
-        imageUrl: m.FImageUrl,
-        calories: m.FCalories,
-        protein: m.FProtein,
-        price: m.FPrice
-      }))
-
-  } catch (err) {
-    console.error('餐點取得失敗', err)
+    meals.value = mapMeals(res.data)
+    return
   }
+
+  // 2️⃣ 喜愛餐點（等下會做）
+  if (category.type === 'favorite') {
+    const res = await axios.get(`${apiUrl}/TMealFavoriteMeals/user?userId=1`)
+    meals.value = mapMeals(res.data)
+    return
+  }
+
+  // 3️⃣ 一般分類
+  const res = await axios.get(
+    `${apiUrl}/TMeals?categoryId=${category.id}`
+  )
+
+  meals.value = mapMeals(res.data)
+}
+
+// ====== 格式轉換 ======
+const mapMeals = (data) => {
+  return data.map(m => ({
+    id: m.FMealId,
+    categoryId: m.FCategoryId,
+    name: m.FMealName,
+    imageUrl: m.FImageUrl,
+    calories: m.FCalories,
+    fat: m.FFat,
+    carbs: m.FCarbs,
+    protein: m.FProtein,
+    price: m.FPrice
+  }))
 }
 
 // ====== 切分類 ======
-const selectCategory = (cat) => {
+const selectCategory = async (cat) => {
   currentCategory.value = cat
+  await fetchMeals(cat)
 }
 
 // ====== 依分類過濾 ======
 const filteredMeals = computed(() => {
-  if (!currentCategory.value.id) return []
+  if (!currentCategory.value) return []   // 🔥 避免 null.id
+  if (currentCategory.value.type === 'all') {
+    return meals.value                    // 🔥 全部餐點直接回傳所有
+  }
+  if (currentCategory.value.type === 'favorite') {
+    return meals.value.filter(m => m.isFavorite)
+  }
   return meals.value.filter(
     m => m.categoryId === currentCategory.value.id
   )
 })
 
+
+
 // ====== 進頁面載入 ======
 onMounted(async () => {
   await fetchCategories()
-  await fetchMeals()
+  await fetchMeals(currentCategory.value)
 })
 
 
@@ -94,21 +131,21 @@ onMounted(async () => {
       <div class="col-md-3 col-lg-2 mb-4">
         <MealSidebar 
           :categories="categories" 
-          :currentCategoryId="currentCategory.id"
+          :currentCategoryId="currentCategory?.id"
           @select-category="selectCategory"
         />
       </div>
 
       <main class="col-md-9 col-lg-10">
         <div class="mb-2 ps-md-3">
-          <h3 class="fw-bold" style="color: #f3722c;">{{ currentCategory.name }}</h3>
-          <h6 class="text-muted">{{ currentCategory.description }}</h6>
+          <h3 class="fw-bold" style="color: #f3722c;">{{ currentCategory?.name }}</h3>
+          <h6 class="text-muted">{{ currentCategory?.description }}</h6>
         </div>
         <!-- 餐點卡片 -->
         <div class="row p-3">
           <div
             v-for="meal in filteredMeals"
-            :key="meal.id"
+            :key="meal?.id"
             class="col-12 col-sm-6 col-md-3 py-2"
           >
             <MealCard :meal="meal" />
