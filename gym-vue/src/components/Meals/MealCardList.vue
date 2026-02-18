@@ -1,6 +1,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+const apiUrl="https://localhost:7218/api"
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+
 
 // 父層傳進來的餐點資料
 const props = defineProps({
@@ -26,11 +32,29 @@ const goDetail = () => {
 }
 
 // 點愛心
-const toggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
+const toggleFavorite = async () => {
 
-  // 👉 之後你在這裡接 API
-  // axios.post('/api/favorite', { mealId: props.meal.id })
+  
+
+   try {
+    const memberId = authStore.member.UserId
+
+    const res = await axios.post(
+      `${apiUrl}/TMealFavoriteMeals/toggle`,
+      {
+        FUserId: memberId,
+        FMealId: props.meal.id,
+        FCreatedAt: new Date().toISOString()
+
+      }
+    )
+
+    // 🔥 依後端回傳決定
+    isFavorite.value = res.data.isFavorite
+
+  } catch (err) {
+    console.error('收藏失敗', err)
+  }
 }
 </script>
 

@@ -1,9 +1,13 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
 import MealSidebar from '@/components/Meals/MealSidebar.vue'
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+const memberId = authStore.member.UserId
 
 const apiUrl="https://localhost:7218/api"
 
@@ -59,7 +63,8 @@ const fetchMeals = async (category) => {
 
   // 2️⃣ 喜愛餐點（等下會做）
   if (category.type === 'favorite') {
-    const res = await axios.get(`${apiUrl}/TMealFavoriteMeals/user?userId=1`)
+    
+    const res = await axios.get(`${apiUrl}/TMealFavoriteMeals/user/${memberId}`)
     meals.value = mapMeals(res.data)
     return
   }
@@ -93,19 +98,6 @@ const selectCategory = async (cat) => {
   await fetchMeals(cat)
 }
 
-// ====== 依分類過濾 ======
-const filteredMeals = computed(() => {
-  if (!currentCategory.value) return []   // 🔥 避免 null.id
-  if (currentCategory.value.type === 'all') {
-    return meals.value                    // 🔥 全部餐點直接回傳所有
-  }
-  if (currentCategory.value.type === 'favorite') {
-    return meals.value.filter(m => m.isFavorite)
-  }
-  return meals.value.filter(
-    m => m.categoryId === currentCategory.value.id
-  )
-})
 
 
 
@@ -144,7 +136,7 @@ onMounted(async () => {
         <!-- 餐點卡片 -->
         <div class="row p-3">
           <div
-            v-for="meal in filteredMeals"
+            v-for="meal in meals"
             :key="meal?.id"
             class="col-12 col-sm-6 col-md-3 py-2"
           >
