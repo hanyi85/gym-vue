@@ -1,7 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
+import axios from 'axios'
+
 
 const apiUrl="https://localhost:7218/api"
 
@@ -22,12 +24,8 @@ const meal = ref({
   price: 160
 })
 
-/* 取餐時段（之後 API 取代） */
-const timeSlots = ref([
-  { id: 1, label: '11:00 - 12:00' },
-  { id: 2, label: '12:00 - 13:00' },
-  { id: 3, label: '18:00 - 19:00' }
-])
+/* 取餐時段 */
+const timeSlots = ref([])
 
 /* 使用者選擇 */
 const selectedDate = ref('')
@@ -49,6 +47,16 @@ function formatDate(date) {
 const minDate = formatDate(tomorrow)
 const maxDate = formatDate(threeMonthsLater)
 
+/* 後台抓取餐時間 */
+async function fetchTimeSlots() {
+  const res = await axios.get(`${apiUrl}/TMealPickUpTimes/active`)
+  timeSlots.value = res.data.map(t => ({
+    id: t.FPickUpTimeId,
+    label: `${t.FStartTime.substring(0,5)} - ${t.FEndTime.substring(0,5)}`
+  }))
+}
+
+
 /* 動作（之後接 API） */
 function addToCart() {
   const payload = {
@@ -64,6 +72,11 @@ function buyNow() {
   addToCart()
   router.push('/meals/cart')
 }
+
+onMounted(() => {
+  fetchTimeSlots()
+})
+
 </script>
 
 
