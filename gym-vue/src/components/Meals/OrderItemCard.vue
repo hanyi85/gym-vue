@@ -13,7 +13,7 @@ const showQr = ref(false)
   <div class="order-item mb-3 p-3 rounded">
     <div class="d-flex gap-3">
       <img
-        :src="item.fMealImage"
+        :src="'https://localhost:7218' + item.fMealImage"
         class="meal-img"
       />
 
