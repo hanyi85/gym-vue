@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
 
-const apiUrl="https://localhost:7193/api/"
+const apiUrl="https://localhost:7218/api"
 
 /* 路由 */
 const route = useRoute()

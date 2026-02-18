@@ -4,7 +4,7 @@ import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-const apiUrl="https://localhost:7193/api/"
+const apiUrl="https://localhost:7218/api"
 
 
 

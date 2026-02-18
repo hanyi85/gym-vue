@@ -7,7 +7,7 @@ import router from '@/router'
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
 import HistoryltemList from '@/components/Meals/HistoryltemList.vue'
 
-const apiUrl="https://localhost:7193/api/"
+const apiUrl="https://localhost:7218/api"
 
 
 
