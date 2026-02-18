@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/mealAuthStore'
 const authStore = useAuthStore()
 const memberId = authStore.member.UserId
 
+
 const apiUrl="https://localhost:7218/api"
 
 //====== 自動載入我喜愛的餐點 ======
@@ -170,6 +171,12 @@ onMounted(async () => {
             @refreshFavorites="fetchFavoriteIds"
             />
           </div>
+        </div>
+        <!-- 尚未收藏餐點 -->
+        <div v-if="currentCategory.type === 'favorite' && meals.length === 0" 
+            class="text-center py-5 text-muted">
+          <h5>尚未收藏餐點</h5>
+          <p>點擊愛心即可加入收藏 <i class="fa fa-heart"></i></p>
         </div>
       </main>
 
