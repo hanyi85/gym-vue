@@ -13,16 +13,7 @@ const router = useRouter()
 const mealId = route.params.mealId
 
 /* 餐點資料（之後 API 取代） */
-const meal = ref({
-  id: mealId,
-  name: '雞胸肉健康餐',
-  imageUrl: '/assets/img/meals/1.jpg',
-  calories: 520,
-  protein: 42,
-  carbs: 45,
-  fat: 10,
-  price: 160
-})
+const meal = ref(null)
 
 /* 取餐時段 */
 const timeSlots = ref([])
@@ -56,6 +47,27 @@ async function fetchTimeSlots() {
   }))
 }
 
+/* 後台抓取餐點 */
+async function fetchMeal() {
+  try {
+    const res = await axios.get(`${apiUrl}/TMeals/${mealId}`)
+    // 後端回傳的欄位是 FMealId, Name, Price, ...
+    meal.value = {
+      id: res.data.FMealId,
+      name: res.data.FMealName,
+      imageUrl: res.data.FImageUrl,   // 假設後端有這個欄位
+      calories: res.data.FCalories,
+      protein: res.data.FProtein,
+      carbs: res.data.FCarbs,
+      fat: res.data.FFat,
+      price: res.data.FPrice
+    }
+  } catch (err) {
+    console.error("載入餐點失敗", err)
+  }
+}
+
+
 
 /* 動作（之後接 API） */
 function addToCart() {
@@ -75,6 +87,7 @@ function buyNow() {
 
 onMounted(() => {
   fetchTimeSlots()
+  fetchMeal()
 })
 
 </script>
@@ -86,8 +99,8 @@ onMounted(() => {
   <div class=" min-vh-100 py-2 container">
     <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><router-link to="/meals" class="text-orange">餐點列表</router-link></li>
-              <li class="breadcrumb-item active">{{ meal.name }}</li>
+              <li v-if="meal" class="breadcrumb-item"><router-link to="/meals" class="text-orange">餐點列表</router-link></li>
+              <li v-if="meal" class="breadcrumb-item active">{{ meal.name }}</li>
             </ol>
           </nav>
     <div class="container meal-detail rounded-4 shadow-sm p-4 p-md-5">
@@ -95,33 +108,33 @@ onMounted(() => {
         
         <div class="col-12 col-md-6 col-lg-5">
           <div class="image-wrapper shadow-sm rounded-4 overflow-hidden">
-            <img :src="meal.imageUrl" class="img-fluid w-100 h-100 object-fit-cover" :alt="meal.name" />
+            <img :src="'https://localhost:7218' + meal.imageUrl" class="img-fluid w-100 h-100 object-fit-cover" :alt="meal.name" v-if="meal"/>
           </div>
         </div>
 
         <div class="col-12 col-md-6 col-lg-5">
-          <h1 class="fw-bold text-dark mb-3">{{ meal.name }}</h1>
+          <h1 class="fw-bold text-dark mb-3" v-if="meal">{{ meal.name }}</h1>
           <div class="price-wrapper mb-2">
       <span class="currency">NT$</span>
-      <span class="price-amount">{{ meal.price }}</span>
+      <span class="price-amount" v-if="meal">{{ meal.price }}</span>
     </div>
 
           <div class="nutrition-grid mb-4">
             <div class="nutrition-card">
               <span class="label">熱量</span>
-              <span class="value">{{ meal.calories }} <small>kcal</small></span>
+              <span class="value" v-if="meal">{{ meal.calories }} <small>kcal</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">蛋白質</span>
-              <span class="value">{{ meal.protein }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.protein }} <small>g</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">碳水</span>
-              <span class="value">{{ meal.carbs }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.carbs }} <small>g</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">脂質</span>
-              <span class="value">{{ meal.fat }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.fat }} <small>g</small></span>
             </div>
           </div>
 
