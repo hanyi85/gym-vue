@@ -1,10 +1,12 @@
 <script setup>
-import { ref } from 'vue'
+import { defineProps,  computed, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 const apiUrl="https://localhost:7218/api"
 import { useAuthStore } from '@/stores/mealAuthStore'
 
+const router = useRouter()
+const emit = defineEmits(['refreshFavorites'])
 const authStore = useAuthStore()
 
 
@@ -13,13 +15,20 @@ const props = defineProps({
   meal: {
     type: Object,
     required: true
+  },
+  favoriteIds: {
+    type: Array,
+    default: () => []
   }
 })
 
-const router = useRouter()
-
 // 之後可以從 API 判斷是否已收藏
-const isFavorite = ref(props.meal.isFavorite ?? false)
+const isFavorite = computed(() => {
+  return props.favoriteIds.includes(props.meal.id)
+})
+
+
+
 
 // 點整張卡片
 const goDetail = () => {
@@ -34,28 +43,30 @@ const goDetail = () => {
 // 點愛心
 const toggleFavorite = async () => {
 
-  
+   if (!authStore.isLogin) {
+    alert('請先登入')
+    return
+  }
 
-   try {
-    const memberId = authStore.member.UserId
+  try {
+    const userId = authStore.member.UserId
 
-    const res = await axios.post(
+    await axios.post(
       `${apiUrl}/TMealFavoriteMeals/toggle`,
       {
-        FUserId: memberId,
-        FMealId: props.meal.id,
-        FCreatedAt: new Date().toISOString()
-
+        FUserId: userId,
+        FMealId: props.meal.id
       }
     )
 
-    // 🔥 依後端回傳決定
-    isFavorite.value = res.data.isFavorite
+    // 🔥 通知父層重新抓收藏ID
+    emit('refreshFavorites')
 
   } catch (err) {
     console.error('收藏失敗', err)
   }
 }
+
 </script>
 
 

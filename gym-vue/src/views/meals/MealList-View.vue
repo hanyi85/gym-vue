@@ -11,6 +11,24 @@ const memberId = authStore.member.UserId
 
 const apiUrl="https://localhost:7218/api"
 
+//====== 自動載入我喜愛的餐點 ======
+
+const favoriteIds = ref([])
+
+const fetchFavoriteIds = async () => {
+
+  if (!authStore.isLogin) return
+
+  const userId = memberId
+
+  const res = await axios.get(
+    `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
+  )
+
+  favoriteIds.value = res.data
+}
+
+
 // ====== 狀態 ======
 const categories = ref([])
 const meals = ref([])
@@ -64,9 +82,14 @@ const fetchMeals = async (category) => {
   // 2️⃣ 喜愛餐點（等下會做）
   if (category.type === 'favorite') {
     
-    const res = await axios.get(`${apiUrl}/TMealFavoriteMeals/user/${memberId}`)
-    meals.value = mapMeals(res.data)
-    return
+    await fetchFavoriteIds()
+
+  const res = await axios.get(
+    `${apiUrl}/TMealFavoriteMeals/user/${memberId}`
+  )
+
+  meals.value = mapMeals(res.data)
+  return
   }
 
   // 3️⃣ 一般分類
@@ -105,6 +128,7 @@ const selectCategory = async (cat) => {
 onMounted(async () => {
   await fetchCategories()
   await fetchMeals(currentCategory.value)
+  await fetchFavoriteIds()
 })
 
 
@@ -140,7 +164,11 @@ onMounted(async () => {
             :key="meal?.id"
             class="col-12 col-sm-6 col-md-3 py-2"
           >
-            <MealCard :meal="meal" />
+            <MealCard 
+            :meal="meal"
+            :favoriteIds="favoriteIds"
+            @refreshFavorites="fetchFavoriteIds"
+            />
           </div>
         </div>
       </main>
