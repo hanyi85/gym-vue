@@ -12,21 +12,17 @@ const apiUrl="https://localhost:7218/api"
 const router = useRouter()
 //訂單編號已在資料庫  要改
 
-// 🔹 假「登入會員資料」
+// 假「登入會員資料」
 const fakeMember = {
   name: '王小明',
   phone: '0912345678',
   email: 'test@gmail.com'
 }
 
-// 🔹 假「取餐店家」
-const stores = ref([
-  { id: 1, name: '台北信義店' },
-  { id: 2, name: '台中公益店' },
-  { id: 3, name: '高雄巨蛋店' }
-])
+// 取餐店家」
+const stores = ref([])
 
-// 🔹 付款方式
+// 付款方式
 const payments = [
   { value: 'cash', label: '現金付款' },
   { value: 'credit', label: '信用卡' },
@@ -42,6 +38,15 @@ const order = ref({
   paymentMethod: 'cash'
 })
 
+/* 後台抓取餐分店 */
+async function fetchVenues() {
+  const res = await axios.get(`${apiUrl}/TMealOrders/MealVenues`)
+  stores.value = res.data.map(t => ({
+    id: t.VenueId,
+    name: t.VenueName
+  }))
+}
+
 // 下一步
 // const goConfirm = () => {
 //   router.push('/meals/result/:orderId')
@@ -52,7 +57,8 @@ onMounted(() => {
   order.value.name = fakeMember.name
   order.value.phone = fakeMember.phone
   order.value.email = fakeMember.email
-})
+},fetchVenues()
+)
 
 // 送出訂單
 const submitOrder = () => {
