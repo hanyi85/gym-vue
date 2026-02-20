@@ -38,7 +38,7 @@ async function fetchOrders() {
           fTotalAmount: order.FTotalAmount,
           fOrderStatus: order.FOrderStatus,
           fPayMethod: order.FPayMethod,
-          fVenueName: order.FVenue?.FVenueName // 關聯場館
+          fVenueName: order.FVenue?.VenueName // 關聯場館
         },
         items: itemList
           .filter(i => i.FOrderId === order.FOrderId) // 對應同一張訂單
