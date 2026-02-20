@@ -3,6 +3,7 @@ import Btn from '@/components/Meals/submitbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const apiUrl="https://localhost:7218/api"
 

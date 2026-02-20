@@ -8,6 +8,7 @@ import { useRoute,useRouter } from 'vue-router'
 
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
 import OrderItemList from '@/components/Meals/OrderItemList.vue'
+import axios from 'axios'
 
 const apiUrl="https://localhost:7218/api"
 

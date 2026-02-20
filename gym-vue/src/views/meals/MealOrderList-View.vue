@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
+import axios from 'axios'
 
 const apiUrl="https://localhost:7218/api"
 
@@ -44,11 +45,16 @@ const mockCartData = {
 }
 
 /* 取餐時段（之後 API 取代） */
-const timeSlots = ref([
-  { id: 1, label: '11:00 - 12:00' },
-  { id: 2, label: '12:00 - 13:00' },
-  { id: 3, label: '18:00 - 19:00' }
-])
+const timeSlots = ref([])
+
+/* 後台抓取餐時間 */
+async function fetchTimeSlots() {
+  const res = await axios.get(`${apiUrl}/TMealPickUpTimes/active`)
+  timeSlots.value = res.data.map(t => ({
+    id: t.FPickUpTimeId,
+    label: `${t.FStartTime.substring(0,5)} - ${t.FEndTime.substring(0,5)}`
+  }))
+}
 
 // 總金額
 const totalAmount = computed(() =>
@@ -77,7 +83,8 @@ const goshopping = () => {
 }
 
 onMounted(() => {
-  getCart()
+  getCart(),
+  fetchTimeSlots()
 })
 
 
