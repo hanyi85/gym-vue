@@ -77,9 +77,16 @@ async function getCart() {
 }
 
 // 模擬刪除
-const deleteItem = (orderItemId) => {
-  if (!confirm('確定要刪除這份餐點嗎？')) return
-  cartItems.value = cartItems.value.filter(i => i.orderItemId !== orderItemId)
+// const deleteItem = (orderItemId) => {
+//   if (!confirm('確定要刪除這份餐點嗎？')) return
+//   cartItems.value = cartItems.value.filter(i => i.orderItemId !== orderItemId)
+// }
+
+async function deleteItem(orderItemId) {
+  if (!confirm('確定刪除？')) return
+
+  await axios.delete(`${apiUrl}/TMealCarts/item/${orderItemId}`)
+  getCart()
 }
 
 // 下一步
