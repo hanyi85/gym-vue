@@ -3,6 +3,9 @@ import { ref, onMounted} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
 
 
 const apiUrl="https://localhost:7218/api"
@@ -12,7 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const mealId = route.params.mealId
 
-/* 餐點資料（之後 API 取代） */
+/* 餐點資料 */
 const meal = ref(null)
 
 /* 取餐時段 */
@@ -70,14 +73,28 @@ async function fetchMeal() {
 
 
 /* 動作（之後接 API） */
-function addToCart() {
-  const payload = {
-    mealId: meal.value.id,
-    pickupDate: selectedDate.value,
-    timeSlotId: selectedTimeSlotId.value,
-    quantity: quantity.value
+async function addToCart() {
+
+  if (!authStore.member.UserId) {
+    alert('請先登入')
+    router.push({ name: 'User-login' })
+    return
   }
-  console.log('加入購物車資料', payload)
+
+  const payload = {
+    FUserId:authStore.member.UserId,
+    FMealId: meal.value.id,
+    FPickDate: selectedDate.value,
+    FPickTimeId: selectedTimeSlotId.value,
+    FQty: quantity.value
+  }
+
+  try {
+    await axios.post(`${apiUrl}/TMealCarts/MealAddToCart`, payload)
+    alert('加入成功')
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 function buyNow() {

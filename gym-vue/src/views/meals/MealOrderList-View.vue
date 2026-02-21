@@ -44,7 +44,7 @@ const mockCartData = {
   ]
 }
 
-/* 取餐時段（之後 API 取代） */
+/* 取餐時段 */
 const timeSlots = ref([])
 
 /* 後台抓取餐時間 */
