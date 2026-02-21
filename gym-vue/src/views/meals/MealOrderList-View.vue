@@ -5,6 +5,10 @@ import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+const UserId = authStore.member.UserId
 
 const apiUrl="https://localhost:7218/api"
 
@@ -14,35 +18,35 @@ const orderId = ref(null)
 const cartItems = ref([])
 
 // 假資料
-const mockCartData = {
-  orderId: 999,
-  items: [
-    {
-      orderItemId: 1,
-      mealId: 101,
-      mealName: '高蛋白雞胸餐',
-      pickDate: '2026-02-10',
-      selectedTimeSlotId: 2,
-      pickTime: '12:00 - 13:00',
-      qty: 2,
-      unitPrice: 120,
-      subtotal: 240,
-      imageUrl: '/assets/img/meals/1.jpg'
-    },
-    {
-      orderItemId: 2,
-      mealId: 102,
-      mealName: '低脂鮭魚餐',
-      pickDate: '2026-02-11',
-      selectedTimeSlotId: 1,
-      pickTime: '18:00 - 19:00',
-      qty: 1,
-      unitPrice: 320,
-      subtotal: 320,
-      imageUrl: '/assets/img/meals/1.jpg',
-    }
-  ]
-}
+// const mockCartData = {
+//   orderId: 999,
+//   items: [
+//     {
+//       orderItemId: 1,
+//       mealId: 101,
+//       mealName: '高蛋白雞胸餐',
+//       pickDate: '2026-02-10',
+//       selectedTimeSlotId: 2,
+//       pickTime: '12:00 - 13:00',
+//       qty: 2,
+//       unitPrice: 120,
+//       subtotal: 240,
+//       imageUrl: '/assets/img/meals/1.jpg'
+//     },
+//     {
+//       orderItemId: 2,
+//       mealId: 102,
+//       mealName: '低脂鮭魚餐',
+//       pickDate: '2026-02-11',
+//       selectedTimeSlotId: 1,
+//       pickTime: '18:00 - 19:00',
+//       qty: 1,
+//       unitPrice: 320,
+//       subtotal: 320,
+//       imageUrl: '/assets/img/meals/1.jpg',
+//     }
+//   ]
+// }
 
 /* 取餐時段 */
 const timeSlots = ref([])
@@ -62,9 +66,14 @@ const totalAmount = computed(() =>
 )
 
 // 模擬取得購物車
-const getCart = () => {
-  orderId.value = mockCartData.orderId
-  cartItems.value = mockCartData.items
+// const getCart = () => {
+//   orderId.value = mockCartData.orderId
+//   cartItems.value = mockCartData.items
+// }
+async function getCart() {
+  const res = await axios.get(`${apiUrl}/TMealCarts/Cart/${UserId}`)
+  orderId.value = res.data.orderId
+  cartItems.value = res.data.items
 }
 
 // 模擬刪除
@@ -108,7 +117,7 @@ onMounted(() => {
 
   <div
     class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4"
-    v-if="cartItems.length > 0"
+    v-if="cartItems && cartItems.length > 0"
   >
     <CartItemCard
       v-for="item in cartItems"
@@ -137,7 +146,7 @@ onMounted(() => {
     class="mt-5 p-4 amountblock rounded-4 shadow-sm d-flex justify-content-between align-items-center border-start border-orange border-5"
   >
     <div>
-      <span class="text-muted ">共 {{ cartItems.length }} 項餐點明細</span>
+      <span class="text-muted ">共  {{ cartItems?.length || 0 }} 項餐點明細</span>
       <h4 class="mb-0 fw-bold  ">總金額</h4>
     </div>
     <div class="text-end">
