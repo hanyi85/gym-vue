@@ -76,11 +76,7 @@ async function getCart() {
   cartItems.value = res.data.items
 }
 
-// 模擬刪除
-// const deleteItem = (orderItemId) => {
-//   if (!confirm('確定要刪除這份餐點嗎？')) return
-//   cartItems.value = cartItems.value.filter(i => i.orderItemId !== orderItemId)
-// }
+// 刪除
 
 async function deleteItem(orderItemId) {
   if (!confirm('確定刪除？')) return

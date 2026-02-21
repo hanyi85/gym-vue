@@ -72,17 +72,17 @@ async function fetchMeal() {
 
 
 
-/* 動作（之後接 API） */
+/* 加入購物車 */
 async function addToCart() {
 
-  if (!authStore.member.UserId) {
+  if (!authStore.member?.UserId) {
     alert('請先登入')
     router.push({ name: 'User-login' })
-    return
+    return false
   }
 
   const payload = {
-    FUserId:authStore.member.UserId,
+    FUserId: authStore.member.UserId,
     FMealId: meal.value.id,
     FPickDate: selectedDate.value,
     FPickTimeId: selectedTimeSlotId.value,
@@ -92,14 +92,22 @@ async function addToCart() {
   try {
     await axios.post(`${apiUrl}/TMealCarts/MealAddToCart`, payload)
     alert('加入成功')
+    return true
   } catch (err) {
     console.error(err)
+    alert('加入失敗')
+    return false
   }
 }
 
-function buyNow() {
-  addToCart()
-  router.push('/meals/cart')
+/* 立即購買 */
+
+async function buyNow() {
+  const success = await addToCart()
+
+  if (success) {
+    await router.push('/meals/cart')
+  }
 }
 
 onMounted(() => {
