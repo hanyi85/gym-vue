@@ -28,34 +28,37 @@ async function fetchOrders() {
     orders.value = orderList.map(order => {
       return {
         info: {
-          fOrderId: order.FOrderId,
-          fOrderName: order.FOrderName,
-          fOrderPhone: order.FOrderPhone,
-          fOrderEmail: order.FOrderEmail,
-          fCartCreateAt: order.FCartCreateAt,
-          fOrderAt: order.FOrderAt,
-          fVenueId: order.FVenueId,
-          fTotalAmount: order.FTotalAmount,
-          fOrderStatus: order.FOrderStatus,
-          fPayMethod: order.FPayMethod,
-          fVenueName: order.FVenue?.VenueName // 關聯場館
+          FOrderId: order.FOrderId,
+          FOrderName: order.FOrderName,
+          FOrderPhone: order.FOrderPhone,
+          FOrderEmail: order.FOrderEmail,
+          FCartCreateAt: order.FCartCreateAt,
+          FOrderAt: order.FOrderAt,
+          FVenueId: order.FVenueId,
+          FTotalAmount: order.FTotalAmount,
+          FOrderStatus: order.FOrderStatus,
+          FPayMethod: order.FPayMethod,
+          FVenue: order.FVenue,
+          // FVenueName: order.FVenue?.VenueName // 關聯場館
         },
         items: itemList
           .filter(i => i.FOrderId === order.FOrderId) // 對應同一張訂單
           .map(i => ({
-            fOrderItemId: i.FOrderItemId,
-            fOrderId: i.FOrderId,
-            fMealId: i.FMealId,
-            fMealName: i.FMeal?.FMealName,
-            fQty: i.FQty,
-            fUnitPrice: i.FUnitPrice,
-            fSubtotal: i.FSubtotal,
-            fPickDate: i.FPickDate,
-            fPickTimeID: `${i.FPickTime?.FStartTime.substring(0,5)}-${i.FPickTime?.FEndTime.substring(0,5)}`,
-            fQrContent: i.FQrContent,
-            fPickupStatus: i.FPickupStatus,
+            FOrderItemId: i.FOrderItemId,
+            FOrderId: i.FOrderId,
+            fFMealId: i.FMealId,
+            FMealName: i.FMeal?.FMealName,
+            FQty: i.FQty,
+            FUnitPrice: i.FUnitPrice,
+            FSubtotal: i.FSubtotal,
+            FPickDate: i.FPickDate,
+            // FPickTimeID: i.FPickTimeID,
+            FPickTime: i.FPickTime,
+            FQrContent: i.FQrContent,
+            FPickupStatus: i.FPickupStatus,
             showQr: false,
-            fMealImage: i.FMeal?.FImageUrl
+            FMeal: i.FMeal,
+            // FMealImage: i.FImageUrl
           }))
       }
     })

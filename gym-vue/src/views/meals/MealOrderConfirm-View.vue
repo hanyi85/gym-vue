@@ -35,7 +35,7 @@ const payments = [
   { value: 'transfer', label: '轉帳' }
 ]
 
-// 🔹 訂單資料
+//  訂單資料
 const order = ref({
   name: '',
   phone: '',

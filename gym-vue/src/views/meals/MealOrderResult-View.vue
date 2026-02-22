@@ -2,7 +2,7 @@
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import Btn from '@/components/btn.vue'
 
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute,useRouter } from 'vue-router'
 // import { useOrderStore } from '@/stores/useOrderStore'
 
@@ -17,61 +17,63 @@ const route = useRoute()
 const router = useRouter()
 
 const orderId = route.params.orderId || orderStore.orderId
+const order = ref(null)
+const orderItems = ref([])
 
-/* ======================
-   假資料：訂單主檔
-====================== */
-const order = ref({
-  fOrderId: orderId,
-  fOrderName: '王小明',
-  fOrderPhone: '0912-345-678',
-  fOrderEmail: 'test@mail.com',
-  fCartCreateAt: '2026-02-06 10:30',
-  fOrderAt: '2026-02-06 10:45',
-  fVenueId: 1,
-  fTotalAmount: 980,
-  fOrderStatus: '已付款',
-  fPayMethod: '信用卡',
-  fVenueName:'大安館'
-})
+// /* ======================
+//    假資料：訂單主檔
+// ====================== */
+// const order = ref({
+//   fOrderId: orderId,
+//   fOrderName: '王小明',
+//   fOrderPhone: '0912-345-678',
+//   fOrderEmail: 'test@mail.com',
+//   fCartCreateAt: '2026-02-06 10:30',
+//   fOrderAt: '2026-02-06 10:45',
+//   fVenueId: 1,
+//   fTotalAmount: 980,
+//   fOrderStatus: '已付款',
+//   fPayMethod: '信用卡',
+//   fVenueName:'大安館'
+// })
 
-/* ======================
-   假資料：訂單明細（多筆）
-====================== */
-const orderItems = ref([
-  {
-    fOrderItemId: 1,
-    fOrderId: orderId,
-    fMealId: 101,
-    fMealName: '高蛋白舒肥雞胸',
-    fQty: 2,
-    fUnitPrice: 180,
-    fSubtotal: 360,
-    fPickDate: '2026-02-07',
-    fPickTimeID: '12:00-13:00',
-    fQrContent: 'ORDERITEM-001',
-    fPickupStatus: false,
-    showQr: false,
-    fMealImage: '/assets/img/meals/1.jpg',
+// /* ======================
+//    假資料：訂單明細（多筆）
+// ====================== */
+// const orderItems = ref([
+//   {
+//     fOrderItemId: 1,
+//     fOrderId: orderId,
+//     fMealId: 101,
+//     fMealName: '高蛋白舒肥雞胸',
+//     fQty: 2,
+//     fUnitPrice: 180,
+//     fSubtotal: 360,
+//     fPickDate: '2026-02-07',
+//     fPickTimeID: '12:00-13:00',
+//     fQrContent: 'ORDERITEM-001',
+//     fPickupStatus: false,
+//     showQr: false,
+//     fMealImage: '/assets/img/meals/1.jpg',
    
-  },
-  {
-    fOrderItemId: 2,
-    fOrderId: orderId,
-    fMealId: 205,
-    fMealName: '低脂香煎鱸魚',
-    fQty: 2,
-    fUnitPrice: 310,
-    fSubtotal: 620,
-    fPickDate: '2026-02-07',
-    fPickTimeID: '18:00-19:00',
-    fQrContent: 'ORDERITEM-002',
-    fPickupStatus: false,
-    showQr: false,
-    fMealImage: '/assets/img/meals/1.jpg',
+//   },
+//   {
+//     fOrderItemId: 2,
+//     fOrderId: orderId,
+//     fMealId: 205,
+//     fMealName: '低脂香煎鱸魚',
+//     fQty: 2,
+//     fUnitPrice: 310,
+//     fSubtotal: 620,
+//     fPickDate: '2026-02-07',
+//     fPickTimeID: '18:00-19:00',
+//     fQrContent: 'ORDERITEM-002',
+//     fPickupStatus: false,
+//     showQr: false,
+//     fMealImage: '/assets/img/meals/1.jpg',
     
-  }
-])
+//   }
+// ])
 
 const goshopping = () => {
   router.push('/meals')
@@ -79,6 +81,17 @@ const goshopping = () => {
 const allorder = () => {
   router.push('/users/order-history')
 }
+
+async function getOrderResult() {
+  const res = await axios.get(`${apiUrl}/TMealOrders/result/${orderId}`)
+  order.value = res.data.order
+  orderItems.value = res.data.items
+}
+
+onMounted(() => {
+  getOrderResult()
+})
+
 
 
 
