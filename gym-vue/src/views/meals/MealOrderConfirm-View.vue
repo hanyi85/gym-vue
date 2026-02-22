@@ -5,6 +5,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+const UserId=authStore.member.UserId
+
+
 const apiUrl="https://localhost:7218/api"
 
 
@@ -13,11 +19,11 @@ const router = useRouter()
 //訂單編號已在資料庫  要改
 
 // 假「登入會員資料」
-const fakeMember = {
-  name: '王小明',
-  phone: '0912345678',
-  email: 'test@gmail.com'
-}
+// const fakeMember = {
+//   name: '王小明',
+//   phone: '0912345678',
+//   email: 'test@gmail.com'
+// }
 
 // 取餐店家」
 const stores = ref([])
@@ -54,30 +60,50 @@ async function fetchVenues() {
 
 // 模擬「頁面載入時已登入」
 onMounted(() => {
-  order.value.name = fakeMember.name
-  order.value.phone = fakeMember.phone
-  order.value.email = fakeMember.email
+  order.value.name = authStore.member?.Name
+  order.value.phone = authStore.member?.Phone
+  order.value.email = authStore.member?.Email
 },fetchVenues()
 )
 
+
+
+
+// 假送出訂單
+// const submitOrder = () => {
+
+
+//   // 🔹 信用卡例外
+//   if (order.value.paymentMethod === 'credit') {
+//     alert('導向第三方信用卡付款（假）')
+//     return
+//   }
+
+//   // ✅ 成功後導頁
+//   router.push({
+//     name: 'meals-result',
+//     params: {
+//       orderId: fakeOrderId
+//     }
+//   })
+// }
+
 // 送出訂單
-const submitOrder = () => {
-
-
-  // 🔹 假建立訂單
-  const fakeOrderId = 1
-
-  // 🔹 信用卡例外
-  if (order.value.paymentMethod === 'credit') {
-    alert('導向第三方信用卡付款（假）')
-    return
-  }
+async function submitOrder() {
+const orderId=
+  await axios.post(`${apiUrl}/TMealCarts/checkout/${UserId}`, {
+    name: order.value.name,
+    phone: order.value.phone,
+    email: order.value.email,
+    venueId: order.value.storeId,
+    payMethod: order.value.paymentMethod
+  })
 
   // ✅ 成功後導頁
   router.push({
     name: 'meals-result',
     params: {
-      orderId: fakeOrderId
+      orderId: orderId.data
     }
   })
 }
