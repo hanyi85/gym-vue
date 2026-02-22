@@ -1,33 +1,45 @@
 <script setup>
 
-import { ref } from 'vue';
+import { ref , onMounted} from 'vue';
 import Banner from '@/components/banner.vue'
 
+const products = ref([]);
+
+const API_URL = 'https://localhost:7218/api/SProducts';
+
+const fetchProducts = async () => {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error('API 連線失敗');
+    
+    const data = await response.json();
+    console.log('DTO 實際回傳內容:', data);
+
+    products.value = data.map(item => {
+      const id = item.PId ?? item.pId;
+      const pName = item.PName ?? item.pName;
+      const price = item.Price ?? item.price ?? 0;
+      const specName = item.SpecName ?? item.specName;
+
+      return {
+        id: id,
+        name: specName ? `${pName} (${specName})` : pName,
+        price: price,
+        originalPrice: (price * 1.2).toFixed(0),
+        // 確保圖片路徑正確，如果是本地開發建議先檢查此 URL 是否有效
+        image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href 
+      };
+    });
+  } catch (error) {
+    console.error('抓取失敗:', error);
+  }
+};
+
+onMounted(() => {
+  fetchProducts();
+});
 
 
-// 1. 代入乳清蛋白相關資料
-
-const products = ref([
-
-  { id: 1, name: '【果果能量】多件優惠-濃縮乳清蛋白 (任選口味)', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 2, name: '【果果能量】分離乳清蛋白 - 經典原味', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 3, name: '【果果能量】水解乳清蛋白 - 巧克力口味', price: 720, originalPrice: 900 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 4, name: '【果果能量】緩釋酪蛋白 - 香草口味', price: 550, originalPrice: 680 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 5, name: '【果果能量】多件優惠-分離乳清蛋白 (限定包裝)', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 6, name: '【果果能量】濃縮乳清蛋白 - 芝麻拿鐵', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 7, name: '【果果能量】水解乳清蛋白 - 抹茶', price: 720, originalPrice: 900,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href },
-
-  { id: 8, name: '【果果能量】分離乳清蛋白 - 草莓牛奶', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 9, name: '【果果能量】濃縮乳清蛋白 - 泰式奶茶', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href}
-
-]);
 
 
 
