@@ -81,13 +81,33 @@ async function getCart() {
 async function deleteItem(orderItemId) {
   if (!confirm('確定刪除？')) return
 
-  await axios.delete(`${apiUrl}/TMealCarts/item/${orderItemId}`)
+  await axios.delete(`${apiUrl}/TMealCarts/Item/${orderItemId}`)
   getCart()
 }
 
 // 下一步
-const goConfirm = () => {
-  router.push('/meals/confirm')
+async function goConfirm() {
+
+  try {
+
+    const payload = {
+      orderId: orderId.value,
+      items: cartItems.value.map(i => ({
+        orderItemId: i.orderItemId,
+        pickDate: i.pickDate,
+        pickTimeId: i.pickTimeId,
+        qty: i.qty
+      }))
+    }
+
+    await axios.put(`${apiUrl}/TMealCarts/UpdateCart`, payload)
+
+    await router.push('/meals/confirm')
+
+  } catch (err) {
+    console.error(err)
+    alert('更新失敗')
+  }
 }
 
 const goshopping = () => {

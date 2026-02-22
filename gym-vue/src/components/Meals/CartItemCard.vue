@@ -50,7 +50,7 @@ const updateItem = () => {
             <label class="form-label small fw-bold text-muted mb-1">
               <i class="bi bi-clock me-1"></i>時段
             </label>
-            <select class="form-select custom-focus" v-model="item.pickTime" @change="updateItem">
+            <select class="form-select custom-focus" v-model="item.pickTimeId" @change="updateItem">
               <option v-for="slot in timeSlots" :key="slot.id" :value="slot.id">{{ slot.label }}</option>
             </select>
           </div>
