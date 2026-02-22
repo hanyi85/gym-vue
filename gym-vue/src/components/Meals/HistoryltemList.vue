@@ -32,7 +32,7 @@ const props = defineProps({
       訂單明細
     </div>
     
-    <span class="badge" :class="allPickedUp ? 'bg-light text-success' : 'bg-danger text-dark'">
+    <span class="badge" :class="allPickedUp ? 'bg-light text-success' : 'bg-danger text-light'">
       {{ allPickedUp ? '已全部領取' : ' 尚未全部領取' }}
     </span>
   </div>
