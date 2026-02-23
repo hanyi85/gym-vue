@@ -62,19 +62,20 @@ const vClickOutside = {
 
 
 
-const fetchCategories = async () => {
-  try {
-    const response = await fetch(import.meta.env.VITE_API_URL + 'SCategories');
-    const data = await response.json();
-
-    categories.value = data.map(cat => ({
-      name: cat.name || cat.Name,
-      isOpen: false,
-      subCategories: cat.subCategories || cat.SubCategories || []
-    }));
-  } catch (error) {
-    console.error('類別選單載入失敗:', error);
-  }
+const getCategories = () => {
+  axios
+    .get(API_URL + 'SCategories')
+    .then(resp => {
+      categories.value = resp.data.map(cat => ({
+        name: cat.Name,           
+        subCategories: cat.SubCategories, 
+        isOpen: false             
+      }));
+      console.log('類別與商品名稱載入成功！');
+    })
+    .catch(error => {
+      console.error('類別選單載入失敗:', error);
+    });
 };
 
 
@@ -91,7 +92,7 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 onMounted(() => {
   getProducts();
-  fetchCategories();
+  getCategories();
 });
 
 </script>
