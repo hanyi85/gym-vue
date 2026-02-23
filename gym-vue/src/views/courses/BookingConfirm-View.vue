@@ -1,23 +1,61 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
+
 const route = useRoute()
 const router = useRouter()
 
-const courseName = '燃脂體能課程'
-const coach = route.query.coach
-const date = route.query.date
-const time = route.query.time
-const price = 400
-const discountCode = 'FIT2026'
-const discountAmount = 100
-const finalPrice = price - discountAmount
+const scheduleId = Number(route.query.scheduleId)
+
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api'
+})
+
+const booking = ref({
+  scheduleId: 0,
+  courseId: 0,
+  courseName: '',
+  price: 0,
+  date: '',
+  time: '',
+  full: false,
+  canEnroll: false,
+  coachName: ''
+})
+
 
 const name = ref('')
 const phone = ref('')
 const note = ref('')
 const agree = ref(false)
+
+
+const discountCode = ref('')
+const discountAmount = ref(0)
+
+const finalPrice = computed(() => {
+  const p = Number(booking.value.price || 0)
+  const d = Number(discountAmount.value || 0)
+  return Math.max(0, p - d)
+})
+
+onMounted(async () => {
+  if (!scheduleId) {
+    alert('缺少 scheduleId，請重新選擇時段')
+    router.back()
+    return
+  }
+
+  try {
+    const res = await api.get(`/CCourses/schedule-detail/${scheduleId}`)
+    booking.value = res.data
+  } catch (err) {
+    alert(err.response?.data || err.message)
+    router.back()
+  }
+})
 
 function goNext() {
   if (!name.value || !phone.value) {
@@ -29,20 +67,19 @@ function goNext() {
     return
   }
 
+  
   router.push({
     name: 'courses-booking-payment',
     query: {
-      date,
-      time,
-      coach,
+      scheduleId: booking.value.scheduleId,
       name: name.value,
       phone: phone.value,
-      price: finalPrice,
+      note: note.value,
+      price: finalPrice.value
     },
   })
 }
 </script>
-
 
 <template>
   <div class="page-wrapper">
@@ -63,29 +100,31 @@ function goNext() {
 
       <div class="info-row">
         <span>課程名稱</span>
-        <span>{{ courseName }}</span>
+        <span>{{ booking.courseName }}</span>
       </div>
       <div class="info-row">
         <span>預約日期</span>
-        <span>{{ date }}</span>
+        <span>{{ booking.date }}</span>
       </div>
       <div class="info-row">
         <span>預約時間</span>
-        <span>{{ time }}</span>
+        <span>{{ booking.time }}</span>
       </div>
       <div class="info-row">
         <span>授課教練</span>
-        <span>{{ coach }}</span>
+        <span>{{ booking.coachName }}</span>
       </div>
       <div class="info-row">
         <span>原價</span>
-        <span>NT$ {{ price }}</span>
+       <span>NT$ {{ booking.price }}</span>
       </div>
-      <div class="info-row discount">
+     <div class="info-row discount">
   <span>折扣碼</span>
-  <span>{{ discountCode }} (-NT$ {{ discountAmount }})</span>
+  <span v-if="discountCode">
+    {{ discountCode }} (-NT$ {{ discountAmount }})
+  </span>
+  <span v-else>未使用</span>
 </div>
-
       <div class="info-row total">
         <span>應付金額</span>
         <span>NT$ {{ finalPrice }}</span>
@@ -114,10 +153,22 @@ function goNext() {
         <input type="checkbox" v-model="agree" />
         <span>我已閱讀並同意相關預約條款</span>
       </div>
+<p v-if="booking.full" style="color:red;">
+  此時段已額滿
+</p>
 
+<p v-else-if="!booking.canEnroll" style="color:red;">
+  已超過報名截止時間
+</p>
       <div class="btn-row">
         <button class="back-btn" @click="$router.back()">上一步</button>
-        <button class="next-btn" @click="goNext()">前往付款</button>
+        <button
+  class="next-btn"
+  :disabled="booking.full || !booking.canEnroll"
+  @click="goNext()"
+>
+  前往付款
+</button>
       </div>
     </div>
   </div>

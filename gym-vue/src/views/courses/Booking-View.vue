@@ -100,13 +100,11 @@ function goNext() {
   if (!selectedSlotId.value) return
 
   const slot = todaySlots.value.find(s => s.scheduleId === selectedSlotId.value)
+  if (!slot) return
 
   router.push({
     name: 'courses-booking-confirm',
     query: {
-      courseId: courseId.value,
-      date: selectedDate.value,
-      time: slot.time,
       scheduleId: slot.scheduleId,
     },
   })
