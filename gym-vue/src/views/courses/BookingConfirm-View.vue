@@ -90,6 +90,45 @@ const finalPrice = computed(() => {
   return Math.max(0, p - d)
 })
 
+//折扣
+const discountInput = ref('')
+const discountLoading = ref(false)
+
+async function applyDiscount() {
+  if (!discountInput.value) {
+    showToast('請輸入折扣碼')
+    return
+  }
+
+  try {
+    discountLoading.value = true
+
+    const res = await api.post('/CCourses/apply-discount', {
+      scheduleId: booking.value.scheduleId,
+      code: discountInput.value.trim()
+    })
+
+    if (res.data.ok) {
+      discountCode.value = res.data.discountCode
+      discountAmount.value = res.data.discountAmount
+      showToast('折扣套用成功', 'success')
+    }
+
+  } catch (err) {
+    discountCode.value = ''
+    discountAmount.value = 0
+    showToast(err.response?.data || '折扣碼錯誤')
+  } finally {
+    discountLoading.value = false
+  }
+}
+//取消折扣
+function clearDiscount() {
+  discountCode.value = ''
+  discountAmount.value = 0
+  discountInput.value = ''
+}
+
 onMounted(async () => {
   if (!scheduleId) {
     showToast('缺少 scheduleId，請重新選擇時段')
@@ -177,18 +216,38 @@ function goNext() {
         <span>原價</span>
        <span>NT$ {{ booking.price }}</span>
       </div>
-     <div class="info-row discount">
-  <span>折扣碼</span>
-  <span v-if="discountCode">
-    {{ discountCode }} (-NT$ {{ discountAmount }})
-  </span>
-  <span v-else>未使用</span>
+  <div class="info-row discount-line">
+  <span class="discount-label">折扣碼</span>
+
+  <div class="discount-right">
+    <div class="discount-input-wrap">
+      <input
+        v-model="discountInput"
+        class="form-control discount-input"
+        placeholder="請輸入折扣碼"
+      />
+
+      <button
+        class="apply-btn orange"
+        :disabled="discountLoading"
+        @click="applyDiscount"
+      >
+        {{ discountLoading ? '套用中...' : '套用' }}
+      </button>
+    </div>
+
+    <div v-if="discountCode" class="discount-success-wrap">
+      <span>已套用 {{ discountCode }}（-NT$ {{ discountAmount }}）</span>
+      <button class="clear-discount-btn" @click="clearDiscount">取消</button>
+    </div>
+
+    <div v-else class="discount-muted">未使用</div>
+  </div>
 </div>
       <div class="info-row total">
         <span>應付金額</span>
         <span>NT$ {{ finalPrice }}</span>
       </div>
-
       <hr />
 
       <h5>聯絡資訊</h5>
@@ -282,7 +341,7 @@ function goNext() {
 }
 .info-row.total {
   font-weight: bold;
-  color: #2563eb;
+  color: #d97706;
 }
 
 .form-row {
@@ -356,7 +415,9 @@ animation: fadeInScale 0.4s ease-in-out;
   border-color: #bbf7d0;
   color: #065f46;
 }
-
+.toast-center.leaving {
+  animation: fadeOutScale 0.25s ease-in;
+}
 /* 小動畫 */
 @keyframes fadeOutScale {
   from {
@@ -381,6 +442,81 @@ animation: fadeInScale 0.4s ease-in-out;
 }
 .label-error {
   color: #dc2626;
+}
+/* 折扣碼整行 */
+.discount-line {
+  align-items: flex-start; 
+  gap: 14px;
+}
+
+/* 左邊 label 寬度固定，右邊才不會跑版 */
+.discount-label {
+  width: 80px;
+  flex: 0 0 80px;
+}
+
+/* 右邊區塊撐滿 */
+.discount-right {
+  width: 260px; 
+}
+
+/* 輸入框 + 按鈕 同一排 */
+.discount-input-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* 輸入框吃滿剩餘寬度 */
+.discount-input {
+  flex: 1;
+}
+
+/* 套用按鈕（橘色） */
+.apply-btn.orange {
+  background: #ff9f1c;  /* 你 next-btn 的橘色 */
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.apply-btn.orange:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 已套用資訊 */
+.discount-success-wrap {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* 取消按鈕 */
+.clear-discount-btn {
+  background: transparent;
+  border: none;
+  color: #666666;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clear-discount-btn:hover {
+  text-decoration: underline;
+}
+
+.discount-muted {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #9ca3af;
 }
 </style>
 
