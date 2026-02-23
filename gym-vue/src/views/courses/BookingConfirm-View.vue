@@ -28,6 +28,55 @@ const booking = ref({
 
 const name = ref('')
 const phone = ref('')
+const phoneError = ref('')
+
+function validatePhone() {
+  const raw = (phone.value || '').trim()
+  const normalized = raw.replace(/\s|-/g, '') 
+  const ok = /^09\d{8}$/.test(normalized)
+
+  if (!raw) {
+    phoneError.value = '請填寫手機號碼'
+    return false
+  }
+
+  if (!ok) {
+    phoneError.value = '手機格式錯誤（請輸入 09 開頭共 10 碼）'
+    return false
+  }
+
+  phoneError.value = ''
+  phone.value = normalized 
+  return true
+}
+const nameError = ref('')
+
+function validateName() {
+  const raw = (name.value || '').trim()
+  if (!raw) {
+    nameError.value = '請填寫姓名'
+    return false
+  }
+  nameError.value = ''
+  name.value = raw
+  return true
+}
+const toast = ref({ show: false, text: '', type: 'error', leaving: false })
+let toastTimer = null
+
+function showToast(text, type = 'error') {
+  toast.value = { show: true, text, type, leaving: false }
+
+  if (toastTimer) clearTimeout(toastTimer)
+
+  toastTimer = setTimeout(() => {
+    toast.value.leaving = true
+    setTimeout(() => {
+      toast.value.show = false
+      toast.value.leaving = false
+    }, 250) 
+  }, 3500)
+}
 const note = ref('')
 const agree = ref(false)
 
@@ -43,7 +92,7 @@ const finalPrice = computed(() => {
 
 onMounted(async () => {
   if (!scheduleId) {
-    alert('缺少 scheduleId，請重新選擇時段')
+    showToast('缺少 scheduleId，請重新選擇時段')
     router.back()
     return
   }
@@ -52,37 +101,47 @@ onMounted(async () => {
     const res = await api.get(`/CCourses/schedule-detail/${scheduleId}`)
     booking.value = res.data
   } catch (err) {
-    alert(err.response?.data || err.message)
+   showToast(err.response?.data || err.message)
     router.back()
   }
 })
 
 function goNext() {
-  if (!name.value || !phone.value) {
-    alert('請填寫聯絡資料')
-    return
-  }
-  if (!agree.value) {
-    alert('請勾選同意條款')
-    return
-  }
+  const nameOk = validateName()
+  const phoneOk = validatePhone()
 
-  
-  router.push({
-    name: 'courses-booking-payment',
-    query: {
-      scheduleId: booking.value.scheduleId,
-      name: name.value,
-      phone: phone.value,
-      note: note.value,
-      price: finalPrice.value
-    },
-  })
+  if (!nameOk) showToast(nameError.value)
+  else if (!phoneOk) showToast(phoneError.value || '手機格式錯誤')
+  else if (!agree.value) showToast('請勾選同意條款')
+
+  if (!nameOk || !phoneOk || !agree.value) return
+
+  showToast('資料已確認，前往付款', 'success')
+  setTimeout(() => {
+    router.push({
+      name: 'courses-booking-payment',
+      query: {
+        scheduleId: booking.value.scheduleId,
+        name: name.value,
+        phone: phone.value,
+        note: note.value,
+        price: finalPrice.value
+      },
+    })
+  }, 350)
 }
 </script>
 
 <template>
+  
   <div class="page-wrapper">
+     <div
+  v-if="toast.show"
+  class="toast-center"
+  :class="[toast.type, { leaving: toast.leaving }]"
+>
+  {{ toast.text }}
+</div>
     <div class="booking-title">
       <h2>課程預約系統</h2>
       <p>請確認預約資訊</p>
@@ -97,7 +156,7 @@ function goNext() {
 
     <div class="confirm-card">
       <h4>確認預約資訊</h4>
-
+      
       <div class="info-row">
         <span>課程名稱</span>
         <span>{{ booking.courseName }}</span>
@@ -134,15 +193,32 @@ function goNext() {
 
       <h5>聯絡資訊</h5>
 
-      <div class="form-row">
-        <label>姓名 *</label>
-        <input v-model="name" class="form-control" placeholder="請輸入姓名" />
-      </div>
+   <div class="form-row">
+  <label :class="{ 'label-error': nameError }">姓名 *</label>
+  <input
+    v-model="name"
+    class="form-control"
+     :class="{ 'input-error': nameError }"
+    placeholder="請輸入姓名"
+    @blur="validateName"
+    @input="nameError = ''"
+  />
+  <p v-if="nameError" class="field-error" >{{ nameError }}</p>
+</div>
 
-      <div class="form-row">
-        <label>手機 *</label>
-        <input v-model="phone" class="form-control" placeholder="09xx-xxx-xxx" />
-      </div>
+     <div class="form-row">
+  <label :class="{ 'label-error': phoneError }">手機 *</label>
+  <input
+    v-model="phone"
+    class="form-control"
+     :class="{ 'input-error': phoneError }"
+    placeholder="09xxxxxxxx"
+    inputmode="numeric"
+    maxlength="10"
+    @blur="validatePhone"
+  />
+  <p v-if="phoneError" class="field-error">{{ phoneError }}</p>
+</div>
 
       <div class="form-row">
         <label>備註</label>
@@ -246,6 +322,65 @@ function goNext() {
   padding: 8px 24px;
   border-radius: 6px;
   font-weight: bold;
+}
+.toast-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  z-index: 9999;
+
+  min-width: 280px;
+  max-width: 400px;
+  padding: 18px 22px;
+
+  border-radius: 16px;
+  font-weight: 700;
+  text-align: center;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  border: 1px solid transparent;
+
+animation: fadeInScale 0.4s ease-in-out;
+}
+
+.toast-center.error {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #9f1239;
+}
+
+.toast-center.success {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #065f46;
+}
+
+/* 小動畫 */
+@keyframes fadeOutScale {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+}
+.input-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 600;
+}
+.label-error {
+  color: #dc2626;
 }
 </style>
 
