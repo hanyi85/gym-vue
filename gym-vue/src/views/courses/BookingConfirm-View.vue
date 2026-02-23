@@ -161,6 +161,7 @@ function goNext() {
       name: 'courses-booking-payment',
       query: {
         scheduleId: booking.value.scheduleId,
+         discountCode: discountCode.value || '',
         name: name.value,
         phone: phone.value,
         note: note.value,

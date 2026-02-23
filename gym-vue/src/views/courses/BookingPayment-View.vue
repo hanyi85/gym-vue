@@ -1,32 +1,104 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-const course = route.query.course || '燃脂體能課程'
-const date = route.query.date || '2026-02-03'
-const time = route.query.time || '10:00'
-const coach = route.query.coach || 'Amy'
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api',
+})
 
-const originPrice = 400
-const discount = 100
-const finalPrice = originPrice - discount
+const scheduleId = Number(route.query.scheduleId || 0)
+const discountCodeQuery = (route.query.discountCode || '').toString().trim()
+
+
+const name = (route.query.name || '').toString()
+const phone = (route.query.phone || '').toString()
+const note = (route.query.note || '').toString()
 
 const paymentMethod = ref('credit')
+
+
+const summary = ref({
+  scheduleId: 0,
+  courseId: 0,
+  courseName: '',
+  date: '',
+  time: '',
+  coachName: '',
+  originPrice: 0,
+  discountCode: '',
+  discountAmount: 0,
+  finalPrice: 0,
+})
+
+const loading = ref(false)
+
+const toast = ref({ show: false, text: '', type: 'error' })
+let toastTimer = null
+function showToast(text, type = 'error') {
+  toast.value = { show: true, text, type }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, 2400)
+}
+
+const payBtnText = computed(() => {
+  if (paymentMethod.value === 'credit') return '前往藍新付款'
+  if (paymentMethod.value === 'cash') return '現金付款'
+  return '產生 ATM 轉帳資訊'
+})
+
+onMounted(async () => {
+
+  if (!scheduleId) {
+    showToast('缺少 scheduleId，請重新選擇時段')
+    setTimeout(() => router.back(), 600)
+    return
+  }
+
+  loading.value = true
+  try {
+    const qs = discountCodeQuery
+      ? `?code=${encodeURIComponent(discountCodeQuery)}`
+      : ''
+
+    const res = await api.get(`/CCourses/payment-summary/${scheduleId}${qs}`)
+    summary.value = res.data
+  } catch (err) {
+    showToast(err.response?.data || err.message)
+  //  setTimeout(() => router.back(), 800)
+  } finally {
+    loading.value = false
+  }
+})
 
 function goPay() {
   router.push({
     name: 'courses-booking-success',
     query: {
-      orderId: 'BK20260203001',
-      course,
-      date,
-      time,
-      coach,
-      price: finalPrice,
+      scheduleId: summary.value.scheduleId,
+      course: summary.value.courseName,
+      date: summary.value.date,
+      time: summary.value.time,
+      coach: summary.value.coachName,
+      originPrice: summary.value.originPrice,
+      discountCode: summary.value.discountCode,
+      discountAmount: summary.value.discountAmount,
+      price: summary.value.finalPrice,
+
+      
+      name,
+      phone,
+      note,
+
+      // 暫時的 orderId（之後改後端回傳）
+      orderId: 'BK' + Date.now(),
+      paymentMethod: paymentMethod.value,
     },
   })
 }
@@ -34,38 +106,57 @@ function goPay() {
 
 <template>
   <div class="page-wrapper">
+    <!-- Toast -->
+    <div v-if="toast.show" class="toast-center" :class="toast.type">
+      {{ toast.text }}
+    </div>
 
     <div class="booking-title">
       <h2>課程預約系統</h2>
       <p>請選擇付款方式</p>
     </div>
 
-  <BookingStepper :current-step="3">
+    <BookingStepper :current-step="3">
       <template #step-1>選日期<br />及時段</template>
       <template #step-2>確認資訊</template>
       <template #step-3>付款</template>
       <template #step-4>完成預約</template>
     </BookingStepper>
-    <div class="payment-layout">
 
+    <div class="payment-layout">
+      <!-- 左：訂單摘要 -->
       <div class="confirm-card">
         <h4>訂單摘要</h4>
-        <div class="info-row"><span>課程</span><span>{{ course }}</span></div>
-        <div class="info-row"><span>日期</span><span>{{ date }}</span></div>
-        <div class="info-row"><span>時間</span><span>{{ time }}</span></div>
-        <div class="info-row"><span>教練</span><span>{{ coach }}</span></div>
-        <div class="info-row"><span>原價</span><span>NT$ {{ originPrice }}</span></div>
-        <div class="info-row discount">
-  <span>折扣碼</span>
-  <span>{{ discountCode }} (-NT$100)</span>
-</div>
 
-        <div class="info-row total">
-          <span>應付金額</span>
-          <span>NT$ {{ finalPrice }}</span>
-        </div>
+        <div v-if="loading" class="loading-text">載入中...</div>
+
+        <template v-else>
+          <div class="info-row"><span>課程</span><span>{{ summary.courseName }}</span></div>
+          <div class="info-row"><span>日期</span><span>{{ summary.date }}</span></div>
+          <div class="info-row"><span>時間</span><span>{{ summary.time }}</span></div>
+          <div class="info-row"><span>教練</span><span>{{ summary.coachName }}</span></div>
+
+          <div class="info-row">
+            <span>原價</span>
+            <span>NT$ {{ summary.originPrice }}</span>
+          </div>
+
+          <div class="info-row discount">
+            <span>折扣碼</span>
+            <span v-if="summary.discountCode">
+              {{ summary.discountCode }}（-NT$ {{ summary.discountAmount }}）
+            </span>
+            <span v-else class="muted">未使用</span>
+          </div>
+
+          <div class="info-row total">
+            <span>應付金額</span>
+            <span>NT$ {{ summary.finalPrice }}</span>
+          </div>
+        </template>
       </div>
 
+      <!-- 右：付款方式 -->
       <div class="confirm-card">
         <h4>付款方式</h4>
 
@@ -75,8 +166,8 @@ function goPay() {
         </label>
 
         <label class="pay-option">
-          <input type="radio" value="linepay" v-model="paymentMethod" />
-          LINE Pay
+          <input type="radio" value="cash" v-model="paymentMethod" />
+          現金付款
         </label>
 
         <label class="pay-option">
@@ -86,12 +177,11 @@ function goPay() {
 
         <div class="btn-row">
           <button class="back-btn" @click="$router.back()">上一步</button>
-          <button class="pay-btn" @click="goPay">
-            前往藍新付款
+          <button class="pay-btn" :disabled="loading" @click="goPay">
+            {{ payBtnText }}
           </button>
         </div>
       </div>
-
     </div>
   </div>
 </template>
