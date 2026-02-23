@@ -34,9 +34,13 @@ const currentLimit = ref(24);
 
 const sortOptions = [ '價格: 由高至低', '價格: 由低至高'];
 
+const currentSort = ref('上架時間: 由新到舊');
 
+const selectSort = (option) => {
+  currentSort.value = option; 
+  showSort.value = false;     
+};
 
-const selectSort = (option) => { showSort.value = false; };
 
 const selectLimit = (num) => { currentLimit.value = num; showLimit.value = false; };
 
@@ -98,6 +102,13 @@ const filteredProducts = computed(() => {
       const fullName = (p.fullName || p.FullName || '').toLowerCase();
       return fullName.includes(query);
     });
+  }
+
+  if (currentSort.value === '價格: 由低至高') {
+    result.sort((a, b) => (a.price || a.Price) - (b.price || b.Price));
+  } 
+  else if (currentSort.value === '價格: 由高至低') {
+    result.sort((a, b) => (b.price || b.Price) - (a.price || a.Price));
   }
 
   return result;
