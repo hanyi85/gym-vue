@@ -1,7 +1,7 @@
 <script setup>
 import Btn from '@/components/Meals/submitbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -53,17 +53,22 @@ async function fetchVenues() {
   }))
 }
 
-// 下一步
-// const goConfirm = () => {
-//   router.push('/meals/result/:orderId')
-// }
+/* 模擬有登入抓取會員資料 */
+watch(
+  () => authStore.member,
+  (member) => {
+    if (member) {
+      order.value.name = member.Name
+      order.value.phone = member.Phone
+      order.value.email = member.Email
+    }
+  },
+  { immediate: true }
+)
+
 
 // 模擬「頁面載入時已登入」
-onMounted(() => {
-  order.value.name = authStore.member?.Name
-  order.value.phone = authStore.member?.Phone
-  order.value.email = authStore.member?.Email
-},fetchVenues()
+onMounted(() => fetchVenues()
 )
 
 
