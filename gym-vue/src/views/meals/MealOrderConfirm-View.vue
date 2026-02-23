@@ -95,7 +95,7 @@ onMounted(() => fetchVenues()
 
 // 送出訂單
 async function submitOrder() {
-const res = await axios.post(`${apiUrl}/TMealCarts/checkout/${UserId}`, {
+const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
     name: order.value.name,
     phone: order.value.phone,
     email: order.value.email,
@@ -116,6 +116,7 @@ const res = await axios.post(`${apiUrl}/TMealCarts/checkout/${UserId}`, {
     document.close()
   } else {
     // 現金或其他方式 → 直接去完成頁
+    await axios.post(`${apiUrl}/TMealCarts/OrderFinish/${UserId}`)
     router.push({
       name: 'meals-result',
       params: { orderId }
