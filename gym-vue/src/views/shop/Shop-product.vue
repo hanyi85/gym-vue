@@ -14,7 +14,6 @@ function getProducts() {
     .get(API_URL + 'SProducts')
     .then(resp => {
       products.value = resp.data;
-      console.log('取得資料成功！');
     })
     .catch(error => {
       console.error('發生錯誤', error);
@@ -22,7 +21,7 @@ function getProducts() {
 }
 
 
-const activeCategory = ref('乳清蛋白'); // 預設改為乳清蛋白
+const activeCategory = ref('全部商品'); // 預設改為乳清蛋白
 
 const searchQuery = ref('');
 
@@ -259,31 +258,30 @@ onMounted(() => {
 
 
         <div class="row g-4 mb-5">
-  <div v-for="product in filteredProducts" :key="product.id" class="col-md-4 col-sm-6 text-start">
-    <div class="product-card">
-      
-      <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
-        <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
-          <img
-            v-if="product.image"
-            :src="product.image"
-            :alt="product.name"
-            class="product-img"
-          >
-          <span v-else class="text-muted small">無圖片</span>
-        </div>
-      </router-link>
+  <div v-for="product in filteredProducts" :key="product.PId" class="col-md-4 col-sm-6 text-start">
+  <div class="product-card">
+    <router-link :to="`/shop/products/${product.PId}`" class="text-decoration-none">
+      <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
+        <img
+          v-if="product.ImagePath"
+          :src="`https://localhost:7218${product.ImagePath.startsWith('/') ? '' : '/'}${product.ImagePath}`"
+          :alt="product.FullName"
+          class="product-img"
+        >
+        <span v-else class="text-muted small">無圖片</span>
+      </div>
+    </router-link>
 
-      <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
-        <p class="mb-1 small text-dark product-name hover-red-text">{{ product.FullName }}</p>
-      </router-link>
+    <router-link :to="`/shop/products/${product.PId}`" class="text-decoration-none">
+      <p class="mb-1 small text-dark product-name hover-red-text">{{ product.FullName }}</p>
+    </router-link>
 
-      <div class="price-info">
-  <span class="active-orange fw-bold me-2">NT${{ product.Price }}</span>
-  <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
-</div>
+    <div class="price-info">
+      <span class="active-orange fw-bold me-2">NT${{ product.Price }}</span>
+      <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
     </div>
   </div>
+</div>
 </div>
 
 
