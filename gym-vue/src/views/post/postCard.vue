@@ -77,7 +77,7 @@
       </div>
 
       <div class="post-display-area">
-        <transition name="fade-fast" mode="out-in">
+        <transition name="view-fade" mode="out-in">
           <div v-if="loading" key="loading" :class="viewMode === 'card' ? 'row g-4' : 'list-layout'">
             <div v-for="i in 6" :key="i" :class="viewMode === 'card' ? 'col-12 col-md-6 col-lg-4' : 'mb-3'">
               <div class="skeleton-card rounded-4 bg-white shadow-sm overflow-hidden"
@@ -92,50 +92,51 @@
             </div>
           </div>
 
-          <div v-else :key="currentCategory + startDate + endDate + viewMode"
-            :class="viewMode === 'card' ? 'row g-4' : 'list-layout'">
-            <div v-for="news in paginatedNews" :key="news.Id"
-              :class="viewMode === 'card' ? 'col-12 col-md-6 col-lg-4' : ''">
+          <div v-else :key="viewMode" class="position-relative">
+            <transition-group name="list-stagger" tag="div" :class="viewMode === 'card' ? 'row g-4' : 'list-layout'">
+              <div v-for="(news, index) in paginatedNews" :key="news.Id" :style="{ transitionDelay: `${index * 30}ms` }"
+                :class="viewMode === 'card' ? 'col-12 col-md-6 col-lg-4' : ''">
 
-              <div v-if="viewMode === 'card'" @click="goToDetail(news.Id)"
-                class="card h-100 border-0 shadow-sm rounded-4 news-card bg-white overflow-hidden">
-                <div class="card-img-wrapper">
-                  <img v-if="news.ImageUrl" :src="news.ImageUrl" class="post-img" />
-                  <div v-else class="post-img-placeholder d-flex align-items-center justify-content-center">
-                    <span class="text-white opacity-50 fw-bold">FitnessBar News</span>
-                  </div>
-                </div>
-                <div class="px-3 py-2 small d-flex justify-content-between border-bottom">
-                  <span class="text-orange fw-bold"># {{ news.TagName }}</span>
-                  <span class="text-muted">{{ news.Date }}</span>
-                </div>
-                <div class="p-4">
-                  <h5 class="fw-bold text-dark mb-2 text-truncate">{{ news.Title }}</h5>
-                  <p class="text-muted small line-clamp-2">{{ news.Detail }}</p>
-                </div>
-              </div>
-
-              <div v-else @click="goToDetail(news.Id)"
-                class="list-item d-flex mb-3 shadow-sm rounded-4 bg-white border-start border-orange border-4 overflow-hidden">
-                <div class="list-img-side flex-shrink-0">
-                  <img v-if="news.ImageUrl" :src="news.ImageUrl" class="side-img" />
-                  <div v-else class="list-img-placeholder d-flex align-items-center justify-content-center">
-                    <i class="bi bi-image text-white opacity-25"></i>
-                  </div>
-                </div>
-                <div class="p-3 flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                      <span class="badge bg-orange-light text-orange mb-2">#{{ news.TagName }}</span>
-                      <h5 class="fw-bold text-dark mb-1">{{ news.Title }}</h5>
-                      <p class="text-muted small mb-0 d-none d-md-block">{{ news.Detail }}</p>
+                <div v-if="viewMode === 'card'" @click="goToDetail(news.Id)"
+                  class="card h-100 border-0 shadow-sm rounded-4 news-card bg-white overflow-hidden cursor-pointer">
+                  <div class="card-img-wrapper">
+                    <img v-if="news.ImageUrl" :src="news.ImageUrl" class="post-img w-100 h-100 object-fit-cover" />
+                    <div v-else class="post-img-placeholder d-flex align-items-center justify-content-center">
+                      <span class="text-white opacity-50 fw-bold">FitnessBar News</span>
                     </div>
-                    <div class="text-end ms-3"><span class="small text-muted">{{ news.Date }}</span></div>
+                  </div>
+                  <div class="px-3 py-2 small d-flex justify-content-between border-bottom">
+                    <span class="text-orange fw-bold"># {{ news.TagName }}</span>
+                    <span class="text-muted">{{ news.Date }}</span>
+                  </div>
+                  <div class="p-4">
+                    <h5 class="fw-bold text-dark mb-2 text-truncate">{{ news.Title }}</h5>
+                    <p class="text-muted small line-clamp-2">{{ news.Detail }}</p>
                   </div>
                 </div>
-              </div>
 
-            </div>
+                <div v-else @click="goToDetail(news.Id)"
+                  class="list-item d-flex mb-3 shadow-sm rounded-4 bg-white border-start border-orange border-4 overflow-hidden cursor-pointer">
+                  <div class="list-img-side flex-shrink-0">
+                    <img v-if="news.ImageUrl" :src="news.ImageUrl" class="side-img w-100 h-100 object-fit-cover" />
+                    <div v-else class="list-img-placeholder d-flex align-items-center justify-content-center">
+                      <i class="bi bi-image text-white opacity-25"></i>
+                    </div>
+                  </div>
+                  <div class="p-3 flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <span class="badge bg-orange-light text-orange mb-2">#{{ news.TagName }}</span>
+                        <h5 class="fw-bold text-dark mb-1">{{ news.Title }}</h5>
+                        <p class="text-muted small mb-0 d-none d-md-block">{{ news.Detail }}</p>
+                      </div>
+                      <div class="text-end ms-3"><span class="small text-muted">{{ news.Date }}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </transition-group>
           </div>
         </transition>
       </div>
@@ -143,17 +144,23 @@
       <nav v-if="totalPages > 1 && !loading" class="mt-5 d-flex justify-content-center">
         <ul class="pagination pagination-sm gap-2">
           <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link rounded-pill border-0 px-3 shadow-none"
-              @click="handlePageChange(currentPage - 1)">上一頁</button>
+            <button class="page-link rounded-pill border-orange-subtle px-3 shadow-none"
+              @click="handlePageChange(currentPage - 1)">
+              <i class="bi bi-chevron-left small me-1"></i>上一頁
+            </button>
           </li>
           <li v-for="page in totalPages" :key="page" class="page-item">
-            <button class="page-link rounded-pill border-0 shadow-none"
-              :class="currentPage === page ? 'btn-orange text-white' : 'text-muted'" @click="handlePageChange(page)">{{
-                page }}</button>
+            <button class="page-link rounded-pill shadow-none"
+              :class="currentPage === page ? 'btn-orange text-white active-page' : 'text-orange-link'"
+              @click="handlePageChange(page)">
+              {{ page }}
+            </button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link rounded-pill border-0 px-3 shadow-none"
-              @click="handlePageChange(currentPage + 1)">下一頁</button>
+            <button class="page-link rounded-pill border-orange-subtle px-3 shadow-none"
+              @click="handlePageChange(currentPage + 1)">
+              下一頁<i class="bi bi-chevron-right small ms-1"></i>
+            </button>
           </li>
         </ul>
       </nav>
@@ -162,7 +169,6 @@
 </template>
 
 <script setup>
-/* ... ( script 邏輯與之前完全一致，保留計數與滾動功能) ... */
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -216,9 +222,11 @@ const handleScroll = () => {
 };
 
 const scrollToTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
 const handlePageChange = (page) => {
+  if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
-  window.scrollTo({ top: 300, behavior: 'smooth' });
+  window.scrollTo({ top: 400, behavior: 'smooth' });
 };
 
 const pinnedPosts = computed(() => newsList.value.filter(item => item.IsPinned));
@@ -237,7 +245,12 @@ const paginatedNews = computed(() => {
 });
 
 const totalPages = computed(() => Math.ceil(filteredNews.value.length / pageSize));
-const changeCategory = (cat) => { currentCategory.value = cat; currentPage.value = 1; };
+
+const changeCategory = (cat) => {
+  currentCategory.value = cat;
+  currentPage.value = 1;
+};
+
 const clearDateFilter = () => { startDate.value = ''; endDate.value = ''; };
 const goToDetail = (id) => router.push(`/post/postDetail/${id}`);
 
@@ -251,15 +264,95 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 1. 置頂圖片寬度加強 (大氣細節) */
+/* --- 分頁按鈕樣式優化 --- */
+.pagination .page-link {
+  background-color: #fff;
+  border: 1px solid #ffdecb !important;
+  color: #f3722c;
+  /* 文字變橘色 */
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.pagination .page-link:hover:not(.disabled) {
+  background-color: rgba(243, 114, 44, 0.08);
+  border-color: #f3722c !important;
+  color: #d15a1a;
+}
+
+/* 當前頁碼樣式 */
+.active-page {
+  background-color: #f3722c !important;
+  border-color: #f3722c !important;
+  color: white !important;
+  box-shadow: 0 3px 8px rgba(243, 114, 44, 0.3);
+}
+
+/* 禁用狀態 (第一頁的上一頁 / 最後一頁的下一頁) */
+.page-item.disabled .page-link {
+  background-color: #f8f9fa;
+  border-color: #eee !important;
+  color: #ccc !important;
+  cursor: not-allowed;
+}
+
+/* --- 動畫樣式 --- */
+.list-stagger-enter-active {
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.list-stagger-leave-active {
+  transition: opacity 0.2s ease-in;
+  position: absolute;
+  width: 100%;
+  max-width: inherit;
+  z-index: 0;
+}
+
+.list-stagger-enter-from {
+  opacity: 0;
+  transform: translateY(15px);
+}
+
+.list-stagger-leave-to {
+  opacity: 0;
+}
+
+.list-stagger-move {
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.view-fade-enter-active,
+.view-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.view-fade-enter-from,
+.view-fade-leave-to {
+  opacity: 0;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+
+/* --- 基礎結構樣式 --- */
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .pinned-img-side {
   width: 240px;
-  /* 寬度從 180 增加到 240 */
-  height: auto;
   min-height: 160px;
 }
 
-/* 2. 圖片與佔位圖結構 (確保回歸) */
 .card-img-wrapper {
   width: 100%;
   height: 200px;
@@ -286,7 +379,7 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-/* 3. 骨架螢幕修正 (對齊新尺寸) */
+/* 骨架屏 */
 .skeleton-img {
   height: 200px;
   background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
@@ -321,15 +414,16 @@ onUnmounted(() => {
   }
 }
 
-/* 其他高級感設計 (保持) */
 .bg-white-90 {
   background-color: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(10px);
 }
 
-.sticky-top {
-  top: 15px;
-  z-index: 1020;
+.filter-toolbar.sticky-top {
+  top: 190px;
+  z-index: 999;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(5px);
 }
 
 .scroll-to-top {
@@ -364,10 +458,6 @@ onUnmounted(() => {
   transition: stroke-dashoffset 0.1s;
 }
 
-.date-input-container {
-  position: relative;
-}
-
 .custom-date-input {
   width: 100%;
   padding: 6px 15px;
@@ -376,16 +466,6 @@ onUnmounted(() => {
   background-color: #f8f9fa;
   border-radius: 50px;
   color: #666;
-  cursor: pointer;
-}
-
-.custom-date-input::-webkit-calendar-picker-indicator {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
   cursor: pointer;
 }
 
