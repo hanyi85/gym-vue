@@ -95,8 +95,7 @@ onMounted(() => fetchVenues()
 
 // 送出訂單
 async function submitOrder() {
-const orderId=
-  await axios.post(`${apiUrl}/TMealCarts/checkout/${UserId}`, {
+const res = await axios.post(`${apiUrl}/TMealCarts/checkout/${UserId}`, {
     name: order.value.name,
     phone: order.value.phone,
     email: order.value.email,
@@ -104,13 +103,24 @@ const orderId=
     payMethod: order.value.paymentMethod
   })
 
-  // ✅ 成功後導頁
-  router.push({
-    name: 'meals-result',
-    params: {
-      orderId: orderId.data
-    }
-  })
+  const orderId = res.data
+
+  // 👇 判斷付款方式
+  if (order.value.paymentMethod === 'credit') {
+    // 呼叫後端產生綠界表單
+    const payRes = await axios.post(`${apiUrl}/ECPayPayment/Create`, {orderId} )
+
+    // 直接寫入綠界自動提交表單
+    document.open()
+    document.write(payRes.data)
+    document.close()
+  } else {
+    // 現金或其他方式 → 直接去完成頁
+    router.push({
+      name: 'meals-result',
+      params: { orderId }
+    })
+  }
 }
 
 </script>

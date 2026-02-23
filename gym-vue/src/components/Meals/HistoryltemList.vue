@@ -8,7 +8,7 @@ const isOpen = ref(false); // 控制手風琴開關
 // 計算是否全部領取
 const allPickedUp = computed(() => {
   if (props.items.length === 0) return false;
-  return props.items.every(item => item.fPickupStatus);
+  return props.items.every(item => item.FPickupStatus);
 });
 // defineProps({
 //   items: Array
