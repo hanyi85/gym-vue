@@ -1,6 +1,7 @@
 <script setup>
 
 import { ref , onMounted} from 'vue';
+import axios from 'axios';
 import Banner from '@/components/banner.vue'
 
 const products = ref([]);
@@ -8,38 +9,17 @@ const categories = ref([]);
 
 const API_URL=import.meta.env.VITE_API_URL
 
-const fetchProducts = async () => {
-  try {
-    const response = await fetch(API_URL+'SProducts');
-    if (!response.ok) throw new Error('API 連線失敗');
-    
-    const data = await response.json();
-    console.log('DTO 實際回傳內容:', data);
-
-    products.value = data.map(item => {
-      const id = item.PId ?? item.pId;
-      const pName = item.PName ?? item.pName;
-      const price = item.Price ?? item.price ?? 0;
-      const specName = item.SpecName ?? item.specName;
-
-      return {
-        id: id,
-        name: specName ? `${pName} (${specName})` : pName,
-        price: price,
-        originalPrice: (price * 1.2).toFixed(0),
-        // 確保圖片路徑正確，如果是本地開發建議先檢查此 URL 是否有效
-        image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href 
-      };
+function getProducts() {
+  axios
+    .get(API_URL + 'SProducts')
+    .then(resp => {
+      products.value = resp.data;
+      console.log('取得資料成功！');
+    })
+    .catch(error => {
+      console.error('發生錯誤', error);
     });
-  } catch (error) {
-    console.error('抓取失敗:', error);
-  }
-};
-
-
-
-
-
+}
 
 
 const activeCategory = ref('乳清蛋白'); // 預設改為乳清蛋白
@@ -90,7 +70,6 @@ const fetchCategories = async () => {
     categories.value = data.map(cat => ({
       name: cat.name || cat.Name,
       isOpen: false,
-      // 這裡的內容現在已經是商品名稱了
       subCategories: cat.subCategories || cat.SubCategories || []
     }));
   } catch (error) {
@@ -111,7 +90,7 @@ const handleCategoryClick = (cat) => {
 const updateTitle = (name) => { activeCategory.value = name; };
 
 onMounted(() => {
-  fetchProducts();
+  getProducts();
   fetchCategories();
 });
 
@@ -253,12 +232,12 @@ onMounted(() => {
       </router-link>
 
       <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
-        <p class="mb-1 small text-dark product-name hover-red-text">{{ product.name }}</p>
+        <p class="mb-1 small text-dark product-name hover-red-text">{{ product.FullName }}</p>
       </router-link>
 
       <div class="price-info">
-        <span class="text-danger fw-bold me-2">NT${{ product.price }}</span>
-        <span class="text-muted text-decoration-line-through x-small">NT${{ product.originalPrice }}</span>
+        <span class="text-danger fw-bold me-2">NT${{ product.Price }}</span>
+        <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
       </div>
     </div>
   </div>
