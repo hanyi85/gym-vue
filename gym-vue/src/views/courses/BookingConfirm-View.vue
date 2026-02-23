@@ -44,8 +44,6 @@ function goNext() {
 </script>
 
 
-
-
 <template>
   <div class="page-wrapper">
     <div class="booking-title">
