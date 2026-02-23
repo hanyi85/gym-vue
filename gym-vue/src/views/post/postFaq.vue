@@ -11,7 +11,14 @@
         </p>
       </nav>
 
-      <div class="row g-4">
+      <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border text-orange" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">資料載入中...</p>
+      </div>
+
+      <div v-else class="row g-4">
         <div class="col-lg-3">
           <div class="sticky-menu">
             <div class="list-group shadow-sm border-0 rounded-4 overflow-hidden">
@@ -24,11 +31,10 @@
             <div class="bg-orange-light rounded-4 p-4 mt-4 text-center border-orange-subtle">
               <h6 class="fw-bold text-dark mb-2">還有其他疑問嗎？</h6>
               <p class="x-small text-muted mb-3">我們的客服團隊很樂意為您服務</p>
-              <button class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold"><router-link
-                  to="/post/customer-service"
-                  class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold text-decoration-none">
-                  聯繫我們
-                </router-link></button>
+              <router-link to="/post/customer-service"
+                class="btn btn-orange btn-sm rounded-pill px-4 text-white fw-bold text-decoration-none">
+                聯繫我們
+              </router-link>
             </div>
           </div>
         </div>
@@ -62,70 +68,95 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 import Banner from '@/components/banner.vue';
 
-// 當前啟動的分類
-const activeCategory = ref('membership');
-
-// FAQ 資料
-const faqData = ref([
-  {
-    id: 'membership',
-    title: '會籍相關',
-    icon: 'bi-person-badge',
-    questions: [
-      { q: '如何申請加入 FitnessBar 會員？', a: '您可以親臨各門市櫃台辦理，或透過官網線上加入頁面進行初步預約。' },
-      { q: '會籍是否可以請假 (暫停)？', a: '可以，會員因出國、懷孕、受傷等原因可申請暫停，需攜帶證明文件至門市辦理。' },
-      { q: '會籍跨館使用規定？', a: '視合約類型而定，全台會員可使用所有據點。' }
-    ]
-  },
-  {
-    id: 'course',
-    title: '課程相關',
-    icon: 'bi-calendar3',
-    questions: [
-      { q: '團體課程需要額外付費嗎？', a: '大部分團體課均包含在月費中，部分特殊課程需額外付費。' },
-      { q: '私人教練課如何預約？', a: '可透過 APP 線上預約，或與您的專屬教練協調時間。' }
-    ]
-  },
-  {
-    id: 'venue',
-    title: '門市據點',
-    icon: 'bi-geo-alt',
-    questions: [
-      { q: '場館內有提供毛巾嗎？', a: '建議自行攜帶，館內亦有販售。' },
-      { q: '營業時間是什麼時候？', a: '多數為 24H 營業，百貨店型依百貨營業時間為準。' }
-    ]
-  },
-  {
-    id: 'trainer',
-    title: '教練介紹',
-    icon: 'bi-award',
-    questions: [
-      { q: '我可以更換教練嗎？', a: '可以，若風格不合可向客服中心申請更換。' }
-    ]
-  }
-]);
+// --- 狀態管理 ---
+const faqData = ref([]);      // 存放經過分組處理後的 FAQ 資料
+const activeCategory = ref(''); // 當前選中的分類 ID
+const loading = ref(true);     // 讀取狀態控制
 
 /**
- * 修正後的跳轉邏輯
- * 使用原生 scrollIntoView 配合 CSS scroll-margin-top
+ * 抓取 API 資料並重新分組
+ * 後端回傳格式預期為: [{ Question: "...", Answer: "...", CategoryName: "..." }]
+ */
+const fetchFaqs = async () => {
+  try {
+    const apiUrl = 'https://localhost:7218/api/YFaqs';
+    const response = await axios.get(apiUrl);
+    const rawData = response.data;
+
+    // 將後端扁平化資料轉換為前端分類結構 (Group By CategoryName)
+    const grouped = rawData.reduce((acc, item) => {
+      const catName = item.CategoryName || '一般問題';
+
+      // 尋找是否已經建立了該分類的容器
+      let category = acc.find(c => c.title === catName);
+
+      if (!category) {
+        category = {
+          id: catName, // 直接拿分類名稱當作 DOM 的 ID 進行跳轉
+          title: catName,
+          icon: getIconByCategory(catName),
+          questions: []
+        };
+        acc.push(category);
+      }
+
+      // 將問題與答案放入該分類中 (注意屬性首字母大寫)
+      category.questions.push({
+        q: item.Question,
+        a: item.Answer
+      });
+
+      return acc;
+    }, []);
+
+    faqData.value = grouped;
+
+    // 初始化選中的分類為第一個
+    if (grouped.length > 0) {
+      activeCategory.value = grouped[0].id;
+    }
+  } catch (error) {
+    console.error('API 串接錯誤:', error);
+    alert('無法載入常見問題，請檢查後端伺服器或連線設定。');
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
+ * 根據分類名稱自動匹配圖示 (Bootstrap Icons)
+ */
+const getIconByCategory = (name) => {
+  if (name.includes('會籍')) return 'bi-person-badge';
+  if (name.includes('課程')) return 'bi-calendar3';
+  if (name.includes('據點') || name.includes('門市')) return 'bi-geo-alt';
+  if (name.includes('教練')) return 'bi-award';
+  return 'bi-question-circle'; // 預設圖示
+};
+
+/**
+ * 捲動至特定分類區域
  */
 const scrollToSection = (id) => {
   activeCategory.value = id;
   const element = document.getElementById(id);
   if (element) {
-    element.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
+
+// 組件掛載後立即執行抓取資料
+onMounted(() => {
+  fetchFaqs();
+});
 </script>
 
 <style scoped>
-/* 品牌色系 */
+/* 品牌主題色 */
 .text-orange {
   color: #f3722c !important;
 }
@@ -143,26 +174,23 @@ const scrollToSection = (id) => {
   border-color: #f3722c !important;
 }
 
-/* 精準跳轉核心：當元素被捲動到頂部時，自動留出 Header 的空間 */
+/* 捲動邊距設定：防止標題被 Header 遮住 */
 .faq-section {
   scroll-margin-top: 130px;
-  /* 根據你的 Header 高度調整，130px 通常很安全 */
 }
 
-/* 解決頁面底部空間不足導致無法跳轉到頂部的問題 */
 .faq-section:last-child {
   padding-bottom: 40vh;
 }
 
-/* 左側 Sticky 選單優化 */
+/* 側邊欄固定效果 */
 .sticky-menu {
   position: sticky;
   top: 120px;
-  /* 選單停下的位置，需避開 Header */
   z-index: 100;
 }
 
-/* 選單 Active 狀態 */
+/* 選單啟動狀態樣式 */
 .active-category {
   background-color: #f3722c !important;
   color: white !important;
@@ -174,7 +202,7 @@ const scrollToSection = (id) => {
   color: #f3722c;
 }
 
-/* 裝飾樣式 */
+/* 裝飾性樣式 */
 .bg-orange-light {
   background-color: rgba(243, 114, 44, 0.05);
   border: 1px solid rgba(243, 114, 44, 0.1);
