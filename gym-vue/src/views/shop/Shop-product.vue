@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref , onMounted} from 'vue';
+import { ref , onMounted, computed} from 'vue';
 import axios from 'axios';
 import Banner from '@/components/banner.vue'
 
@@ -32,7 +32,7 @@ const showLimit = ref(false);
 
 const currentLimit = ref(24);
 
-const sortOptions = ['上架時間: 由新到舊', '上架時間: 由舊到新', '價格: 由高至低', '價格: 由低至高', '銷量: 由高至低'];
+const sortOptions = [ '價格: 由高至低', '價格: 由低至高'];
 
 
 
@@ -78,15 +78,43 @@ const getCategories = () => {
     });
 };
 
+const selectedSubCategory = ref('');
 
+const filteredProducts = computed(() => {
+  if (!products.value || products.value.length === 0) return [];
+  
+  let result = products.value;
+
+  if (selectedSubCategory.value) {
+    result = result.filter(p => {
+      const nameToCheck = p.pName || p.PName || '';
+      return nameToCheck.includes(selectedSubCategory.value);
+    });
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(p => {
+      const fullName = (p.fullName || p.FullName || '').toLowerCase();
+      return fullName.includes(query);
+    });
+  }
+
+  return result;
+});
+
+const updateFilteredCategory = (name) => {
+  selectedSubCategory.value = name;
+  
+  activeCategory.value = name; 
+};
 
 const handleCategoryClick = (cat) => {
-
   cat.isOpen = !cat.isOpen;
-
   activeCategory.value = cat.name;
-
+  selectedSubCategory.value = ''; 
 };
+
 
 const updateTitle = (name) => { activeCategory.value = name; };
 
@@ -115,10 +143,8 @@ onMounted(() => {
             <li class="menu-item mb-3">
 
               <a href="javascript:void(0)" class="fw-bold text-decoration-none d-block py-1 transition-color"
-
-                 :class="activeCategory === '全部商品' ? 'text-danger' : 'text-dark'"
-
-                 @click="updateTitle('全部商品')">全部商品</a>
+   :class="activeCategory === '全部商品' ? 'active-orange' : 'text-dark'"
+   @click="updateTitle('全部商品')">全部商品</a>
 
             </li>
 
@@ -126,7 +152,10 @@ onMounted(() => {
 
               <div class="category-header d-flex justify-content-between align-items-center cursor-pointer py-1" @click="handleCategoryClick(cat)">
 
-                <span class="fw-bold transition-color" :class="{ 'text-danger': activeCategory === cat.name || cat.isOpen }">{{ cat.name }}</span>
+                <span class="fw-bold transition-color" 
+      :class="{ 'active-orange': activeCategory === cat.name || cat.isOpen }">
+      {{ cat.name }}
+</span>
 
                 <span class="v-icon" :class="{ 'rotated': cat.isOpen }"></span>
 
@@ -138,9 +167,11 @@ onMounted(() => {
 
                   <li v-for="sub in cat.subCategories" :key="sub" class="py-1">
 
-                    <a href="javascript:void(0)" class="small text-decoration-none d-block transition-color hover-red"
-
-                       :class="activeCategory === sub ? 'text-danger fw-bold' : 'text-muted'" @click.stop="updateTitle(sub)">{{ sub }}</a>
+                    <a href="javascript:void(0)" @click="updateFilteredCategory(sub)" class="small text-decoration-none d-block transition-color hover-orange"
+   :class="activeCategory === sub ? 'active-orange fw-bold' : 'text-muted'" 
+   @click.stop="updateTitle(sub)">
+   {{ sub }}
+</a>
 
                   </li>
 
@@ -217,7 +248,7 @@ onMounted(() => {
 
 
         <div class="row g-4 mb-5">
-  <div v-for="product in products" :key="product.id" class="col-md-4 col-sm-6 text-start">
+  <div v-for="product in filteredProducts" :key="product.id" class="col-md-4 col-sm-6 text-start">
     <div class="product-card">
       
       <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
@@ -237,9 +268,9 @@ onMounted(() => {
       </router-link>
 
       <div class="price-info">
-        <span class="text-danger fw-bold me-2">NT${{ product.Price }}</span>
-        <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
-      </div>
+  <span class="active-orange fw-bold me-2">NT${{ product.Price }}</span>
+  <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
+</div>
     </div>
   </div>
 </div>
@@ -281,6 +312,43 @@ onMounted(() => {
 
 
 <style scoped>
+.active-orange {
+  color: #f3722c !important;
+}
+
+/* 側邊欄與連結 Hover 效果 */
+.hover-orange:hover {
+  color: #f3722c !important;
+}
+
+/* 商品名稱 Hover 效果 */
+.hover-red-text:hover {
+  color: #f3722c !important;
+}
+
+/* 下拉選單滑入顏色 */
+.custom-dropdown li:hover {
+  color: #f3722c;
+  background: #f8f9fa;
+}
+
+/* 側邊欄箭頭旋轉時的顏色 */
+.v-icon.rotated {
+  transform: rotate(-135deg);
+  border-color: #f3722c; /* 這裡原本就是 #f3722c */
+}
+
+/* 分頁 active 顏色 */
+.page-item.active {
+  color: #f3722c;
+  font-weight: bold;
+  border-bottom: 1px solid #f3722c;
+}
+
+.page-item:hover {
+  color: #f3722c;
+}
+
 /* 圖片縮放效果 */
 .img-wrapper {
   transition: all 0.3s ease;
@@ -337,7 +405,7 @@ onMounted(() => {
 
 .custom-dropdown li { padding: 8px 15px; cursor: pointer; }
 
-.custom-dropdown li:hover { color: #fe4c50; background: #f8f9fa; }
+.custom-dropdown li:hover { color: #f3722c; background: #f8f9fa; }
 
 
 
@@ -345,11 +413,11 @@ onMounted(() => {
 
 .v-icon { width: 7px; height: 7px; border-right: 1px solid #888; border-bottom: 1px solid #888; transform: rotate(45deg); transition: 0.3s; margin-right: 5px; }
 
-.v-icon.rotated { transform: rotate(-135deg); border-color: #fe4c50; }
+.v-icon.rotated { transform: rotate(-135deg); border-color: #f3722c; }
 
 
 
-.hover-red:hover { color: #fe4c50 !important; }
+.hover-red:hover { color: #f3722c !important; }
 
 .cursor-pointer { cursor: pointer; }
 
@@ -383,9 +451,9 @@ onMounted(() => {
 
 .page-item { cursor: pointer; padding: 2px 5px; transition: color 0.2s; }
 
-.page-item:hover { color: #fe4c50; }
+.page-item:hover { color: #f3722c; }
 
-.page-item.active { color: #fe4c50; font-weight: bold; border-bottom: 1px solid #fe4c50; }
+.page-item.active { color: #f3722c; font-weight: bold; border-bottom: 1px solid #f3722c; }
 
 .next-btn { font-size: 0.8rem; color: #888; }
 
