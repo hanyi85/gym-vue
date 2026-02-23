@@ -25,20 +25,36 @@
       <div class="verify-card">
         <h2 class="title">認證你的電子郵件</h2>
 
-        <div class="state success">
-          <div class="icon success">✓</div>
-          <p class="message">你的電子郵件已完成驗證</p>
+        <div class="state">
 
-          <div class="actions">
-             <router-link
-               to="/users/profile-health"
-               class="next btn-next"
-             >
-               下一步
-             </router-link>
+  <!-- Loading -->
+  <div v-if="status === 'loading'">
+    <div class="icon">⏳</div>
+    <p class="message">{{ message }}</p>
+  </div>
 
-                </div>
-        </div>
+  <!-- Success -->
+  <div v-else-if="status === 'success'">
+    <div class="icon success">✓</div>
+    <p class="message">{{ message }}</p>
+
+    <div class="actions">
+      <router-link
+        to="/users/profile-health"
+        class="next"
+      >
+        下一步
+      </router-link>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div v-else>
+    <div class="icon error">✕</div>
+    <p class="message">{{ message }}</p>
+  </div>
+
+</div>
       </div>
     </main>
 
@@ -47,9 +63,16 @@
 
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '@/services/api'
+import axios from 'axios'
 
-const currentStep = ref(1) // 第二步：驗證電子信箱
+const route = useRoute()
+
+const currentStep = ref(1)
+const status = ref('loading') // loading | success | error
+const message = ref('正在驗證中...')
 
 const steps = [
   { title: '基本資料', desc: '填寫個人資訊' },
@@ -57,28 +80,33 @@ const steps = [
   { title: '健康數據', desc: '身體狀態' },
   { title: '完成', desc: '確認送出' }
 ]
-// import { ref, onMounted } from 'vue'
-// import { useRoute } from 'vue-router'
 
-// const route = useRoute()
-// const status = ref('loading')
+onMounted(async () => {
+  const token = route.query.token
 
-// onMounted(() => {
-//   const token = route.query.token
+  if (!token) {
+    status.value = 'error'
+    message.value = '驗證連結無效'
+    return
+  }
 
-//   // 模擬 API 驗證
-//   setTimeout(() => {
-//     if (token) {
-//       status.value = 'success'
-//     } else {
-//       status.value = 'error'
-//     }
-//   }, 1500)
-// })
+  try {
+    const res = await api.get(
+  `/auth/verify-email?token=${token}`
+)
 
-// const resend = () => {
-//   alert('已重新寄送驗證信（前端模擬）')
-// }
+    if (res.data.success) {
+      status.value = 'success'
+      message.value = '你的電子郵件已完成驗證'
+    } else {
+      status.value = 'error'
+      message.value = res.data.message || '驗證失敗'
+    }
+  } catch (err) {
+    status.value = 'error'
+    message.value = '驗證失敗或連結已過期'
+  }
+})
 </script>
 
 <style scoped>
@@ -280,5 +308,9 @@ const steps = [
     font-size: 16px;
     cursor: pointer;
      text-decoration: none;
+}
+.icon.error {
+  background-color: #fdecea;
+  color: #e53935;
 }
 </style>

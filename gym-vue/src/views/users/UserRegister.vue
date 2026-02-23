@@ -9,9 +9,9 @@
 
       <form @submit.prevent="handleRegister">
         <div class="input-wrapper mb-4">
-          <input type="text" v-model="form.account" class="minimal-input" placeholder=" " required>
+          <input type="text" v-model="form.email" class="minimal-input" placeholder=" " required>
           <label class="floating-label">電子信箱</label>
-          <p v-if="errors.account" class="error-msg">{{ errors.account }}</p>
+          <p v-if="errors.account" class="error-msg">{{ errors.email }}</p>
         </div>
 
         <div class="input-wrapper mb-4">
@@ -55,33 +55,41 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import api from '@/services/api';
 
+const handleRegister = async () => {
+
+  if (form.password !== form.confirmPassword) {
+    errors.confirmPassword = "密碼不一致";
+    return;
+  }
+
+  try {
+    await api.post("/Auth/register", {
+      email: form.email,
+      password: form.password
+    });
+
+    router.push("/users/profile");
+
+  } catch (err) {
+    alert("註冊失敗：" + err.response.data);
+  }
+};
 const router = useRouter();
 const showPwd = ref(false);
 
 const form = reactive({
-  account: '',
   email: '',
   password: '',
   confirmPassword: ''
 });
 
 const errors = reactive({
-  account: '',
   email: '',
   password: '',
   confirmPassword: ''
 });
-
-const handleRegister = () => {
-  // 簡單驗證邏輯
-  if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = '密碼不一致';
-    return;
-  }
-  console.log('提交註冊:', form);
-  router.push('/users/profile');
-};
 
 const socialAuth = (platform) => {
   alert(`即將跳轉至 ${platform} 授權頁面`);

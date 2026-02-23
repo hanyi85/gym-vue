@@ -9,7 +9,7 @@
       <form @submit.prevent="handleLogin">
         <div class="input-wrapper mb-4">
           <input type="text" v-model="email" class="minimal-input" placeholder=" " required>
-          <label class="floating-label">電郵或手機號碼</label>
+          <label class="floating-label">電郵</label>
         </div>
 
         <div class="input-wrapper mb-2">
@@ -51,25 +51,44 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import banner from '@/components/banner.vue';
-import Btn from '@/components/btn.vue';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import Btn from '@/components/btn.vue'
 
-const router = useRouter();
-const email = ref('');
-const password = ref('');
-const showPassword = ref(false);
+const router = useRouter()
 
-const handleLogin = () => {
-  console.log('執行登入:', { email: email.value, password: password.value });
-  // 登入成功後跳轉
-  router.push('/users/home');
-};
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+
+async function handleLogin() {
+  try {
+    const response = await axios.post(
+      "https://localhost:7218/api/Auth/login",
+      {
+        email: email.value,
+        password: password.value
+      }
+    )
+
+    console.log(response.data)
+
+    // 存 token
+    localStorage.setItem("token", response.data.token)
+
+    // 跳轉
+    router.push("/users/home")
+
+  } catch (error) {
+    console.error(error)
+    alert("登入失敗")
+  }
+}
 
 const socialLogin = (platform) => {
-  console.log(`${platform} 登入啟動`);
-};
+  console.log(`${platform} 登入啟動`)
+}
 </script>
 
 <style scoped>
