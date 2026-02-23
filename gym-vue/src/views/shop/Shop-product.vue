@@ -4,12 +4,13 @@ import { ref , onMounted} from 'vue';
 import Banner from '@/components/banner.vue'
 
 const products = ref([]);
+const categories = ref([]);
 
-const API_URL = 'https://localhost:7218/api/SProducts';
+const API_URL=import.meta.env.VITE_API_URL
 
 const fetchProducts = async () => {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL+'SProducts');
     if (!response.ok) throw new Error('API 連線失敗');
     
     const data = await response.json();
@@ -35,9 +36,7 @@ const fetchProducts = async () => {
   }
 };
 
-onMounted(() => {
-  fetchProducts();
-});
+
 
 
 
@@ -83,17 +82,21 @@ const vClickOutside = {
 
 
 
-const categories = ref([
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(import.meta.env.VITE_API_URL + 'SCategories');
+    const data = await response.json();
 
-  { name: '精選商品', isOpen: false, subCategories: ['本月熱銷', '新品上市'] },
-
-  { name: '推薦清單', isOpen: false, subCategories: ['增肌推薦', '減脂推薦'] },
-
-  { name: '乳清蛋白', isOpen: true, subCategories: ['濃縮乳清蛋白', '分離乳清蛋白', '水解乳清蛋白', '緩釋酪蛋白'] },
-
-  { name: '健康零食', isOpen: false, subCategories: ['蛋白棒', '威化餅'] }
-
-]);
+    categories.value = data.map(cat => ({
+      name: cat.name || cat.Name,
+      isOpen: false,
+      // 這裡的內容現在已經是商品名稱了
+      subCategories: cat.subCategories || cat.SubCategories || []
+    }));
+  } catch (error) {
+    console.error('類別選單載入失敗:', error);
+  }
+};
 
 
 
@@ -106,6 +109,11 @@ const handleCategoryClick = (cat) => {
 };
 
 const updateTitle = (name) => { activeCategory.value = name; };
+
+onMounted(() => {
+  fetchProducts();
+  fetchCategories();
+});
 
 </script>
 
