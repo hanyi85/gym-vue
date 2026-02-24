@@ -11,6 +11,22 @@
     <div class="container py-4">
       <Banner title="資訊公告" subtitle="立即取得我們的最新資訊活動" />
 
+      <nav aria-label="breadcrumb" class="custom-breadcrumb-wrapper mb-4">
+        <ol class="breadcrumb mb-0 p-2 px-3 bg-white rounded-pill shadow-sm border border-white">
+          <li class="breadcrumb-item">
+            <router-link to="/" class="breadcrumb-link">
+              <i class="bi bi-house-door-fill me-1"></i>首頁
+            </router-link>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            <span class="text-orange fw-bold">資訊公告</span>
+          </li>
+          <li v-if="currentCategory !== 'ALL'" class="breadcrumb-item active" aria-current="page">
+            <span class="text-muted">{{ currentCategory }}</span>
+          </li>
+        </ol>
+      </nav>
+
       <div class="row g-4 mb-5">
         <div class="col-md-6" v-for="(p, index) in pinnedPosts.slice(0, 2)" :key="'pinned-' + p.Id">
           <div
@@ -211,7 +227,7 @@ const fetchPosts = async () => {
 const triggerGuide = () => {
   setTimeout(() => {
     showGuideBanner.value = true;
-    setTimeout(() => { showGuideBanner.value = false; }, 5000);
+    setTimeout(() => { showGuideBanner.value = false; }, 10000);
   }, 1000);
 };
 
@@ -264,12 +280,40 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* --- 分頁按鈕樣式優化 --- */
+/* --- 麵包屑樣式 --- */
+.custom-breadcrumb-wrapper .breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-top: 15px;
+}
+
+.breadcrumb-item+.breadcrumb-item::before {
+  content: "›";
+  /* 使用更高級的間隔符號 */
+  font-size: 1.2rem;
+  line-height: 1;
+  vertical-align: sub;
+  color: #ddd;
+}
+
+.breadcrumb-link {
+  color: #888;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.breadcrumb-link:hover {
+  color: #f3722c;
+  transform: translateX(2px);
+  display: inline-block;
+}
+
+/* --- 分頁按鈕樣式 --- */
 .pagination .page-link {
   background-color: #fff;
   border: 1px solid #ffdecb !important;
   color: #f3722c;
-  /* 文字變橘色 */
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -280,7 +324,6 @@ onUnmounted(() => {
   color: #d15a1a;
 }
 
-/* 當前頁碼樣式 */
 .active-page {
   background-color: #f3722c !important;
   border-color: #f3722c !important;
@@ -288,7 +331,6 @@ onUnmounted(() => {
   box-shadow: 0 3px 8px rgba(243, 114, 44, 0.3);
 }
 
-/* 禁用狀態 (第一頁的上一頁 / 最後一頁的下一頁) */
 .page-item.disabled .page-link {
   background-color: #f8f9fa;
   border-color: #eee !important;
@@ -305,7 +347,6 @@ onUnmounted(() => {
   transition: opacity 0.2s ease-in;
   position: absolute;
   width: 100%;
-  max-width: inherit;
   z-index: 0;
 }
 
@@ -343,7 +384,7 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* --- 基礎結構樣式 --- */
+/* --- 基礎結構 --- */
 .cursor-pointer {
   cursor: pointer;
 }
@@ -379,7 +420,6 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-/* 骨架屏 */
 .skeleton-img {
   height: 200px;
   background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
