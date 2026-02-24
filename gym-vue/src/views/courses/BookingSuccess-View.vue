@@ -1,28 +1,45 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
 import QrcodeVue from 'qrcode.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-const courseId = route.query.courseId
-if (courseId === undefined || courseId === null || courseId === '' || courseId === 'undefined') {
-  // 不要做 router.push(`/courses/${courseId}`)
-  // 你想導回列表就：
-  // router.replace('/courses/list')
-}
-const orderId = route.query.orderId
-const course = route.query.course
-const date = route.query.date
-const time = route.query.time
-const price = route.query.price
+// 先讀 query
+let orderId = route.query.orderId
+let course = route.query.course
+let date = route.query.date
+let time = route.query.time
+let price = route.query.price
 
-const qrValue = JSON.stringify({
-  orderId,
-  course,
-  date,
-  time,
-})
+// 如果 query 沒有 → 讀 localStorage
+if (!course) {
+  const raw = localStorage.getItem('pending_booking')
+  if (raw) {
+    const b = JSON.parse(raw)
+
+    orderId = orderId || 'NP' + Date.now()
+    course = b.course
+    date = b.date
+    time = b.time
+    price = b.price
+
+    // 成功頁顯示完可以選擇刪掉
+    localStorage.removeItem('pending_booking')
+  }
+}
+
+//  組 QR Code 內容（可以放真實資料）
+const qrValue = computed(() =>
+  JSON.stringify({
+    orderId,
+    course,
+    date,
+    time,
+    price,
+  })
+)
 </script>
 
 
