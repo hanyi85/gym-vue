@@ -37,7 +37,7 @@
                     <div class="grid grid-basic">
                         <div class="field">
                             <label class="field-label">姓名</label>
-                            <input placeholder="請輸入姓名" />
+                            <input v-model="form.name" placeholder="請輸入姓名" />
                         </div>
 
                         <div class="field">
@@ -54,7 +54,7 @@
                     <!-- 生日 -->
                     <div class="field">
                         <label class="field-label">生日</label>
-                        <input type="date" />
+                        <input type="date" v-model="form.birthday" />
                     </div>
                 </div>
 
@@ -64,7 +64,7 @@
                     <div class="grid">
                         <div class="field">
                             <label class="field-label">手機號碼</label>
-                            <input placeholder="09xxxxxxxx" />
+                            <input v-model="form.phone" placeholder="09xxxxxxxx" />
                         </div>
 
                         <div class="field">
@@ -104,7 +104,7 @@
 
                     <div class="field">
                         <label class="field-label">路名與門牌號碼</label>
-                        <input placeholder="例：中山路一段 100 號" />
+                        <input placeholder="例：中山路一段 100 號" v-model="form.address" />
                     </div>
                 </div>
 
@@ -138,9 +138,11 @@
 
                 <!-- 操作按鈕 -->
                 <div class="actions">
-                    <router-link to="/users/home" class="next btn-next">
-                        儲存並返回會員首頁<i class="fa fa-long-arrow-right" aria-hidden="true"></i>
-                    </router-link>
+
+
+                    <button class="next btn-next" :disabled="saving" @click="saveProfile">
+                        {{ saving ? "儲存中..." : "儲存並返回會員首頁⭢" }}
+                    </button>
                 </div>
 
             </div>
@@ -151,20 +153,24 @@
 
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from "@/services/api"
 
-const currentStep = ref(0)
-const gender = ref('男')
+const router = useRouter()
+
 const form = ref({
-    email: 'test@example.com', // 之後可改成 API 帶入
+    email: '',
     name: '',
     phone: '',
     birthday: '',
     address: ''
 })
 
+const gender = ref('')
 const city = ref('')
 const area = ref('')
+const avatar = ref(null)
 
 const password = ref({
     current: '',
@@ -174,10 +180,8 @@ const password = ref({
 
 const passwordError = ref('')
 
-const avatar = ref(null)
-
-const onUpload = (e) => {
-    const file = e.target.files[0]
+const onUpload = (event) => {
+    const file = event.target.files[0]
     if (!file) return
     avatar.value = URL.createObjectURL(file)
 }
@@ -186,8 +190,62 @@ const removeAvatar = () => {
     avatar.value = null
 }
 
-const triggerUpload = () => {
-    document.querySelector('.avatar-edit input').click()
+onMounted(async () => {
+    try {
+        const res = await api.get("/UUsers/profile")
+
+        console.log(res.data)
+        form.value = {
+            email: res.data.Email,
+            name: res.data.Name,
+            phone: res.data.Phone,
+            birthday: res.data.BirthDate
+                ? res.data.BirthDate.split("T")[0]
+                : '',
+            address: res.data.Address
+        }
+
+        gender.value = res.data.Sex
+        if (res.data.Image) {
+            avatar.value = `data:image/jpeg;base64,${res.data.Image}`
+        }
+
+    } catch (err) {
+        console.error(err)
+    }
+})
+const saving = ref(false)
+
+const saveProfile = async () => {
+    if (saving.value) return
+
+    saving.value = true
+
+    try {
+        await api.put("/UUsers/profile", {
+            name: form.value.name,
+            phone: form.value.phone,
+            sex: gender.value,
+            birthDate: form.value.birthday,
+            address: form.value.address
+        })
+
+        alert("更新成功")
+
+        router.push("/users/home")
+
+    } catch (err) {
+        console.error(err)
+
+        const message =
+            err.response?.data?.message ||
+            "更新失敗，請稍後再試"
+
+        alert(message)
+
+    } finally {
+        saving.value = false
+    }
 }
 </script>
 
@@ -283,7 +341,8 @@ const triggerUpload = () => {
     /* font-size: 22px;
     font-weight: 600; */
     margin-bottom: 32px;
-    color:  #f38d00;;
+    color: #f38d00;
+    ;
 }
 
 
