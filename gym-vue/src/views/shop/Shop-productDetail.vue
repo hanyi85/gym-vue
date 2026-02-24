@@ -28,7 +28,7 @@ const loadProduct = () => {
         price: data.Price,                 
         discountPrice: data.DiscountPrice,
         category: data.CategoryName,
-        image: API_URL.replace('/api/', '') + data.ImagePath,
+        images: data.ImageList || [],
         description: data.Description || '暫無商品描述',
         rating: data.AverageStar || 0,
         reviewCount: data.TotalComments || 0,
@@ -124,98 +124,92 @@ watch(
     </nav>
 
     <div class="row g-5">
-      <div class="col-lg-6">
-        <div class="image-gallery">
-          <div class="main-image-box border rounded bg-white position-relative mb-3">
-            <img :src="product.image" class="img-fluid main-img" :alt="product.name">
-            
-          </div>
-
-          <div class="thumbnail-row d-flex gap-2">
-            <div 
-              class="thumb-item border rounded overflow-hidden" 
-              :class="{ 'active-thumb': activeImageIndex === 0 }"
-              @click="activeImageIndex = 0"
-            >
-              <img :src="product.image" class="img-fluid">
-            </div>
-            <div 
-              v-for="i in 2" :key="i"
-              class="thumb-item border rounded overflow-hidden opacity-50"
-              @click="activeImageIndex = i"
-            >
-              <img :src="product.image" class="img-fluid" style="filter: grayscale(1);">
-            </div>
-          </div>
+  <div class="col-lg-6" v-if="product.images && product.images.length > 0">
+    <div id="productCarousel" class="carousel slide border rounded shadow-sm overflow-hidden mb-3" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <div 
+          v-for="(img, index) in product.images" 
+          :key="'main-' + index"
+          class="carousel-item" 
+          :class="{ active: index === 0 }"
+          data-bs-interval="3000"
+        >
+          <img 
+  :src="API_URL.replace('/api/', '') + img" 
+  class="d-block w-100" 
+  style="object-fit: cover; aspect-ratio: 1/1;"
+>
         </div>
       </div>
+      
+      <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      </button>
+    </div>
 
-      <div class="col-lg-6">
-        <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}({{ product.specName }})</h1>
-        <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
-        
-        <ul class="list-unstyled mb-4">
-          <li v-for="feat in product.features" :key="feat" class="small text-secondary mb-1">
-            ◦ {{ feat }}
-          </li>
-        </ul>
-
-        <div class="promo-banner border-start border-warning border-4 ps-3 py-2 mb-4 bg-light small">
-          <div class="text-dark mb-1">至 02/11 00:00 截止 全店，馬上紅包袋</div>
-          <div class="text-dark">至 02/11 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
-        </div>
-
-        <div class="price-rating-area mb-4" v-if="product">
-  <div class="d-flex align-items-baseline mb-1">
-    <span class="text-danger fs-2 fw-bold me-2">
-      NT${{ (product.discountPrice && product.discountPrice > 0) ? product.discountPrice : product.price }}
-    </span>
-    
-    <span v-if="product.discountPrice && product.discountPrice > 0" class="text-muted text-decoration-line-through small">
-      NT${{ product.price }}
-    </span>
-  </div>
-
-  <div class="rating text-warning small">
-    ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
-  </div>
-</div>
-
-        <div class="quantity-control mb-4">
-          <label class="small text-muted d-block mb-2">數量</label>
-          <div class="input-group" style="width: 130px;">
-            <button class="btn btn-outline-secondary py-1" @click="decreaseQty">-</button>
-            <input type="text" class="form-control text-center border-secondary py-1" v-model="quantity" readonly>
-            <button class="btn btn-outline-secondary py-1" @click="increaseQty">+</button>
-          </div>
-        </div>
-
-        <!-- <div class="addon-box border rounded p-3 mb-4 bg-light">
-          <div class="addon-title small fw-bold mb-3 text-muted">+ 以優惠價加購商品 (最多 1 件)</div>
-          <div v-for="addon in product.additions" :key="addon.id" class="addon-item d-flex align-items-center mb-2">
-            <input type="checkbox" class="form-check-input me-3" v-model="addon.checked">
-            <div class="addon-img-placeholder border rounded bg-white me-2"></div>
-            <div class="addon-info small">
-              <div class="text-dark">{{ addon.name }}</div>
-              <div class="text-danger">優惠價 NT${{ addon.price }}</div>
-            </div>
-          </div>
-        </div> -->
-
-        <div class="row g-2">
-          <div class="col-6">
-            <button class="btn w-100 py-2 fw-bold text-white btn-add-cart" @click="addToCart">加入購物車</button>
-          </div>
-          <div class="col-6">
-            <button class="btn w-100 py-2 fw-bold text-white btn-buy-now">立即購買</button>
-          </div>
-        </div>
-        
-        <!-- <div class="text-center mt-3">
-          <a href="#" class="text-muted small text-decoration-none">♡ 加入追蹤清單</a>
-        </div> -->
+    <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar">
+      <div 
+        v-for="(img, index) in product.images" 
+        :key="'thumb-' + index"
+        class="thumb-box border rounded cursor-pointer"
+        data-bs-target="#productCarousel" 
+        :data-bs-slide-to="index"
+        style="width: 80px; height: 80px; flex-shrink: 0; overflow: hidden; cursor: pointer;"
+      >
+        <img 
+  :src="API_URL.replace('/api/', '') + img" 
+  class="w-100 h-100" 
+  style="object-fit: cover;"
+>
       </div>
     </div>
+  </div>
+  
+  <div class="col-lg-6">
+    <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}({{ product.specName }})</h1>
+    <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
+    
+    <div class="promo-banner border-start border-warning border-4 ps-3 py-2 mb-4 bg-light small">
+      <div class="text-dark mb-1">至 02/11 00:00 截止 全店，馬上紅包袋</div>
+      <div class="text-dark">至 02/11 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
+    </div>
+
+    <div class="price-rating-area mb-4">
+      <div class="d-flex align-items-baseline mb-1">
+        <span class="text-danger fs-2 fw-bold me-2">
+          NT${{ (product.discountPrice && product.discountPrice > 0) ? product.discountPrice : product.price }}
+        </span>
+        <span v-if="product.discountPrice && product.discountPrice > 0" class="text-muted text-decoration-line-through small">
+          NT${{ product.price }}
+        </span>
+      </div>
+      <div class="rating text-warning small">
+        ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
+      </div>
+    </div>
+
+    <div class="quantity-control mb-4">
+      <label class="small text-muted d-block mb-2">數量</label>
+      <div class="input-group" style="width: 130px;">
+        <button class="btn btn-outline-secondary py-1" @click="decreaseQty">-</button>
+        <input type="text" class="form-control text-center border-secondary py-1" v-model="quantity" readonly>
+        <button class="btn btn-outline-secondary py-1" @click="increaseQty">+</button>
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6">
+        <button class="btn w-100 py-2 fw-bold text-white btn-add-cart" @click="addToCart" style="background-color: #ff8c00; border: none;">加入購物車</button>
+      </div>
+      <div class="col-6">
+        <button class="btn w-100 py-2 fw-bold text-white" @click="buyNow" style="background-color: #f4511e; border: none;">立即購買</button>
+      </div>
+    </div>
+  </div>
+</div>
     <div class="product-info-tabs mt-5">
       <ul class="nav nav-tabs justify-content-center border-bottom-0" id="productTab" role="tablist">
         <li class="nav-item" role="presentation">
