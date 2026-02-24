@@ -1,61 +1,92 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-const orders = ref([
-  {
-    id: 'BK20260203001',
-    course: '燃脂體能課程',
-    coach: '張老師',
-    date: '2026-02-03',
-    time: '10:00',
-    price: 300,
-    status: '已完成',
-  },
-  {
-    id: 'BK20260205002',
-    course: '瑜珈基礎課程',
-    coach: 'Linda',
-    date: '2026-02-05',
-    time: '14:00',
-    price: 400,
-    status: '即將到來',
-  },
-  {
-    id: 'BK20260120003',
-    course: '進階重訓',
-    coach: 'Mike',
-    date: '2026-01-20',
-    time: '18:00',
-    price: 600,
-    status: '已取消',
-  }
-])
+const orders = ref([])
+const loading = ref(true)
 
-function goDetail(order) {
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api',
+})
+
+// 依你的後端：GET /api/coursebookings/history?userId=1
+async function fetchOrders() {
+  loading.value = true
+  try {
+    const userId = 1 // 先假登入
+    const res = await api.get(`/coursebookings/history?userId=${userId}`)
+    orders.value = res.data || []
+  } catch (err) {
+    console.error(err)
+    alert('載入訂單失敗')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchOrders)
+
+// 把 StartTime 轉成你畫面要的 YYYY-MM-DD / HH:mm
+function formatDate(dt) {
+  const d = new Date(dt)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+function formatTime(dt) {
+  const d = new Date(dt)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mi}`
+}
+
+/**
+ * 狀態顯示：
+ * 你的後端 Status 目前回「已報名」等字串，
+ * 但你 UI 想要「即將到來 / 已完成 / 已取消」
+ * 所以我們用 StartTime + Status 推出 UI 狀態。
+ */
+function uiStatus(o) {
+  // 若後端明確是取消類
+  if ((o.Status || '').includes('取消')) return '已取消'
+
+  const start = new Date(o.StartTime)
+  const now = new Date()
+
+  // 過去時間 -> 已完成（前提不是取消）
+  if (start < now) return '已完成'
+
+  // 未來時間 -> 即將到來
+  return '即將到來'
+}
+
+function goDetail(o) {
   router.push({
     name: 'courses-booking-success',
     query: {
-      orderId: order.id,
-      course: order.course,
-      date: order.date,
-      time: order.time,
-      price: order.price
-    }
+      // 原本用 order.id，現在用 CourseBookingId
+      orderId: `BK${o.CourseBookingId}`,
+      course: o.CourseName,
+      date: formatDate(o.StartTime),
+      time: formatTime(o.StartTime),
+      price: o.FinalPrice,
+    },
   })
 }
 
-function goReview(order) {
+function goReview(o) {
   router.push({
     name: 'courses-review',
     query: {
-      orderId: order.id,
-      course: order.course,
-      coach: order.coach,
-      date: `${order.date} ${order.time}`,
-    }
+      orderId: `BK${o.CourseBookingId}`,
+      course: o.CourseName,
+      coach: o.CoachName,
+      date: `${formatDate(o.StartTime)} ${formatTime(o.StartTime)}`,
+    },
   })
 }
 </script>
@@ -64,50 +95,48 @@ function goReview(order) {
   <div class="page-wrapper">
     <div class="content-wrapper">
       <h2 class="fw-bold text-center mb-2">我的課程訂單</h2>
-      <p class="text-center text-muted mb-4">
-        查看你的預約紀錄與狀態
-      </p>
+      <p class="text-center text-muted mb-4">查看你的預約紀錄與狀態</p>
 
-      <div class="order-list">
-        <div class="order-card" v-for="o in orders" :key="o.id">
+      <div v-if="loading" class="text-center text-muted">載入中...</div>
+
+      <div v-else class="order-list">
+        <div class="order-card" v-for="o in orders" :key="o.CourseBookingId">
           <div class="order-left">
-            <h5>{{ o.course }}</h5>
-            <p>教練：{{ o.coach }}</p>
-            <p>時間：{{ o.date }} {{ o.time }}</p>
-            <p>訂單編號：{{ o.id }}</p>
+            <h5>{{ o.CourseName }}</h5>
+            <p>教練：{{ o.CoachName }}</p>
+            <p>時間：{{ formatDate(o.StartTime) }} {{ formatTime(o.StartTime) }}</p>
+            <p>訂單編號：BK{{ o.CourseBookingId }}</p>
           </div>
 
           <div class="order-right">
             <span
               class="status"
               :class="{
-                done: o.status === '已完成',
-                upcoming: o.status === '即將到來',
-                cancel: o.status === '已取消'
+                done: uiStatus(o) === '已完成',
+                upcoming: uiStatus(o) === '即將到來',
+                cancel: uiStatus(o) === '已取消'
               }"
             >
-              {{ o.status }}
+              {{ uiStatus(o) }}
             </span>
 
-            <div class="price">NT$ {{ o.price }}</div>
+            <div class="price">NT$ {{ o.FinalPrice }}</div>
 
             <div class="btn-group">
-            <button class="detail-btn" @click="goDetail(o)">
-  查看詳情
-</button>
+              <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
+
               <button
-                v-if="o.status === '已完成'"
-                class="review-btn" @click="goReview(o)"
+                v-if="uiStatus(o) === '已完成'"
+                class="review-btn"
+                @click="goReview(o)"
               >
                 去評論
               </button>
             </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="orders.length === 0" class="empty">
-        尚無任何預約紀錄
+        <div v-if="orders.length === 0" class="empty">尚無任何預約紀錄</div>
       </div>
     </div>
   </div>

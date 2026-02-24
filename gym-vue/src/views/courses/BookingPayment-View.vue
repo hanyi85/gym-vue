@@ -74,7 +74,7 @@ onMounted(async () => {
 
 //  建立表單並自動送到藍新
 function postToNewebPay(payload) {
-  // ✅ 同時支援 PascalCase / camelCase
+  //  同時支援 PascalCase / camelCase
   const url = payload.GatewayUrl || payload.gatewayUrl
   const merchantId = payload.MerchantID || payload.merchantID
   const tradeInfo = payload.TradeInfo || payload.tradeInfo
@@ -117,45 +117,64 @@ async function goPay() {
     return
   }
 
-  // 信用卡：走藍新
-  if (paymentMethod.value === 'credit') {
-    paying.value = true
-    try {
-      const res = await api.post('/Payment/newebpay/create', {
-        // 暫時用 scheduleId 當 orderId（之後你可改成後端先建立訂單再回傳 orderId）
-        orderId: summary.value.scheduleId || scheduleId,
-        amount: summary.value.finalPrice,
-        itemDesc: summary.value.courseName || '課程訂單',
-      })
-localStorage.setItem('pending_booking', JSON.stringify({
-  scheduleId: summary.value.scheduleId,
-  courseId: summary.value.courseId,
-  course: summary.value.courseName,
-  date: summary.value.date,
-  time: summary.value.time,
-  price: summary.value.finalPrice,
-  coach: summary.value.coachName,
-  name,
-  phone,
-  note,
-}))
-      postToNewebPay(res.data)
-      // ⚠️ 這裡不要 router.push，因為已經跳到藍新頁面了
-      return
-    } catch (err) {
-      showToast(err.response?.data || err.message)
-    } finally {
-      paying.value = false
-    }
-    return
-  }
+// 信用卡：最穩流程（先寫 DB 拿 BK，再去藍新）
+if (paymentMethod.value === 'credit') {
+  paying.value = true
+  try {
+    // 先建立「待付款」訂單（真的寫進資料庫）
+    const pendingRes = await api.post('/CourseBookings/pending', {
+      ScheduleId: summary.value.scheduleId || scheduleId,
+      UserId: 1, // 先假登入
+      FinalPrice: summary.value.finalPrice,
+      DiscountAmount: summary.value.discountAmount || 0,
+      DiscountId: null,
+    })
 
-  // 非信用卡：先沿用你原本的 success（專題展示用）
+    const bookingId = pendingRes.data.CourseBookingId
+    const merchantOrderNo = `BK${String(bookingId).padStart(9, '0')}` 
+
+    //  用 BK 當 orderId 建立藍新交易（這樣回來就能對回 DB）
+    const res = await api.post('/Payment/newebpay/create', {
+      OrderId: merchantOrderNo,
+  Amount: summary.value.finalPrice,
+  ItemDesc: summary.value.courseName || '課程訂單',
+    })
+
+    // （可留可不留）保留展示資訊，不再依賴它寫 DB
+    localStorage.setItem(
+      'pending_booking',
+      JSON.stringify({
+        bookingId, // 多存 bookingId，成功頁就算沒打 API 也能顯示 BK
+        scheduleId: summary.value.scheduleId,
+        courseId: summary.value.courseId,
+        course: summary.value.courseName,
+        date: summary.value.date,
+        time: summary.value.time,
+        price: summary.value.finalPrice,
+        coach: summary.value.coachName,
+        name,
+        phone,
+        note,
+      })
+    )
+
+    // 跳藍新
+    postToNewebPay(res.data)
+    return
+  } catch (err) {
+    showToast(err.response?.data || err.message)
+  } finally {
+    paying.value = false
+  }
+  return
+}
+
+  // 非信用卡：沿用原本的 success
 router.push({
   name: 'courses-booking-success',
   query: {
     scheduleId: summary.value.scheduleId,
-    courseId: summary.value.courseId,          // ✅新增：避免 undefined
+    courseId: summary.value.courseId,         
     course: summary.value.courseName,
     date: summary.value.date,
     time: summary.value.time,
