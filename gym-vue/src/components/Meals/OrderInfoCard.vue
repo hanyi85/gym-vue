@@ -1,4 +1,6 @@
 <script setup>
+import dayjs from 'dayjs'
+
 defineProps({
   order: Object
 })
@@ -12,7 +14,7 @@ defineProps({
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-6">訂單編號：{{ order?.FOrderId }}</div>
-        <div class="col-md-6">訂單成立時間：{{ order?.FOrderAt }}</div>
+        <div class="col-md-6">訂單成立時間：{{ order?.FOrderAt ? dayjs(order.FOrderAt).format('YYYY年MM月DD日 HH:mm:ss') : '' }}</div>
         <div class="col-md-6">訂購人：{{ order?.FOrderName }}</div>
         <div class="col-md-6">電話：{{ order?.FOrderPhone }}</div>
         <div class="col-md-6">Email：{{ order?.FOrderEmail }}</div>
