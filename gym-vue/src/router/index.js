@@ -158,6 +158,7 @@ const routes = [
     name: 'courses-booking-payment',
     component: () => import('@/views/courses/BookingPayment-View.vue'),
   },
+  
   {
     path: '/courses/booking-success',
     name: 'courses-booking-success',

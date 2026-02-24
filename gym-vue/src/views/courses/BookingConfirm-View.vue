@@ -7,7 +7,7 @@ import BookingStepper from '@/components/Course/BookingStepper.vue'
 const route = useRoute()
 const router = useRouter()
 
-const scheduleId = Number(route.query.scheduleId)
+const scheduleId = Number(route.query.scheduleId || 0)
 
 const api = axios.create({
   baseURL: 'https://localhost:7218/api'

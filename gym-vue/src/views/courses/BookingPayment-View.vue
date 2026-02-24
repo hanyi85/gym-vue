@@ -1,4 +1,5 @@
 <script setup>
+
 import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
@@ -14,13 +15,11 @@ const api = axios.create({
 const scheduleId = Number(route.query.scheduleId || 0)
 const discountCodeQuery = (route.query.discountCode || '').toString().trim()
 
-
 const name = (route.query.name || '').toString()
 const phone = (route.query.phone || '').toString()
 const note = (route.query.note || '').toString()
 
 const paymentMethod = ref('credit')
-
 
 const summary = ref({
   scheduleId: 0,
@@ -36,6 +35,7 @@ const summary = ref({
 })
 
 const loading = ref(false)
+const paying = ref(false)
 
 const toast = ref({ show: false, text: '', type: 'error' })
 let toastTimer = null
@@ -54,7 +54,6 @@ const payBtnText = computed(() => {
 })
 
 onMounted(async () => {
-
   if (!scheduleId) {
     showToast('缺少 scheduleId，請重新選擇時段')
     setTimeout(() => router.back(), 600)
@@ -63,44 +62,117 @@ onMounted(async () => {
 
   loading.value = true
   try {
-    const qs = discountCodeQuery
-      ? `?code=${encodeURIComponent(discountCodeQuery)}`
-      : ''
-
+    const qs = discountCodeQuery ? `?code=${encodeURIComponent(discountCodeQuery)}` : ''
     const res = await api.get(`/CCourses/payment-summary/${scheduleId}${qs}`)
     summary.value = res.data
   } catch (err) {
     showToast(err.response?.data || err.message)
-  //  setTimeout(() => router.back(), 800)
   } finally {
     loading.value = false
   }
 })
 
-function goPay() {
-  router.push({
-    name: 'courses-booking-success',
-    query: {
-      scheduleId: summary.value.scheduleId,
-      course: summary.value.courseName,
-      date: summary.value.date,
-      time: summary.value.time,
-      coach: summary.value.coachName,
-      originPrice: summary.value.originPrice,
-      discountCode: summary.value.discountCode,
-      discountAmount: summary.value.discountAmount,
-      price: summary.value.finalPrice,
+//  建立表單並自動送到藍新
+function postToNewebPay(payload) {
+  // ✅ 同時支援 PascalCase / camelCase
+  const url = payload.GatewayUrl || payload.gatewayUrl
+  const merchantId = payload.MerchantID || payload.merchantID
+  const tradeInfo = payload.TradeInfo || payload.tradeInfo
+  const tradeSha = payload.TradeSha || payload.tradeSha
+  const version = payload.Version || payload.version
 
-      
-      name,
-      phone,
-      note,
+  if (!url || !merchantId || !tradeInfo || !tradeSha || !version) {
+    console.error('NewebPay payload missing fields:', payload)
+    showToast('藍新參數缺少（欄位大小寫不一致），請看 Console')
+    return
+  }
 
-      // 暫時的 orderId（之後改後端回傳）
-      orderId: 'BK' + Date.now(),
-      paymentMethod: paymentMethod.value,
-    },
-  })
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = url
+
+  const add = (name, value) => {
+    const input = document.createElement('input')
+    input.type = 'hidden'
+    input.name = name
+    input.value = value
+    form.appendChild(input)
+  }
+
+  add('MerchantID', merchantId)
+  add('TradeInfo', tradeInfo)
+  add('TradeSha', tradeSha)
+  add('Version', version)
+
+  console.log('POST to:', form.action)
+  document.body.appendChild(form)
+  form.submit()
+}
+async function goPay() {
+  if (paying.value) return
+
+  // 基本檢查
+  if (!summary.value.finalPrice || summary.value.finalPrice <= 0) {
+    showToast('金額不正確，請重新選擇')
+    return
+  }
+
+  // 信用卡：走藍新
+  if (paymentMethod.value === 'credit') {
+    paying.value = true
+    try {
+      const res = await api.post('/Payment/newebpay/create', {
+        // 暫時用 scheduleId 當 orderId（之後你可改成後端先建立訂單再回傳 orderId）
+        orderId: summary.value.scheduleId || scheduleId,
+        amount: summary.value.finalPrice,
+        itemDesc: summary.value.courseName || '課程訂單',
+      })
+localStorage.setItem('pending_booking', JSON.stringify({
+  scheduleId: summary.value.scheduleId,
+  courseId: summary.value.courseId,
+  course: summary.value.courseName,
+  date: summary.value.date,
+  time: summary.value.time,
+  price: summary.value.finalPrice,
+  coach: summary.value.coachName,
+  name,
+  phone,
+  note,
+}))
+      postToNewebPay(res.data)
+      // ⚠️ 這裡不要 router.push，因為已經跳到藍新頁面了
+      return
+    } catch (err) {
+      showToast(err.response?.data || err.message)
+    } finally {
+      paying.value = false
+    }
+    return
+  }
+
+  // 非信用卡：先沿用你原本的 success（專題展示用）
+router.push({
+  name: 'courses-booking-success',
+  query: {
+    scheduleId: summary.value.scheduleId,
+    courseId: summary.value.courseId,          // ✅新增：避免 undefined
+    course: summary.value.courseName,
+    date: summary.value.date,
+    time: summary.value.time,
+    coach: summary.value.coachName,
+    originPrice: summary.value.originPrice,
+    discountCode: summary.value.discountCode,
+    discountAmount: summary.value.discountAmount,
+    price: summary.value.finalPrice,
+
+    name,
+    phone,
+    note,
+
+    orderId: 'BK' + Date.now(),
+    paymentMethod: paymentMethod.value,
+  },
+})
 }
 </script>
 
@@ -175,12 +247,16 @@ function goPay() {
           ATM 轉帳
         </label>
 
-        <div class="btn-row">
-          <button class="back-btn" @click="$router.back()">上一步</button>
-          <button class="pay-btn" :disabled="loading" @click="goPay">
-            {{ payBtnText }}
-          </button>
-        </div>
+       <div class="btn-row">
+  <button class="back-btn" @click="$router.back()">上一步</button>
+  <button
+    class="pay-btn"
+    :disabled="loading || paying"
+    @click="goPay"
+  >
+    {{ payBtnText }}
+  </button>
+</div>
       </div>
     </div>
   </div>

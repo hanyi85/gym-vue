@@ -5,6 +5,12 @@ import QrcodeVue from 'qrcode.vue'
 const route = useRoute()
 const router = useRouter()
 
+const courseId = route.query.courseId
+if (courseId === undefined || courseId === null || courseId === '' || courseId === 'undefined') {
+  // 不要做 router.push(`/courses/${courseId}`)
+  // 你想導回列表就：
+  // router.replace('/courses/list')
+}
 const orderId = route.query.orderId
 const course = route.query.course
 const date = route.query.date
