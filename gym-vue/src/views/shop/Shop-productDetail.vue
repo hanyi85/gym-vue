@@ -191,8 +191,8 @@ watch(
     <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
     
     <div class="promo-banner border-start border-warning border-4 ps-3 py-2 mb-4 bg-light small">
-      <div class="text-dark mb-1">至 02/11 00:00 截止 全店，馬上紅包袋</div>
-      <div class="text-dark">至 02/11 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
+      <div class="text-dark mb-1">至 03/14 00:00 截止 全店，馬上紅包袋</div>
+      <div class="text-dark">至 03/14 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
     </div>
 
     <div class="price-rating-area mb-4">
