@@ -42,6 +42,12 @@ const routes = [
     path: '/users/verifyEmail',
     name: 'user-verify-Email',
     component: () => import('@/views/users/UserVerifyEmail.vue'),
+  }, 
+  //舊用戶信箱驗證
+  {
+    path: '/users/EmailNotice',
+    name: 'user-Email-Notice',
+    component: () => import('@/views/users/VerifyEmailNotice.vue'),
   },
 
   // 會員健康資訊

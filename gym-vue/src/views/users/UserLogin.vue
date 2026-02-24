@@ -18,6 +18,9 @@
           <label class="floating-label">密碼</label>
           <span class="eye-icon" @click="showPassword = !showPassword">
             <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+            <p v-if="errorMessage" class="error-text">
+  {{ errorMessage }}
+</p>
           </span>
         </div>
 
@@ -25,7 +28,12 @@
           <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
 
-        <Btn add-text="登入" :single="true" @add="handleLogin" />
+        <Btn 
+  add-text="登入" 
+  :single="true" 
+  :disabled="loading"
+  @add="handleLogin" 
+/>
 
       </form>
 
@@ -53,7 +61,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/services/api'
 import Btn from '@/components/btn.vue'
 
 const router = useRouter()
@@ -61,28 +69,40 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const loading = ref(false)
+const errorMessage = ref('')
 
 async function handleLogin() {
-  try {
-    const response = await axios.post(
-      "https://localhost:7218/api/Auth/login",
-      {
-        email: email.value,
-        password: password.value
-      }
-    )
+  if (loading.value) return
 
-    console.log(response.data)
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const res = await api.post("/Auth/login", {
+      email: email.value,
+      password: password.value
+    })
 
     // 存 token
-    localStorage.setItem("token", response.data.token)
+    localStorage.setItem("token", res.data.token)
 
-    // 跳轉
-    router.push("/users/home")
+    // 根據 Email 驗證狀態導向
+    if (!res.data.isEmailVerified) {
+      router.push("/users/EmailNotice")
+    } else {
+      router.push("/users/home")
+    }
 
-  } catch (error) {
-    console.error(error)
-    alert("登入失敗")
+  } catch (err) {
+    console.error(err)
+
+    errorMessage.value =
+      err.response?.data ||
+      "登入失敗，請檢查帳號密碼"
+
+  } finally {
+    loading.value = false
   }
 }
 
