@@ -1,15 +1,36 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 
-const orderId = route.query.orderId || 'BK20260203001'
-const course = route.query.course || '燃脂體能課程'
-const coach = route.query.coach || '張老師'
-const date = route.query.date || '2026-02-03 10:00'
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api',
+})
 
+// ✅ 一律從訂單頁帶進來（沒有就退回）
+const courseBookingId = ref(Number(route.query.courseBookingId || 0))
+
+// ✅ 顯示資訊（不再有假資料）
+const orderId = ref((route.query.orderId || '').toString())
+const course = ref((route.query.course || '').toString())
+const coach = ref((route.query.coach || '').toString())
+const startTime = ref((route.query.startTime || '').toString())
+
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
+
+const displayDateTime = computed(() => {
+  if (!startTime.value) return ''
+  const d = new Date(startTime.value)
+  if (isNaN(d.getTime())) return startTime.value
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+})
+
+// ⭐ 評分
 const overallRating = ref(5)
 const coachRating = ref(5)
 const environmentRating = ref(5)
@@ -26,112 +47,201 @@ const tags = [
   '課程充實',
   '會再回訪',
   '節奏剛好',
-  '設備新穎'
+  '設備新穎',
 ]
 
 function toggleTag(tag) {
+  if (isReviewed.value) return
   if (selectedTags.value.includes(tag)) {
-    selectedTags.value = selectedTags.value.filter(t => t !== tag)
+    selectedTags.value = selectedTags.value.filter((t) => t !== tag)
   } else {
     selectedTags.value.push(tag)
   }
 }
 
-function submitReview() {
-  console.log({
-    orderId,
-    overallRating: overallRating.value,
-    coachRating: coachRating.value,
-    environmentRating: environmentRating.value,
-    contentRating: contentRating.value,
-    atmosphereRating: atmosphereRating.value,
-    comment: comment.value,
-    tags: selectedTags.value
-  })
+const submitting = ref(false)
+const loading = ref(false)
 
-  router.push('/courses/review-success')
+// ✅ 是否已評論（如果已評論 → 進來顯示內容並鎖住不能改）
+const isReviewed = ref(false)
+
+onMounted(async () => {
+  if (!courseBookingId.value) {
+    router.push('/courses/booking-history')
+    return
+  }
+
+  // ✅ 不要 alert，改成：如果已評論就「自動載入並鎖住」
+  loading.value = true
+  try {
+    const existed = await api.get(`/Reviews/booking/${courseBookingId.value}`)
+
+    if (existed.data) {
+      isReviewed.value = true
+
+      // 嘗試把既有評論帶回來顯示（欄位名依你後端回傳可能不同）
+      // 如果你後端回的是 CReview entity，通常會是：
+      // rating/teachingQuality/environmentScore/difficultyScore/valueScore/comment
+      const r = existed.data
+
+      overallRating.value = r.Rating ?? r.rating ?? overallRating.value
+      coachRating.value = r.TeachingQuality ?? r.teachingQuality ?? coachRating.value
+      environmentRating.value = r.EnvironmentScore ?? r.environmentScore ?? environmentRating.value
+      atmosphereRating.value = r.DifficultyScore ?? r.difficultyScore ?? atmosphereRating.value
+      contentRating.value = r.ValueScore ?? r.valueScore ?? contentRating.value
+      comment.value = r.Comment ?? r.comment ?? ''
+
+      // tags：你目前還沒做 TagMap 的回傳就先不處理
+      selectedTags.value = []
+    }
+  } catch (err) {
+    // 沒這支 API 或其他錯誤：不擋使用者送出
+    console.warn('check existed review failed:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+async function submitReview() {
+  if (submitting.value) return
+  if (!courseBookingId.value) return
+  if (isReviewed.value) {
+    router.push('/courses/booking-history')
+    return
+  }
+
+  const payload = {
+    CourseBookingId: courseBookingId.value,
+    UserId: 1, // 先假登入
+
+    Rating: overallRating.value,
+    TeachingQuality: coachRating.value,
+    EnvironmentScore: environmentRating.value,
+
+    // 先用 ValueScore / DifficultyScore 填（展示用）
+    ValueScore: contentRating.value,
+    DifficultyScore: atmosphereRating.value,
+
+    Comment: comment.value || '',
+    TagIds: [], // ✅ 明天再做 TagName -> TagId / TagMap
+  }
+
+  submitting.value = true
+  try {
+    await api.post('/Reviews/course', payload)
+
+    // ✅ 不要 alert，直接回訂單頁（訂單頁會顯示「已評論」）
+    router.push('/courses/booking-history')
+  } catch (err) {
+    console.error(err)
+    alert(err.response?.data || err.message)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
 <template>
   <div class="page-wrapper">
-
     <div class="review-title">
       <h2>評論系統</h2>
+      <p v-if="loading" class="muted">載入中...</p>
+      <p v-else-if="isReviewed" class="muted">此訂單已評論（僅供查看）</p>
     </div>
 
     <div class="review-card">
+     <div class="course-info">
+  <h4 class="course-title">{{ course }}</h4>
+  <p>教練：{{ coach }}</p>
+  <p>時間：{{ displayDateTime }}</p>
+  <p>訂單編號：{{ orderId }}</p>
+</div>
 
-      <div class="course-info">
-        <div class="img">課程圖片</div>
-        <div class="info">
-          <h4>{{ course }}</h4>
-          <p>教練：{{ coach }}</p>
-          <p>時間：{{ date }}</p>
-          <p>訂單編號：{{ orderId }}</p>
-        </div>
-      </div>
+<hr class="divider" />
 
-      
       <div class="rating-group">
         <div class="rating-item">
           <span>整體評分</span>
           <div class="stars">
-            <span v-for="n in 5" :key="n"
-              :class="{ active: n <= overallRating }"
-              @click="overallRating = n">★</span>
+            <span
+              v-for="n in 5"
+              :key="n"
+              :class="{ active: n <= overallRating, disabled: isReviewed }"
+              @click="isReviewed ? null : (overallRating = n)"
+              >★</span
+            >
           </div>
         </div>
 
         <div class="rating-item">
           <span>教練表現</span>
           <div class="stars">
-            <span v-for="n in 5" :key="n"
-              :class="{ active: n <= coachRating }"
-              @click="coachRating = n">★</span>
+            <span
+              v-for="n in 5"
+              :key="n"
+              :class="{ active: n <= coachRating, disabled: isReviewed }"
+              @click="isReviewed ? null : (coachRating = n)"
+              >★</span
+            >
           </div>
         </div>
 
         <div class="rating-item">
           <span>環境整潔</span>
           <div class="stars">
-            <span v-for="n in 5" :key="n"
-              :class="{ active: n <= environmentRating }"
-              @click="environmentRating = n">★</span>
+            <span
+              v-for="n in 5"
+              :key="n"
+              :class="{ active: n <= environmentRating, disabled: isReviewed }"
+              @click="isReviewed ? null : (environmentRating = n)"
+              >★</span
+            >
           </div>
         </div>
 
         <div class="rating-item">
           <span>課程內容</span>
           <div class="stars">
-            <span v-for="n in 5" :key="n"
-              :class="{ active: n <= contentRating }"
-              @click="contentRating = n">★</span>
+            <span
+              v-for="n in 5"
+              :key="n"
+              :class="{ active: n <= contentRating, disabled: isReviewed }"
+              @click="isReviewed ? null : (contentRating = n)"
+              >★</span
+            >
           </div>
         </div>
 
         <div class="rating-item">
           <span>氣氛體驗</span>
           <div class="stars">
-            <span v-for="n in 5" :key="n"
-              :class="{ active: n <= atmosphereRating }"
-              @click="atmosphereRating = n">★</span>
+            <span
+              v-for="n in 5"
+              :key="n"
+              :class="{ active: n <= atmosphereRating, disabled: isReviewed }"
+              @click="isReviewed ? null : (atmosphereRating = n)"
+              >★</span
+            >
           </div>
         </div>
       </div>
 
-      
       <div class="textarea">
         <label>心得分享</label>
-        <textarea v-model="comment" rows="4" placeholder="寫下你的真實體驗..." />
+        <textarea
+          v-model="comment"
+          rows="4"
+          placeholder="寫下你的真實體驗..."
+          :disabled="isReviewed"
+        />
       </div>
- 
+
       <div class="tags">
         <p>快速標籤</p>
         <span
           v-for="t in tags"
           :key="t"
-          :class="{ active: selectedTags.includes(t) }"
+          :class="{ active: selectedTags.includes(t), disabled: isReviewed }"
           @click="toggleTag(t)"
         >
           {{ t }}
@@ -139,10 +249,23 @@ function submitReview() {
       </div>
 
       <div class="btn-row">
-        <button class="outline" @click="$router.back()">返回訂單</button>
-        <button class="primary" @click="submitReview">送出評論</button>
-      </div>
+        <button class="outline" @click="router.push('/courses/booking-history')">
+          返回訂單
+        </button>
 
+        <button
+          v-if="!isReviewed"
+          class="primary"
+          :disabled="submitting"
+          @click="submitReview"
+        >
+          {{ submitting ? '送出中...' : '送出評論' }}
+        </button>
+
+        <button v-else class="primary" disabled>
+          已評論
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -168,18 +291,25 @@ function submitReview() {
 }
 
 .course-info {
-  display: flex;
-  gap: 16px;
+  text-align: center;
   margin-bottom: 24px;
 }
 
-.img {
-  width: 140px;
-  height: 90px;
-  background: #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.course-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.course-info p {
+  margin: 4px 0;
+  color: #374151;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #434344;
+  margin: 20px 0 30px 0;
 }
 
 .rating-group {
@@ -254,5 +384,7 @@ function submitReview() {
   border-radius: 8px;
   font-weight: bold;
 }
+
+
 </style>
 

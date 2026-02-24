@@ -82,10 +82,11 @@ function goReview(o) {
   router.push({
     name: 'courses-review',
     query: {
+      courseBookingId: o.CourseBookingId,
       orderId: `BK${o.CourseBookingId}`,
       course: o.CourseName,
       coach: o.CoachName,
-      date: `${formatDate(o.StartTime)} ${formatTime(o.StartTime)}`,
+      startTime: o.StartTime,
     },
   })
 }
@@ -123,16 +124,39 @@ function goReview(o) {
             <div class="price">NT$ {{ o.FinalPrice }}</div>
 
             <div class="btn-group">
-              <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
+  <!-- 詳情只留一顆 -->
+  <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
 
-              <button
-                v-if="uiStatus(o) === '已完成'"
-                class="review-btn"
-                @click="goReview(o)"
-              >
-                去評論
-              </button>
-            </div>
+  <!-- 用 uiStatus(o) 統一判斷，避免你顯示跟判斷不一致 -->
+  <!-- 已取消 -->
+  <button
+    v-if="uiStatus(o) === '已取消'"
+    class="review-btn disabled"
+    disabled
+  >
+    已取消
+  </button>
+
+  <!-- 已完成 + 已評論 -->
+  <button
+    v-else-if="uiStatus(o) === '已完成' && o.IsReviewed"
+    class="review-btn disabled"
+    disabled
+  >
+    已評論
+  </button>
+
+  <!-- 已完成 + 未評論 -->
+  <button
+    v-else-if="uiStatus(o) === '已完成' && !o.IsReviewed"
+    class="review-btn"
+    @click="goReview(o)"
+  >
+    去評論
+  </button>
+
+  <!-- 即將到來：不顯示評論按鈕（想顯示也可做 disabled） -->
+</div>
           </div>
         </div>
 
@@ -244,5 +268,11 @@ function goReview(o) {
   text-align: center;
   color: #999;
   margin-top: 60px;
+}
+
+.review-btn.disabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 </style>
