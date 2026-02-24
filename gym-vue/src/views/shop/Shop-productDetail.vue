@@ -13,6 +13,13 @@ const allProducts = ref([]);
 
 const API_URL=import.meta.env.VITE_API_URL
 
+const maskName = (name) => {
+  if (!name) return "匿名用戶";
+  const str = String(name);
+  if (str.length <= 2) return str.substring(0, 1) + "*";
+  return str.substring(0, 1) + "*".repeat(str.length - 2) + str.substring(str.length - 1);
+};
+
 const loadProduct = () => {
   const specId = route.params.id;
   
@@ -32,7 +39,17 @@ const loadProduct = () => {
         description: data.Description || '暫無商品描述',
         rating: data.AverageStar || 0,
         reviewCount: data.TotalComments || 0,
-        comments: data.Comments || [],
+        // 修正後的 map 邏輯
+comments: (data.Comments || []).map(c => {
+    console.log("正在處理的評論原始物件:", c);
+    
+    return {
+        userName: maskName(c.UserName || `User${c.UserId}`),
+        star: c.CommentStar || 0, 
+        content: c.productComment|| c.ProductComment || c.productcomment || "（讀取內容失敗）", 
+        date: c.CommentTime || ""
+    };
+})
       };
     })
     .catch(error => {
@@ -40,11 +57,12 @@ const loadProduct = () => {
     });
 };
 
+
+
 const loadRelatedProducts = () => {
   // 這裡路徑要確認，如果是複用列表頁，通常是 SProducts
   axios.get(API_URL + 'SProducts') 
     .then(resp => {
-      // 這裡的對接邏輯要跟你的 loadProduct 欄位名稱一致
       allProducts.value = resp.data.map(p => ({
         id: p.PId,
         name: p.PName,
@@ -64,8 +82,8 @@ const relatedProducts = computed(() => {
   if (allProducts.value.length === 0) return [];
   
   return allProducts.value
-    .filter(p => p.id !== product.value?.id) // 過濾掉「目前正在看」的這件
-    .slice(0, 4); // 只取前 4 件顯示
+    .filter(p => p.id !== product.value?.id) 
+    .slice(0, 4); 
 });
 
 onMounted(() => {
@@ -273,14 +291,52 @@ watch(
         </div>
 
         <div class="tab-pane fade" id="reviews" role="tabpanel">
-          <div class="mx-auto max-width-800 py-4 text-center">
-             <div class="fs-2 text-warning mb-2">★★★★★</div>
-             <p class="fw-bold">{{ product.rating }} / 5.0</p>
-             <p class="text-muted">共有 {{ product.reviewCount }} 位顧客留下評價</p>
-             <hr>
-             <p class="text-muted italic small py-5">目前尚無詳細文字評論內容</p>
+  <div class="mx-auto max-width-800 py-4">
+    <div class="row align-items-center mb-5">
+      <div class="col-md-4 text-center border-end">
+        <h4 class="fw-bold mb-1">{{ product.reviewCount }} 個評價</h4>
+        <div class="text-warning fs-5 mb-1">
+          <span v-for="i in 5" :key="i">{{ i <= Math.round(product.rating) ? '★' : '☆' }}</span>
+          <span class="ms-2 text-dark fs-6">{{ product.rating }} 分</span>
+        </div>
+      </div>
+      <div class="col-md-8 ps-md-4">
+        <div v-for="i in [5,4,3,2,1]" :key="i" class="d-flex align-items-center mb-1 small text-muted">
+          <span class="me-2" style="width: 30px;">{{ i }} 分</span>
+          <div class="progress flex-grow-1" style="height: 4px;">
+            <div class="progress-bar bg-warning" :style="{ width: (i === 5 ? '98%' : (i === 4 ? '2%' : '0%')) }"></div>
+          </div>
+          <span class="ms-2" style="width: 30px;">{{ i === 5 ? '98%' : (i === 4 ? '2%' : '0%') }}</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div v-if="product.comments && product.comments.length > 0">
+      <div v-for="(comment, index) in product.comments" :key="index" class="row mb-5">
+        <div class="col-md-4 d-flex align-items-start mb-2 mb-md-0">
+          <div class="avatar-circle bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+            <i class="bi bi-person text-secondary fs-4"></i>
+          </div>
+          <div>
+            <div class="fw-bold">{{ comment.userName }}</div>
+            <div class="text-muted small">{{ comment.date }}</div>
           </div>
         </div>
+        <div class="col-md-8">
+          <div class="text-warning mb-2">
+            <span v-for="star in 5" :key="star">{{ star <= comment.star ? '★' : '☆' }}</span>
+          </div>
+          <p class="text-secondary small">{{ comment.content }}</p>
+        </div>
+      </div>
+    </div>
+    <div v-else class="text-center py-5">
+      <p class="text-muted italic">目前尚無詳細評價內容</p>
+    </div>
+  </div>
+</div>
       </div>
     </div>
     <div class="related-products-section mt-5 pt-5 border-top">
@@ -316,6 +372,28 @@ watch(
 </template>
 
 <style scoped>
+.avatar-circle {
+  border: 1px solid #eee;
+}
+
+.progress {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
+.progress-bar {
+  border-radius: 10px;
+}
+
+/* 確保評價內容的文字顏色與圖片一致 */
+.text-secondary {
+  color: #666 !important;
+}
+
+.max-width-800 {
+  max-width: 800px;
+}
+
 /* 相關產品樣式 */
 .x-small { font-size: 0.75rem; }
 .text-truncate-2 {
