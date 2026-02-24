@@ -23,7 +23,7 @@ function getProducts() {
 }
 
 
-const activeCategory = ref('全部商品'); // 預設改為乳清蛋白
+const activeCategory = ref('全部商品'); 
 
 const searchQuery = ref('');
 
@@ -283,8 +283,13 @@ onMounted(() => {
     </router-link>
 
     <div class="price-info">
-      <span class="active-orange fw-bold me-2">NT${{ product.Price }}</span>
-      <span class="text-muted text-decoration-line-through x-small">NT${{ product.OriginalPrice }}</span>
+      <span class="active-orange fw-bold me-2">
+    NT${{ (product.DiscountPrice && product.DiscountPrice > 0) ? product.DiscountPrice : product.Price }}
+  </span>
+
+  <span v-if="product.DiscountPrice && product.DiscountPrice > 0" class="text-muted text-decoration-line-through x-small">
+    NT${{ product.Price }}
+  </span>
     </div>
   </div>
 </div>

@@ -19,12 +19,14 @@ const loadProduct = () => {
   axios.get(API_URL+'SProducts/'+specId)
     .then(resp => {
       const data = resp.data;
-      console.log("後端回傳的原始資料：", data);
+      console.log("單一商品 API 回傳內容：", data);
+
       product.value = {
         id: data.PId,
         name: data.PName,
-        specName: data.SpecName,
-        price: data.Price,
+        specName: data.SpecName,     
+        price: data.Price,                 
+        discountPrice: data.DiscountPrice,
         category: data.CategoryName,
         image: API_URL.replace('/api/', '') + data.ImagePath,
         description: data.Description || '暫無商品描述',
@@ -47,7 +49,9 @@ const loadRelatedProducts = () => {
         id: p.PId,
         name: p.PName,
         specName: p.SpecName,
-        price: p.Price,
+        price: (p.DiscountPrice && p.DiscountPrice > 0) ? p.DiscountPrice : p.Price,
+  originalPrice: p.Price,
+  hasDiscount: !!(p.DiscountPrice && p.DiscountPrice > 0),
         image: API_URL.replace('/api/', '').replace(/\/$/, '') + p.ImagePath,
       }));
     })
@@ -161,15 +165,21 @@ watch(
           <div class="text-dark">至 02/11 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
         </div>
 
-        <div class="price-rating-area mb-4">
-          <div class="d-flex align-items-baseline mb-1">
-            <span class="text-danger fs-2 fw-bold me-2">NT${{ product.price }}</span>
-            <span class="text-muted text-decoration-line-through small">NT${{ product.originalPrice }}</span>
-          </div>
-          <div class="rating text-warning small">
-            ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
-          </div>
-        </div>
+        <div class="price-rating-area mb-4" v-if="product">
+  <div class="d-flex align-items-baseline mb-1">
+    <span class="text-danger fs-2 fw-bold me-2">
+      NT${{ (product.discountPrice && product.discountPrice > 0) ? product.discountPrice : product.price }}
+    </span>
+    
+    <span v-if="product.discountPrice && product.discountPrice > 0" class="text-muted text-decoration-line-through small">
+      NT${{ product.price }}
+    </span>
+  </div>
+
+  <div class="rating text-warning small">
+    ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
+  </div>
+</div>
 
         <div class="quantity-control mb-4">
           <label class="small text-muted d-block mb-2">數量</label>
