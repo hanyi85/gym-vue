@@ -47,7 +47,7 @@ comments: (data.Comments || []).map(c => {
         userName: maskName(c.UserName || `User${c.UserId}`),
         star: c.CommentStar || 0, 
         content: c.productComment|| c.ProductComment || c.productcomment || "（讀取內容失敗）", 
-        date: c.CommentTime || ""
+        date: c.CommentTime ? c.CommentTime.replace(/-/g, '/').substring(0, 10) : ''
     };
 })
       };
@@ -96,19 +96,28 @@ const decreaseQty = () => { if (quantity.value > 1) quantity.value--; };
 const increaseQty = () => { quantity.value++; };
 
 const addToCart = () => {
-  const cartItem = {
-    specId: product.value.id,   
-    quantity: quantity.value,   
-    price: product.value.price, 
-    userId: 1                   // 測試用，建議之後動態抓取
+  // 從 localStorage 取得登入會員資訊
+  // const user = JSON.parse(localStorage.getItem('user'));
+  
+  // if (!user) {
+  //   alert("請先登入會員");
+  //   return;
+  // }
+
+const cartData = {
+    // 這裡的 Key (UserId, SpecId, Count) 必須與後端 DTO 完全一致
+    UserId: user.UserId, 
+    SpecId: parseInt(route.params.id), 
+    Count: quantity.value // 確保您有定義 const quantity = ref(1)
   };
 
-  axios.post(API_URL+'SCarts/AddToCart', cartItem)
-    .then(resp => {
-      alert("已成功存入資料庫購物車！");
+  axios.post(API_URL + 'SCarts', cartData)
+    .then(res => {
+      alert("已加入購物車");
     })
     .catch(err => {
-      console.error("失敗原因是：", err.response.data);
+      console.error("加入購物車失敗", err.response?.data);
+      alert("加入失敗，請檢查主控台錯誤訊息");
     });
 };
   
