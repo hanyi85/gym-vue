@@ -103,21 +103,26 @@ const addToCart = () => {
   //   alert("請先登入會員");
   //   return;
   // }
-
+const tempUserId = 1;
 const cartData = {
-    // 這裡的 Key (UserId, SpecId, Count) 必須與後端 DTO 完全一致
-    UserId: user.UserId, 
+    
+    UserId: tempUserId, 
     SpecId: parseInt(route.params.id), 
-    Count: quantity.value // 確保您有定義 const quantity = ref(1)
+    Quantity: quantity.value, 
+    Price: product.value.price
   };
+  console.log("嘗試送出的購物車資料：", cartData);
 
-  axios.post(API_URL + 'SCarts', cartData)
+  axios.post(`${API_URL}SCarts/AddToCart`, cartData)
     .then(res => {
-      alert("已加入購物車");
+      if (confirm("商品已加入購物車！是否要立即前往購物車結帳？")) {
+      router.push('/shop/cart'); 
+    } else {
+      console.log("使用者選擇繼續購物");}
     })
     .catch(err => {
-      console.error("加入購物車失敗", err.response?.data);
-      alert("加入失敗，請檢查主控台錯誤訊息");
+      console.error("加入購物車失敗", err);
+      alert("系統忙碌中，請稍後再試");
     });
 };
   
