@@ -1,107 +1,100 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'; // 確保匯入 watch
+import { ref, onMounted, computed, watch } from 'vue'; 
 import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
 
 const route = useRoute();
 const router = useRouter();
 
-// 模擬商品資料庫，建議與 Shop-product.vue 的 ID 對應
-const allProducts = ref([
-  { 
-    id: 1, 
-    name: '水解乳清蛋白【可可歐蕾】500克-GOpower果果能量', 
-    category: '乳清蛋白',
-    price: 729, 
-    originalPrice: 1100,
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    rating: 5.0,
-    reviewCount: 313,
-    description: '濃郁可可香氣搭配歐蕾的絲滑口感，每一口都彷彿沉浸在濃郁香醇的巧克力海洋中。',
-    features: ['水解技術，將蛋白質轉換為更小形式', '獨家水解技術，適合腸胃吸收較不佳者', '採用國際知名大廠乳清蛋白'],
-    additions: [
-      { id: 101, name: '脆米蛋白棒【雙癒可可】', price: 64, checked: false },
-      { id: 102, name: '濃縮乳清蛋白【臻醇可可】隨身包', price: 50, checked: false }
-    ]
-  },
-  { 
-    id: 2, 
-    name: '【果果能量】分離乳清蛋白 - 經典原味', 
-    category: '乳清蛋白',
-    price: 650, 
-    originalPrice: 800,
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    rating: 4.8,
-    reviewCount: 156,
-    description: '極低脂肪與碳水化合物，適合追求純淨蛋白質補充的健身者。',
-    features: ['極低乳糖', '迅速吸收', '無添加人工香料'],
-    additions: [
-      { id: 101, name: '搖搖杯 - 霧黑款', price: 199, checked: false }
-    ]
-  }
-]);
-
 const product = ref(null);
 const quantity = ref(1);
 const activeImageIndex = ref(0);
+const allProducts = ref([]);
 
-// 載入商品邏輯
+const API_URL=import.meta.env.VITE_API_URL
+
 const loadProduct = () => {
-  const productId = parseInt(route.params.id);
-  const found = allProducts.value.find(p => p.id === productId);
-  if (found) {
-    product.value = found;
-  } else {
-    // 若找不到則預設顯示第一筆，或導回列表
-    product.value = allProducts.value[0];
-  }
+  const specId = route.params.id;
+  
+  axios.get(API_URL+'SProducts/'+specId)
+    .then(resp => {
+      const data = resp.data;
+      console.log("後端回傳的原始資料：", data);
+      product.value = {
+        id: data.PId,
+        name: data.PName,
+        specName: data.SpecName,
+        price: data.Price,
+        category: data.CategoryName,
+        image: API_URL.replace('/api/', '') + data.ImagePath,
+        description: data.Description || '暫無商品描述',
+        rating: data.AverageStar || 0,
+        reviewCount: data.TotalComments || 0,
+        comments: data.Comments || [],
+      };
+    })
+    .catch(error => {
+      console.error('抓取商品詳情失敗:', error);
+    });
 };
 
-onMounted(loadProduct);
-
-// 監聽 ID 變化，避免切換商品時頁面不更新
-watch(() => route.params.id, loadProduct);
-
-// 數量控制
-const decreaseQty = () => { if (quantity.value > 1) quantity.value--; };
-const increaseQty = () => { quantity.value++; };
-
-// 加入購物車模擬
-const addToCart = () => {
-  // 1. 從本地儲存取得現有購物車資料，若無則為空陣列
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-  // 2. 檢查購物車是否已有相同商品
-  const existingItem = cart.find(item => item.id === product.value.id);
-
-  if (existingItem) {
-    // 若有，增加數量
-    existingItem.quantity += quantity.value;
-  } else {
-    // 若無，新增商品資訊
-    cart.push({
-      id: product.value.id,
-      name: product.value.name,
-      price: product.value.price,
-      image: product.value.image,
-      category: product.value.category,
-      quantity: quantity.value
+const loadRelatedProducts = () => {
+  // 這裡路徑要確認，如果是複用列表頁，通常是 SProducts
+  axios.get(API_URL + 'SProducts') 
+    .then(resp => {
+      // 這裡的對接邏輯要跟你的 loadProduct 欄位名稱一致
+      allProducts.value = resp.data.map(p => ({
+        id: p.PId,
+        name: p.PName,
+        specName: p.SpecName,
+        price: p.Price,
+        image: API_URL.replace('/api/', '').replace(/\/$/, '') + p.ImagePath,
+      }));
+    })
+    .catch(err => {
+      console.error("抓取列表失敗:", err);
     });
-  }
-
-  // 3. 存回 localStorage
-  localStorage.setItem('cart', JSON.stringify(cart));
-  
-  // 4. 提示使用者並詢問是否前往購物車
-  if (confirm(`已將 ${quantity.value} 件商品加入購物車！是否立即前往結帳？`)) {
-    router.push('/shop/cart');
-  }
 };
 
 const relatedProducts = computed(() => {
+  if (allProducts.value.length === 0) return [];
+  
   return allProducts.value
-    .filter(p => p.id !== product.value?.id)
-    .slice(0, 4);
+    .filter(p => p.id !== product.value?.id) // 過濾掉「目前正在看」的這件
+    .slice(0, 4); // 只取前 4 件顯示
 });
+
+onMounted(() => {
+  loadProduct();
+  loadRelatedProducts();
+});
+
+
+const decreaseQty = () => { if (quantity.value > 1) quantity.value--; };
+const increaseQty = () => { quantity.value++; };
+
+const addToCart = () => {
+  const cartItem = {
+    specId: product.value.id,   
+    quantity: quantity.value,   
+    price: product.value.price, 
+    userId: 1                   // 測試用，建議之後動態抓取
+  };
+
+  axios.post(API_URL+'SCarts/AddToCart', cartItem)
+    .then(resp => {
+      alert("已成功存入資料庫購物車！");
+    })
+    .catch(err => {
+      console.error("失敗原因是：", err.response.data);
+    });
+};
+  
+  // 4. 提示使用者並詢問是否前往購物車
+  // if (confirm(`已將 ${quantity.value} 件商品加入購物車！是否立即前往結帳？`)) {
+  //   router.push('/shop/cart');
+  // }
+
 
 // 跳轉至指定產品明細頁
 const goToProduct = (id) => {
@@ -154,7 +147,7 @@ watch(
       </div>
 
       <div class="col-lg-6">
-        <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}</h1>
+        <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}({{ product.specName }})</h1>
         <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
         
         <ul class="list-unstyled mb-4">
@@ -303,10 +296,10 @@ watch(
             <div class="image-wrapper bg-light rounded p-3 mb-3 position-relative">
               <img :src="item.image" class="img-fluid" :alt="item.name">
               <span class="badge bg-warning position-absolute top-0 end-0 m-2 opacity-75 small">
-                {{ item.tag || '500g' }}
+                
               </span>
             </div>
-            <p class="product-name small mb-2 text-dark text-truncate-2">{{ item.name }}</p>
+            <p class="product-name small mb-2 text-dark text-truncate-2">{{ item.name }}({{ item.specName }})</p>
             <div class="product-price">
               <span class="text-warning fw-bold me-1">NT${{ item.price }}</span>
               <span class="text-muted text-decoration-line-through x-small">NT${{ item.originalPrice }}</span>

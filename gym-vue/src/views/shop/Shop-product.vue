@@ -2,10 +2,12 @@
 
 import { ref , onMounted, computed} from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 import Banner from '@/components/banner.vue'
 
 const products = ref([]);
 const categories = ref([]);
+const router = useRouter();
 
 const API_URL=import.meta.env.VITE_API_URL
 
@@ -127,6 +129,10 @@ const handleCategoryClick = (cat) => {
 
 
 const updateTitle = (name) => { activeCategory.value = name; };
+
+const goToDetail = (id) => {
+  router.push({ name: 'ProductDetail', params: { id: id } });
+};
 
 onMounted(() => {
   getProducts();
@@ -258,7 +264,7 @@ onMounted(() => {
 
 
         <div class="row g-4 mb-5">
-  <div v-for="product in filteredProducts" :key="product.PId" class="col-md-4 col-sm-6 text-start">
+  <div v-for="product in filteredProducts" :key="product.PId" class="col-md-4 col-sm-6 text-start" @click="goToDetail(product.PId)">
   <div class="product-card">
     <router-link :to="`/shop/products/${product.PId}`" class="text-decoration-none">
       <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
