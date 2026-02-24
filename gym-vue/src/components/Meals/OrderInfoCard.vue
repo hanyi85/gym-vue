@@ -1,6 +1,13 @@
 <script setup>
 import dayjs from 'dayjs'
+const payments = [
+  { value: 'cash', label: '現金付款' },
+  { value: 'credit', label: '信用卡' },
+  { value: 'transfer', label: '轉帳' }
+]
 
+// 建立一個 map，方便查找
+const paymentMap = Object.fromEntries(payments.map(p => [p.value, p.label]))
 defineProps({
   order: Object
 })
@@ -19,7 +26,7 @@ defineProps({
         <div class="col-md-6">電話：{{ order?.FOrderPhone }}</div>
         <div class="col-md-6">Email：{{ order?.FOrderEmail }}</div>
         <div class="col-md-6">取餐場館：{{ order?.FVenue?.VenueName }}</div>
-        <div class="col-md-6">付款方式：{{ order?.FPayMethod }}</div>
+        <div class="col-md-6">付款方式：{{ paymentMap[order?.FPayMethod] }}</div>
         <div class="col-md-6">訂單狀態：{{ order?.FOrderStatus }}</div>
         <div class="col-md-6 fw-bold price">
           總金額 NT$ {{ order?.FTotalAmount }}
