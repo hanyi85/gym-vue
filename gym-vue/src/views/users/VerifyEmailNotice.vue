@@ -51,11 +51,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '@/services/api'
+import axios from 'axios'
 
 const route = useRoute()
 
-const status = ref('loading') // loading | success | error
+const status = ref('loading') 
 const message = ref('正在驗證中...')
 
 onMounted(async () => {
@@ -68,9 +68,12 @@ onMounted(async () => {
   }
 
   try {
-    const res = await api.get(`/Auth/verify-email`, {
-  params: { token }
-})
+    const res = await axios.get(
+  "http://localhost:5265/api/Auth/verify-email",
+  {
+    params: { token }
+  }
+)
 
     if (res.data.success) {
       status.value = 'success'
@@ -82,7 +85,7 @@ onMounted(async () => {
 
   } catch (err) {
     status.value = 'error'
-    message.value = '驗證失敗或連結已過期'
+    message.value = err.response?.data?.message || '驗證失敗或連結已過期'
   }
 })
 </script>
