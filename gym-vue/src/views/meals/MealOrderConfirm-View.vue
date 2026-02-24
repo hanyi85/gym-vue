@@ -110,10 +110,16 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
     // 呼叫後端產生綠界表單
     const payRes = await axios.post(`${apiUrl}/ECPayPayment/Create`, {orderId} )
 
-    // 直接寫入綠界自動提交表單
-    document.open()
-    document.write(payRes.data)
-    document.close()
+    const div = document.createElement('div')
+  div.innerHTML = payRes.data
+
+  const form = div.querySelector('form')
+  document.body.appendChild(form)
+  form.submit()
+    // // 直接寫入綠界自動提交表單
+    // document.open()
+    // document.write(payRes.data)
+    // document.close()
   } else {
     // 現金或其他方式 → 直接去完成頁
     await axios.post(`${apiUrl}/TMealCarts/OrderFinish/${UserId}`)
