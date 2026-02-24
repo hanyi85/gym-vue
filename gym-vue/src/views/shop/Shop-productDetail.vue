@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
+console.log('API_URL:', API_URL);
 const route = useRoute();
 const router = useRouter();
 
@@ -29,6 +30,7 @@ const loadProduct = () => {
       console.log("單一商品 API 回傳內容：", data);
 
       product.value = {
+        SpecId: data.SpecId || specId,
         id: data.PId,
         name: data.PName,
         specName: data.SpecName,     
@@ -95,41 +97,65 @@ onMounted(() => {
 const decreaseQty = () => { if (quantity.value > 1) quantity.value--; };
 const increaseQty = () => { quantity.value++; };
 
-const addToCart = () => {
-  // 從 localStorage 取得登入會員資訊
-  // const user = JSON.parse(localStorage.getItem('user'));
-  
-  // if (!user) {
-  //   alert("請先登入會員");
-  //   return;
-  // }
-const tempUserId = 1;
-const cartData = {
-    
-    UserId: tempUserId, 
-    SpecId: parseInt(route.params.id), 
-    Quantity: quantity.value, 
-    Price: product.value.price
-  };
-  console.log("嘗試送出的購物車資料：", cartData);
+const addToCart = async () => {
+  const tempUserId = 1;
+  const productData = product.value;
 
-  axios.post(`${API_URL}SCarts/AddToCart`, cartData)
-    .then(res => {
-      if (confirm("商品已加入購物車！是否要立即前往購物車結帳？")) {
-      router.push('/shop/cart'); 
-    } else {
-      console.log("使用者選擇繼續購物");}
-    })
-    .catch(err => {
-      console.error("加入購物車失敗", err);
-      alert("系統忙碌中，請稍後再試");
-    });
+  if (!productData || !productData.SpecId) {
+    alert("商品規格載入失敗，請重新整理頁面");
+    return;
+  }
+
+  const cartData = {
+    UserId: tempUserId,
+    SpecId: productData.SpecId,
+    Quantity: quantity.value,
+    Price: productData.discountPrice || productData.price,
+  };
+
+  try {
+    await axios.post(`${API_URL}SCarts/AddToCart`, cartData);
+
+    const goCart = confirm("商品已加入購物車！是否要前往購物車結帳？");
+    if (goCart) {
+      router.push('/shop/cart');
+    }
+  } catch (err) {
+    console.error("加入購物車失敗", err);
+    alert("加入購物車失敗，請稍後再試");
+  }
 };
-  
-  // 4. 提示使用者並詢問是否前往購物車
-  // if (confirm(`已將 ${quantity.value} 件商品加入購物車！是否立即前往結帳？`)) {
-  //   router.push('/shop/cart');
-  // }
+
+
+const buyNow = async () => {
+  const productData = product.value;
+
+  const cartData = {
+    UserId: 1,
+    SpecId: productData.SpecId,
+    Quantity: quantity.value,
+    Price: productData.discountPrice || productData.price,
+  };
+
+  try {
+    const res = await axios.post(
+      `${API_URL}SCarts/AddToCart`,
+      cartData
+    );
+
+    console.log('AddToCart 回傳：', res.data);
+
+    // ✅ 明確確認後端成功
+    if (res.status === 200 || res.status === 201) {
+      router.push('/shop/cart');
+    } else {
+      alert('加入購物車失敗');
+    }
+  } catch (err) {
+    console.error('加入購物車 API 失敗', err.response || err);
+    alert('加入購物車失敗，請查看 console');
+  }
+};
 
 
 // 跳轉至指定產品明細頁
