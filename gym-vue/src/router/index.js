@@ -187,6 +187,11 @@ const routes = [
   name: 'courses-review-success',
   component: () => import('@/views/courses/ReviewSuccess-View.vue'),
 },
+{
+  path: '/counter/demo',
+  name: 'CounterDemo',
+  component: () => import('@/views/courses/CounterScan-View.vue')
+},
 
   /* =========================
    * 商城 Shop

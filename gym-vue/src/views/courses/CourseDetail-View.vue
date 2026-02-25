@@ -64,16 +64,30 @@ onMounted(async () => {
   course.value = res.data
 
   try {
-    const rr = await axios.get(
-  `https://localhost:7218/api/Reviews/course/${course.value.Id}`
-)
-reviewSummary.value = rr.data
-reviews.value = rr.data.items || []
-  } catch (err) {
-    console.warn('load reviews failed', err)
-    reviewSummary.value = { averageRating: 0, reviewCount: 0 }
-    reviews.value = []
+  const rr = await axios.get(
+    `https://localhost:7218/api/Reviews/course/${course.value.Id}`
+  )
+
+  const d = rr.data || {}
+
+  //  summary 兼容大小寫
+  reviewSummary.value = {
+    courseId: d.courseId ?? d.CourseId ?? 0,
+    averageRating: d.averageRating ?? d.AverageRating ?? 0,
+    reviewCount: d.reviewCount ?? d.ReviewCount ?? 0,
+    averageTeachingQuality: d.averageTeachingQuality ?? d.AverageTeachingQuality ?? 0,
+    averageEnvironment: d.averageEnvironment ?? d.AverageEnvironment ?? 0,
+    averageDifficulty: d.averageDifficulty ?? d.AverageDifficulty ?? 0,
+    averageValue: d.averageValue ?? d.AverageValue ?? 0,
   }
+
+  //  items 兼容大小寫
+  reviews.value = d.items ?? d.Items ?? []
+} catch (err) {
+  console.warn('load reviews failed', err)
+  reviewSummary.value = { averageRating: 0, reviewCount: 0 }
+  reviews.value = []
+}
 })
 
 function goBooking() {
@@ -228,10 +242,10 @@ function goHome() {
   </div>
 
   <div v-else class="review-list">
-    <div class="review-card" v-for="r in reviews" :key="r.reviewId">
+    <div class="review-card" v-for="r in reviews" :key="r.reviewId ?? r.ReviewId">
       <div class="review-head">
        <div class="name">{{ r.userName || r.UserName || '匿名學員' }}</div>
-        <div class="stars small">{{ starText(r.rating) }}</div>
+       <div class="stars small">{{ starText(r.rating ?? r.Rating) }}</div>
       </div>
 
       <div class="subscores" v-if="r.teachingQuality || r.environmentScore || r.valueScore">
@@ -241,8 +255,8 @@ function goHome() {
         <span v-if="r.valueScore">價值 {{ r.valueScore }}</span>
       </div>
 
-      <div class="review-body">{{ r.comment }}</div>
-      <div class="review-foot">{{ fmtDate(r.reviewTime) }}</div>
+    <div class="review-body">{{ r.comment ?? r.Comment }}</div>
+    <div class="review-foot">{{ fmtDate(r.reviewTime ?? r.ReviewTime) }}</div>
     </div>
   </div>
 </div>
