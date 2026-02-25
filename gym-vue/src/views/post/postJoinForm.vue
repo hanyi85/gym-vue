@@ -52,8 +52,10 @@
                   </div>
                   <div>
                     <small class="text-muted d-block">活動時間</small>
-                    <span class="fw-bold text-dark small">{{ formatDateTime(postData.EventInfo.StartDate) }} ~ {{
-                      formatDateTime(postData.EventInfo.EndDate) }}</span>
+                    <span class="fw-bold text-dark small">
+                      {{ formatDateTime(postData.EventInfo.StartDate) }} ~ {{ formatDateTime(postData.EventInfo.EndDate)
+                      }}
+                    </span>
                   </div>
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
@@ -117,12 +119,12 @@
                       <label class="form-check-label fw-bold text-dark" for="sexMale">男性</label>
                     </div>
                     <div class="form-check custom-radio">
-                      <input v-model="form.Sex" class="form-check-input shadow-none" type="radio" value="2"
+                      <input v-model="form.Sex" class="form-check-input shadow-none" type="radio" value="0"
                         id="sexFemale">
                       <label class="form-check-label fw-bold text-dark" for="sexFemale">女性</label>
                     </div>
                     <div class="form-check custom-radio">
-                      <input v-model="form.Sex" class="form-check-input shadow-none" type="radio" value="0"
+                      <input v-model="form.Sex" class="form-check-input shadow-none" type="radio" value="2"
                         id="sexOther">
                       <label class="form-check-label fw-bold text-dark" for="sexOther">其他</label>
                     </div>
@@ -174,10 +176,8 @@
                 </div>
               </div>
 
-              <div
-                class="captcha-wrapper p-4 rounded-4 bg-light mb-5 border border-dashed d-flex justify-content-center">
-                <vue-recaptcha sitekey="6LcNAHcsAAAAAFgudKK9KwtxBbWF7yrTTDZODESg" @verify="onVerify"
-                  @expired="onExpired" />
+              <div class="mb-4 d-flex justify-content-center">
+                <div id="recaptcha-element"></div>
               </div>
 
               <button type="submit" :disabled="isSubmitting"
@@ -200,12 +200,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
-import  VueRecaptcha  from 'vue3-recaptcha-v2';
 
 const route = useRoute();
 const router = useRouter();
@@ -213,15 +211,6 @@ const postData = ref(null);
 const isSubmitting = ref(false);
 const currentStep = ref(1);
 const isLoggedIn = ref(false);
-
-// Google reCAPTCHA 相關
-const recaptchaToken = ref('');
-const onVerify = (response) => {
-  recaptchaToken.value = response;
-};
-const onExpired = () => {
-  recaptchaToken.value = '';
-};
 
 const form = reactive({
   PostId: route.params.id,
@@ -232,33 +221,34 @@ const form = reactive({
   PaymentMethod: 'LINEPAY'
 });
 
-// --- 會員資料處理邏輯 ---
+// 格式化日期
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '未定';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+};
 
-// 1. 模擬測試資料注入 (組員寫好前使用)
-const injectTestData = () => {
-  const testKey = 'userInfo';
-  if (!localStorage.getItem(testKey)) {
-    const mockUser = {
-      name: "王大錘",
-      sex: "1",
-      email: "hammer.king@fitness.com",
-      phone: "0900123456"
-    };
-    localStorage.setItem(testKey, JSON.stringify(mockUser));
-    console.log("🛠️ 已注入模擬會員資料");
+// 取得貼文與活動詳細資訊
+const fetchAllInfo = async () => {
+  try {
+    const id = route.params.id;
+    const response = await axios.get(`https://localhost:7218/api/YPosts/${id}`);
+    postData.value = response.data;
+  } catch (error) {
+    console.error('資料讀取失敗', error);
+    Swal.fire('錯誤', '無法取得活動資訊', 'error');
   }
 };
 
-// 2. 檢查並抓取 localStorage 資料
+// 檢查會員登入狀態並帶入資料
 const checkUserStatus = () => {
-  const savedData = localStorage.getItem('userInfo');
+  const savedData = localStorage.getItem('userInfo'); // 假設你的登入資料存在這
   if (savedData) {
     try {
       const userData = JSON.parse(savedData);
       isLoggedIn.value = true;
-      // 自動填入
       form.Name = userData.name || '';
-      form.Sex = userData.sex ? String(userData.sex) : '1';
+      form.Sex = userData.sex !== undefined ? String(userData.sex) : '1';
       form.Email = userData.email || '';
       form.Phone = userData.phone || '';
     } catch (e) {
@@ -272,34 +262,42 @@ const goToLogin = () => {
   router.push('/login');
 };
 
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '未定';
-  const date = new Date(dateStr);
-  return date.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+// 處理 reCAPTCHA 手動渲染
+let recaptchaWidgetId = null;
+const renderRecaptcha = () => {
+  const checkInterval = setInterval(() => {
+    if (window.grecaptcha && window.grecaptcha.render) {
+      const element = document.getElementById('recaptcha-element');
+      if (element) {
+        recaptchaWidgetId = window.grecaptcha.render('recaptcha-element', {
+          'sitekey': '6LcNAHcsAAAAAFgudKK9KwtxBbWF7yrTTDZODESg'
+        });
+        clearInterval(checkInterval);
+      }
+    }
+  }, 500);
 };
 
-const fetchAllInfo = async () => {
-  try {
-    const id = route.params.id;
-    const response = await axios.get(`https://localhost:7218/api/YPosts/${id}`);
-    postData.value = response.data;
-  } catch (error) {
-    console.error('資料讀取失敗', error);
-  }
-};
-
+// 表單提交邏輯
 const handleFormSubmit = async () => {
-  // 驗證 Google reCAPTCHA
-  if (!recaptchaToken.value) {
-    Swal.fire({ icon: 'warning', title: '驗證提醒', text: '請先勾選「我不是機器人」', confirmButtonColor: '#f3722c' });
+  // 1. 取得 reCAPTCHA Token
+  const token = window.grecaptcha.getResponse(recaptchaWidgetId);
+
+  if (!token) {
+    Swal.fire({
+      icon: 'warning',
+      title: '驗證提醒',
+      text: '請先勾選「我不是機器人」',
+      confirmButtonColor: '#f3722c'
+    });
     return;
   }
 
   isSubmitting.value = true;
 
   try {
-    // 流程步驟 2: 付款確認
-    if (postData.value.EventInfo.Fee > 0) {
+    // 2. 費用確認邏輯
+    if (postData.value?.EventInfo?.Fee > 0) {
       currentStep.value = 2;
       const result = await Swal.fire({
         title: '確認報名資訊？',
@@ -307,7 +305,7 @@ const handleFormSubmit = async () => {
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#f3722c',
-        confirmButtonText: '前往付款',
+        confirmButtonText: '確定，前往付款',
         cancelButtonText: '再檢查一下'
       });
 
@@ -318,18 +316,39 @@ const handleFormSubmit = async () => {
       }
     }
 
-    // 模擬 API 送出
-    const finalData = { ...form, captcha: recaptchaToken.value };
-    console.log('送出的資料：', finalData);
+    // 3. 組合 Payload
+    const userData = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const payload = {
+      PostId: Number(form.PostId),  // 確保是數字
+      UserId: userData.userId ? Number(userData.userId) : null,
+      Name: form.Name,
+      Sex: String(form.Sex),        // 傳送字串 "1", "0" 給後端
+      Email: form.Email,
+      Phone: form.Phone,
+      PaymentMethod: form.PaymentMethod,
+      CaptchaToken: token
+    };
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 4. API 請求
+    const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
+
+    // 5. 成功後續處理
     currentStep.value = 3;
+    await Swal.fire({
+      icon: 'success',
+      title: '報名完成！',
+      text: response.data.message || '已成功收到您的報名資料',
+      confirmButtonColor: '#f3722c'
+    });
 
-    await Swal.fire({ icon: 'success', title: '報名完成！', text: '已收到您的報名，請留意信箱通知', confirmButtonColor: '#f3722c' });
     router.push('/post/card');
 
   } catch (error) {
-    Swal.fire('系統錯誤', '暫時無法報名，請稍後再試', 'error');
+    // 失敗則重設 reCAPTCHA
+    if (window.grecaptcha) window.grecaptcha.reset(recaptchaWidgetId);
+
+    const errorMsg = error.response?.data?.message || '報名失敗，請稍後再試';
+    Swal.fire('系統錯誤', errorMsg, 'error');
   } finally {
     isSubmitting.value = false;
   }
@@ -337,14 +356,14 @@ const handleFormSubmit = async () => {
 
 onMounted(() => {
   window.scrollTo(0, 0);
-  injectTestData(); // 測試用，對接後可刪除
   checkUserStatus();
   fetchAllInfo();
+  renderRecaptcha();
 });
 </script>
 
 <style scoped>
-/* 流程進度條 */
+/* 這裡保留你原本優雅的 CSS 樣式 */
 .process-steps {
   position: relative;
 }
@@ -352,13 +371,11 @@ onMounted(() => {
 .step-line {
   position: absolute;
   top: 20px;
-  left: 0;
-  right: 0;
+  left: 10%;
+  right: 10%;
   height: 2px;
   background: #e0e0e0;
   z-index: 0;
-  width: 80%;
-  margin: 0 auto;
 }
 
 .step-circle {
@@ -393,7 +410,6 @@ onMounted(() => {
   margin-top: 5px;
 }
 
-/* 付款選項 */
 .payment-option {
   cursor: pointer;
   transition: 0.2s;
@@ -411,7 +427,6 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(243, 114, 44, 0.1);
 }
 
-/* 基本樣式 */
 .text-orange {
   color: #f3722c !important;
 }
@@ -428,17 +443,10 @@ onMounted(() => {
   background-color: rgba(25, 135, 84, 0.08);
 }
 
-.border-orange-light {
-  border-color: rgba(243, 114, 44, 0.2) !important;
-}
-
-.border-orange-dashed {
-  border: 2px dashed rgba(243, 114, 44, 0.2);
-}
-
 .btn-orange {
   background-color: #f3722c;
   border: none;
+  color: white;
   transition: 0.3s;
 }
 
@@ -465,11 +473,6 @@ onMounted(() => {
   padding: 0.8rem 0.5rem;
 }
 
-.custom-radio .form-check-input:checked {
-  background-color: #f3722c;
-  border-color: #f3722c;
-}
-
 .info-icon-box {
   width: 48px;
   height: 48px;
@@ -482,10 +485,6 @@ onMounted(() => {
 
 .animate-up {
   animation: fadeInUp 0.6s ease-out both;
-}
-
-.extra-small {
-  font-size: 0.75rem;
 }
 
 @keyframes fadeInUp {
