@@ -11,10 +11,8 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-//  兩種編號分開存：
-// bookingNo = 你系統的訂單編號（BK9）=> 要跟歷史頁一致
-// tradeNo   = 藍新交易/訂單編號（NPxxxx）=> 可選顯示
-const bookingNo = ref('') // BK9
+// 顯示用
+const bookingNo = ref('') // BKxx
 const tradeNo = ref('')   // NP...
 
 const course = ref('')
@@ -24,7 +22,7 @@ const price = ref(0)
 
 const saving = ref(false)
 
-// 建立 booking 寫入資料庫
+// ===== API helpers =====
 async function createBookingFromPending(p) {
   const payload = {
     ScheduleId: p.scheduleId,
@@ -34,55 +32,117 @@ async function createBookingFromPending(p) {
     DiscountAmount: 0,
     DiscountId: null,
   }
-
   const res = await api.post('/CourseBookings', payload)
   return res.data?.CourseBookingId
 }
 
-onMounted(async () => {
-  // ✅ 先吃 query：讓畫面永遠有基本資料（不依賴 pending）
+async function confirmPaid(courseBookingId) {
+  // demo：後端會直接改成已付款（你之後要換成真的查藍新可再改）
+  return api.get('/Payment/newebpay/status', {
+    params: { courseBookingId },
+  })
+}
+
+async function getBookingIdBySchedule(scheduleId) {
+  const r = await api.get('/Payment/booking-id-by-schedule', {
+    params: { scheduleId, userId: 1 },
+  })
+  return r.data?.courseBookingId
+}
+
+// ===== UI / url helpers =====
+function applyQueryBasics() {
   course.value = (route.query.course || '').toString()
   date.value = (route.query.date || '').toString()
   time.value = (route.query.time || '').toString()
   price.value = Number(route.query.price || 0)
 
-  // ✅ orderId 先當成「交易編號」放 tradeNo
-  // （如果你哪天把 BK 帶在 query 也可自動辨識）
   const qOrderId = (route.query.orderId || '').toString()
   if (qOrderId.startsWith('BK')) bookingNo.value = qOrderId
   else tradeNo.value = qOrderId
+}
 
-  // ✅ 如果 query 有 bookingId（你未來可以加），直接顯示 BK
+function syncBookingIdToUrl(id) {
+  // 避免無限 replace：只有當 url 上的 bookingId 不同才 replace
+  const current = Number(route.query.bookingId || 0)
+  if (current === id) return
+
+  router.replace({
+    path: route.path,
+    query: { ...route.query, bookingId: id, paid: 'true' },
+  })
+}
+
+async function markPaidAndSyncUrl(id) {
+  if (!id) return
+  try {
+    await confirmPaid(id)
+  } catch (err) {
+    console.error('confirmPaid failed', err)
+  } finally {
+    bookingNo.value = 'BK' + id
+    syncBookingIdToUrl(id)
+  }
+}
+
+// ===== main flow =====
+onMounted(async () => {
+  console.log('booking-success mounted', route.fullPath)
+
+  applyQueryBasics()
+
+  const paid = (route.query.paid || '').toString() === 'true'
+  const scheduleId = Number(route.query.scheduleId || 0)
   const qBookingId = Number(route.query.bookingId || 0)
-  if (!bookingNo.value && qBookingId) bookingNo.value = 'BK' + qBookingId
 
-  // ✅ 再讀 pending：有才建立訂單、拿到 BK
+  // 1) 如果網址已經有 bookingId：直接更新付款 & 同步顯示
+  if (qBookingId) {
+    await markPaidAndSyncUrl(qBookingId)
+    // 不 return，讓下面也能補資料（如果 query 缺 course/date/time/price）
+  }
+
+  // 2) 若沒有 bookingId 但 paid=true 且有 scheduleId：用 scheduleId 找最新那筆 bookingId
+  if (!qBookingId && paid && scheduleId) {
+    try {
+      const id = await getBookingIdBySchedule(scheduleId)
+      if (id) await markPaidAndSyncUrl(id)
+    } catch (err) {
+      console.error('getBookingIdBySchedule failed', err)
+    }
+  }
+
+  // 3) 如果有 pending_booking：建立訂單（避免重複建立）
   const raw = localStorage.getItem('pending_booking')
   if (!raw) return
 
   const p = JSON.parse(raw)
 
-  // 如果 query 沒帶到，就用 pending 補上
+  // query 沒帶到就用 pending 補上
   if (!course.value) course.value = p.course || ''
   if (!date.value) date.value = p.date || ''
   if (!time.value) time.value = p.time || ''
   if (!price.value) price.value = Number(p.price || 0)
 
-  // 避免刷新重複建立
   const lockKey = `booking_created_${p.scheduleId}_${p.price}`
   const cachedBk = sessionStorage.getItem(lockKey)
+
   if (cachedBk) {
     bookingNo.value = cachedBk
     localStorage.removeItem('pending_booking')
+
+    const cachedId = Number(cachedBk.replace('BK', ''))
+    if (cachedId) await markPaidAndSyncUrl(cachedId)
     return
   }
 
   saving.value = true
   try {
     const id = await createBookingFromPending(p)
-    bookingNo.value = 'BK' + id
-    sessionStorage.setItem(lockKey, bookingNo.value)
-    localStorage.removeItem('pending_booking')
+    if (id) {
+      sessionStorage.setItem(lockKey, 'BK' + id)
+      localStorage.removeItem('pending_booking')
+      await markPaidAndSyncUrl(id)
+    }
   } catch (err) {
     console.error(err)
     alert(err.response?.data || err.message)
