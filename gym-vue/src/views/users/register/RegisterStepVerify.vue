@@ -202,6 +202,7 @@ console.log('token =', token)
 }
 
 .icon {
+   line-height: 1;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -273,6 +274,7 @@ console.log('token =', token)
 .icon.success {
   background-color: #e8f5e9;
   color: #4caf50;
+  background: red !important;
 }
 
 .btn {
@@ -308,5 +310,6 @@ console.log('token =', token)
 .icon.error {
   background-color: #fdecea;
   color: #e53935;
+  background: red !important;
 }
 </style>
