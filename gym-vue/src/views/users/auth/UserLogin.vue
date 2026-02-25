@@ -18,22 +18,17 @@
           <label class="floating-label">密碼</label>
           <span class="eye-icon" @click="showPassword = !showPassword">
             <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
-            
+
           </span>
         </div>
-<p v-if="errorMessage" class="error-text">
-  {{ errorMessage }}
-</p>
+        <p v-if="errorMessage" class="error-text">
+          {{ errorMessage }}
+        </p>
         <div class="text-start mb-5">
-          <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
+          <router-link to="/users/auth/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
 
-        <Btn 
-  add-text="登入" 
-  :single="true" 
-  :disabled="loading"
-  @add="handleLogin" 
-/>
+        <Btn add-text="登入" :single="true" :disabled="loading" @add="handleLogin" />
 
       </form>
 
@@ -56,6 +51,24 @@
       </div>
     </div>
   </div>
+
+  <!-- Email 驗證視窗 -->
+  <div v-if="showVerifyModal" class="verify-modal">
+    <div class="verify-card">
+      <h4>請先完成電子郵件驗證</h4>
+      <p>我們已寄送驗證信到您的信箱</p>
+
+      <div class="d-flex gap-3 mt-3">
+        <button class="btn-outline-tech" @click="resendEmail">
+          重新寄送
+        </button>
+
+        <button class="btn-outline-tech" @click="showVerifyModal = false">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -63,33 +76,18 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import Btn from '@/components/btn.vue'
-import axios from "axios"
 
-async function login() {
-  const res = await axios.post("https://localhost:7218/api/auth/login", {
-    email: this.email,
-    password: this.password
-  })
-
-  const token = res.data.token
-
-  // 存 JWT
-  localStorage.setItem("token", token)
-
-  // (可選) 存使用者資訊
-  localStorage.setItem("user", JSON.stringify(res.data))
-
-  // 導向首頁
-  this.$router.push("/users/home")
-}
 const router = useRouter()
 
+// 狀態
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+const showVerifyModal = ref(false)
 
+// 登入
 async function handleLogin() {
   if (loading.value) return
 
@@ -102,28 +100,40 @@ async function handleLogin() {
       password: password.value
     })
 
-    // 存 token
-    localStorage.setItem("token", res.data.token)
-
-    // 根據 Email 驗證狀態導向
-    if (!res.data.isEmailVerified) {
-      router.push("/users/EmailNotice")
-    } else {
-      router.push("/users/home")
+    //  如果需要驗證信箱
+    if (res.data.needVerify) {
+      showVerifyModal.value = true
+      return
     }
 
-  } catch (err) {
-    console.error(err)
+    //  正常登入
+    localStorage.setItem("token", res.data.token)
+    router.push("/users/home")
 
+  } catch (err) {
     errorMessage.value =
       err.response?.data ||
       "登入失敗，請檢查帳號密碼"
-
   } finally {
     loading.value = false
   }
 }
 
+// 重新寄送驗證信
+async function resendEmail() {
+  console.log("我被點了")
+  try {
+    await api.post(
+  "https://localhost:7218/api/Auth/resend-verify-email", {
+      email: email.value
+    })
+    alert("驗證信已重新寄出")
+  } catch {
+    alert("寄送失敗，請稍後再試")
+  }
+}
+
+// 第三方登入
 const socialLogin = (platform) => {
   console.log(`${platform} 登入啟動`)
 }
@@ -256,5 +266,22 @@ const socialLogin = (platform) => {
 .social-circle:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.verify-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verify-card {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  width: 320px;
+  text-align: center;
 }
 </style>

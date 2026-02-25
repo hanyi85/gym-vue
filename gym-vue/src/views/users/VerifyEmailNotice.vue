@@ -43,44 +43,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { useEmailVerify } from '@/composables/useEmailVerify'
+import { verifyEmailChange } from '@/services/auth' // 引入 API
 
 const route = useRoute()
 
-const status = ref('loading')
-const message = ref('正在驗證中...')
+//  把 API 傳進去
+const { status, message, execute } =
+  useEmailVerify(verifyEmailChange)
 
-onMounted(async () => {
-  const token = route.query.token
-
-  if (!token) {
-    status.value = 'error'
-    message.value = '驗證連結無效'
-    return
-  }
-
-  try {
-    const res = await axios.get(
-      "http://localhost:5265/api/Auth/verify-email",
-      {
-        params: { token }
-      }
-    )
-
-    if (res.data.success) {
-      status.value = 'success'
-      message.value = '你的電子郵件已完成驗證'
-    } else {
-      status.value = 'error'
-      message.value = res.data.message || '驗證失敗'
-    }
-
-  } catch (err) {
-    status.value = 'error'
-    message.value = err.response?.data?.message || '驗證失敗或連結已過期'
-  }
+onMounted(() => {
+  execute(route.query.token)
 })
 </script>
 

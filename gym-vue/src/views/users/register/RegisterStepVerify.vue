@@ -21,14 +21,20 @@
     </aside>
 
     <!-- 右側內容 -->
-    <main class="content">
+    <main class="setup-content">
       <div class="verify-card">
         <h2 class="title">認證你的電子郵件</h2>
 
-        <div class="state">
+<div class="state">
+
+  <!-- 查收信件狀態 -->
+  <div v-if="status === 'notice'">
+    <div class="icon">📧</div>
+    <p class="message">{{ message }}</p>
+  </div>
 
   <!-- Loading -->
-  <div v-if="status === 'loading'">
+  <div v-else-if="status === 'loading'">
     <div class="icon">⏳</div>
     <p class="message">{{ message }}</p>
   </div>
@@ -65,14 +71,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '@/services/api'
-import axios from 'axios'
+import { useEmailVerify } from '@/composables/useEmailVerify'
+import { verifyEmail } from '@/services/auth'
 
 const route = useRoute()
 
 const currentStep = ref(1)
-const status = ref('loading') // loading | success | error
-const message = ref('正在驗證中...')
 
 const steps = [
   { title: '基本資料', desc: '填寫個人資訊' },
@@ -81,30 +85,19 @@ const steps = [
   { title: '完成', desc: '確認送出' }
 ]
 
-onMounted(async () => {
+const { status, message, execute } =
+  useEmailVerify(verifyEmail)
+
+onMounted(() => {
   const token = route.query.token
-
-  if (!token) {
-    status.value = 'error'
-    message.value = '驗證連結無效'
-    return
-  }
-
-  try {
-    const res = await api.get(
-  `/auth/verify-email?token=${token}`
-)
-
-    if (res.data.success) {
-      status.value = 'success'
-      message.value = '你的電子郵件已完成驗證'
-    } else {
-      status.value = 'error'
-      message.value = res.data.message || '驗證失敗'
-    }
-  } catch (err) {
-    status.value = 'error'
-    message.value = '驗證失敗或連結已過期'
+console.log('token =', token)
+  if (token) {
+    console.log('準備執行驗證')
+    execute(token)
+  } else {
+    status.value = 'notice'
+    message.value =
+      '我們已寄送驗證信至您的信箱，請前往收信並點擊驗證連結完成註冊。'
   }
 })
 </script>
@@ -112,8 +105,8 @@ onMounted(async () => {
 <style scoped>
 /* ===== 整頁版型 ===== */
 .setup-page {
-  display: flex;
-  min-height: 100vh;
+    display: flex;
+  min-height: calc(100vh - 80px);
   background: #f6f4f1;
 }
 
@@ -180,12 +173,12 @@ onMounted(async () => {
 }
 
 /* ===== 右側內容 ===== */
-.content {
+.setup-content {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 60px;
+  padding: 60px 0;
 }
 
 /* ===== 驗證卡片 ===== */
@@ -209,10 +202,10 @@ onMounted(async () => {
 }
 
 .icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  font-size: 24px;
+  font-size: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,8 +242,9 @@ onMounted(async () => {
 }
 
 .title {
-  font-size: 20px;
-  margin-bottom: 32px;
+    font-size: 22px;
+  margin-bottom: 28px;
+  font-weight: 600;
   color: #333;
 }
 
@@ -296,7 +290,9 @@ onMounted(async () => {
   border: none;
 }
 .actions {
-    text-align: right;
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
 }
 
 .next {

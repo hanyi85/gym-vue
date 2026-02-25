@@ -121,7 +121,7 @@
 
                 <!-- 操作按鈕 -->
                 <div class="actions">
-                    <router-link to="/users/verifyEmail" class="next btn-next">
+                    <router-link to="/users/verify-email" class="next btn-next">
                         下一步
                     </router-link>
                 </div>
