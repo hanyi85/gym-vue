@@ -77,7 +77,17 @@ function goDetail(o) {
     },
   })
 }
-
+function goPay(o) {
+  router.push({
+    name: 'courses-booking-payment', // 你自己的付款頁路由名稱
+    query: {
+      courseBookingId: o.CourseBookingId,
+      scheduleId: o.ScheduleId,
+      price: o.FinalPrice,
+      course: o.CourseName
+    }
+  })
+}
 function goReview(o) {
   router.push({
     name: 'courses-review',
@@ -100,68 +110,78 @@ function goReview(o) {
 
       <div v-if="loading" class="text-center text-muted">載入中...</div>
 
-      <div v-else class="order-list">
-        <div class="order-card" v-for="o in orders" :key="o.CourseBookingId">
-          <div class="order-left">
-            <h5>{{ o.CourseName }}</h5>
-            <p>教練：{{ o.CoachName }}</p>
-            <p>時間：{{ formatDate(o.StartTime) }} {{ formatTime(o.StartTime) }}</p>
-            <p>訂單編號：BK{{ o.CourseBookingId }}</p>
-          </div>
+      <template v-else>
+        <div v-if="orders.length === 0" class="empty">尚無任何預約紀錄</div>
 
-          <div class="order-right">
-            <span
-              class="status"
-              :class="{
-                done: uiStatus(o) === '已完成',
-                upcoming: uiStatus(o) === '即將到來',
-                cancel: uiStatus(o) === '已取消'
-              }"
-            >
-              {{ uiStatus(o) }}
-            </span>
+        <div v-else class="order-list">
+          <div class="order-card" v-for="o in orders" :key="o.CourseBookingId">
+            <div class="order-left">
+              <h5 class="course-title">{{ o.CourseName }}</h5>
+              <p>教練：{{ o.CoachName }}</p>
+              <p>時間：{{ formatDate(o.StartTime) }} {{ formatTime(o.StartTime) }}</p>
+              <p>訂單編號：BK{{ o.CourseBookingId }}</p>
+            </div>
 
-            <div class="price">NT$ {{ o.FinalPrice }}</div>
+            <div class="order-right">
+             <div class="meta-row">
+  <span class="badge" :class="o.PaymentStatus === '已付款' ? 'paid' : 'unpaid'">
+    {{ o.PaymentStatus }}
+  </span>
 
-            <div class="btn-group">
-  <!-- 詳情只留一顆 -->
-  <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
-
-  <!-- 用 uiStatus(o) 統一判斷，避免你顯示跟判斷不一致 -->
-  <!-- 已取消 -->
-  <button
-    v-if="uiStatus(o) === '已取消'"
-    class="review-btn disabled"
-    disabled
+  <span
+    class="status"
+    :class="{
+      done: uiStatus(o) === '已完成',
+      upcoming: uiStatus(o) === '即將到來',
+      cancel: uiStatus(o) === '已取消'
+    }"
   >
-    已取消
-  </button>
-
-  <!-- 已完成 + 已評論 -->
-  <button
-    v-else-if="uiStatus(o) === '已完成' && o.IsReviewed"
-    class="review-btn disabled"
-    disabled
-  >
-    已評論
-  </button>
-
-  <!-- 已完成 + 未評論 -->
-  <button
-    v-else-if="uiStatus(o) === '已完成' && !o.IsReviewed"
-    class="review-btn"
-    @click="goReview(o)"
-  >
-    去評論
-  </button>
-
-  <!-- 即將到來：不顯示評論按鈕（想顯示也可做 disabled） -->
+    {{ uiStatus(o) }}
+  </span>
 </div>
+
+              <div class="price">NT$ {{ o.FinalPrice }}</div>
+
+              <div class="btn-group">
+                <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
+                <button
+  v-if="o.PaymentStatus === '待付款'"
+  class="pay-btn"
+  @click="goPay(o)"
+>
+  去付款
+</button>
+                <!-- 已取消 -->
+                <button
+                  v-if="uiStatus(o) === '已取消'"
+                  class="review-btn disabled"
+                  disabled
+                >
+                  已取消
+                </button>
+
+                <!-- 已完成 + 已評論 -->
+                <button
+                  v-else-if="uiStatus(o) === '已完成' && o.IsReviewed"
+                  class="review-btn disabled"
+                  disabled
+                >
+                  已評論
+                </button>
+
+                <!-- 已完成 + 未評論 -->
+                <button
+                  v-else-if="uiStatus(o) === '已完成' && !o.IsReviewed"
+                  class="review-btn"
+                  @click="goReview(o)"
+                >
+                  去評論
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div v-if="orders.length === 0" class="empty">尚無任何預約紀錄</div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -212,7 +232,13 @@ function goReview(o) {
   align-items: flex-end;
   gap: 6px;
 }
-
+.meta-row{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end; /* 靠右 */
+  gap:8px;
+  margin-bottom:6px;
+}
 .status {
   font-size: 12px;
   padding: 4px 10px;
@@ -235,44 +261,99 @@ function goReview(o) {
 }
 
 .price {
-  font-weight: bold;
-  color: #2563eb;
+  font-weight: 700;
+  color: #111827; /* 改成深灰，不用藍色 */
 }
-
 .btn-group {
   display: flex;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
-.detail-btn {
-  background: #f3f4f6;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.review-btn {
-  background: #ff8a00;
+/* 主行動（橘色） */
+.review-btn{
+  background: #f3722a;
   color: white;
   border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  min-width: 80px; 
 }
 
-.empty {
-  text-align: center;
-  color: #999;
-  margin-top: 60px;
+.pay-btn {
+ background: #ff9f1c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 80px; 
+}
+
+
+.review-btn:hover,
+.pay-btn:hover {
+  opacity: 0.92;
+}
+
+/* 次要按鈕 */
+.detail-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 80px; /* 同一大小 */
 }
 
 .review-btn.disabled {
   background: #e5e7eb;
   color: #6b7280;
   cursor: not-allowed;
+}
+
+/* ===== 狀態標籤 ===== */
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 成功：柔綠 */
+.paid {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+/* 待付款：柔紅 */
+.unpaid {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* 課程狀態 */
+.status.done {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.status.upcoming {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.cancel {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 </style>
