@@ -69,6 +69,12 @@ const routes = [
     name: 'user-forgot-password',
     component: () => import('@/views/users/UserForgotPassword.vue'),
   },
+//重設密碼
+  {
+  path: '/reset-password',
+  name: 'ResetPassword',
+  component: () => import('@/views/users/UserResetPassword.vue')
+},
 
     {
     path: '/users/profile-edit',

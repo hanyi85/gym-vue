@@ -48,27 +48,36 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
+import axios from 'axios'
 
-const email = ref('');
-const isSent = ref(false);
-const isLoading = ref(false);
-const error = ref('');
+const email = ref('')
+const isSent = ref(false)
+const isLoading = ref(false)
+const error = ref('')
 
-const handleResetRequest = () => {
+const handleResetRequest = async () => {
+  error.value = ''
+
   if (!email.value) {
-    error.value = '請輸入電子郵件';
-    return;
+    error.value = '請輸入電子郵件'
+    return
   }
-  
-  isLoading.value = true;
-  // 模擬 API 請求
-  setTimeout(() => {
-    isLoading.value = false;
-    isSent.value = true;
-    error.value = '';
-  }, 1500);
-};
+
+  try {
+    isLoading.value = true
+
+    await axios.post('https://localhost:7218/api/Auth/forgot-password', {
+      email: email.value
+    })
+
+    isSent.value = true
+  } catch (err) {
+    error.value = err.response?.data || '發送失敗，請稍後再試'
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <style scoped>

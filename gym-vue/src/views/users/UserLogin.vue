@@ -18,12 +18,12 @@
           <label class="floating-label">密碼</label>
           <span class="eye-icon" @click="showPassword = !showPassword">
             <i :class="showPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
-            <p v-if="errorMessage" class="error-text">
-  {{ errorMessage }}
-</p>
+            
           </span>
         </div>
-
+<p v-if="errorMessage" class="error-text">
+  {{ errorMessage }}
+</p>
         <div class="text-start mb-5">
           <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
@@ -63,7 +63,25 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import Btn from '@/components/btn.vue'
+import axios from "axios"
 
+async function login() {
+  const res = await axios.post("https://localhost:7218/api/auth/login", {
+    email: this.email,
+    password: this.password
+  })
+
+  const token = res.data.token
+
+  // 存 JWT
+  localStorage.setItem("token", token)
+
+  // (可選) 存使用者資訊
+  localStorage.setItem("user", JSON.stringify(res.data))
+
+  // 導向首頁
+  this.$router.push("/users/home")
+}
 const router = useRouter()
 
 const email = ref('')

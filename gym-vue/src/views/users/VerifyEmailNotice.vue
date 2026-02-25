@@ -18,10 +18,7 @@
           <p class="message">{{ message }}</p>
 
           <div class="actions">
-            <router-link
-              to="/users/profile-health"
-              class="btn primary"
-            >
+            <router-link to="/users/profile-health" class="btn primary">
               下一步
             </router-link>
           </div>
@@ -33,10 +30,7 @@
           <p class="message">{{ message }}</p>
 
           <div class="actions">
-            <router-link
-              to="/users/login"
-              class="btn outline"
-            >
+            <router-link to="/users/login" class="btn outline">
               返回登入
             </router-link>
           </div>
@@ -55,7 +49,7 @@ import axios from 'axios'
 
 const route = useRoute()
 
-const status = ref('loading') 
+const status = ref('loading')
 const message = ref('正在驗證中...')
 
 onMounted(async () => {
@@ -69,11 +63,11 @@ onMounted(async () => {
 
   try {
     const res = await axios.get(
-  "http://localhost:5265/api/Auth/verify-email",
-  {
-    params: { token }
-  }
-)
+      "http://localhost:5265/api/Auth/verify-email",
+      {
+        params: { token }
+      }
+    )
 
     if (res.data.success) {
       status.value = 'success'
@@ -91,7 +85,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
 /* ===== 整頁置中 ===== */
 .verify-page {
   min-height: 100vh;
@@ -193,5 +186,4 @@ onMounted(async () => {
 .btn.outline:hover {
   background: #f2f2f2;
 }
-
 </style>
