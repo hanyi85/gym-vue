@@ -3,16 +3,18 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
+// 1. 先定義 API_URL，避免 console.log 報錯
+const API_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = API_URL.replace('/api/', '').replace(/\/$/, ''); // 取得 https://localhost:7218 這種格式
+
 console.log('API_URL:', API_URL);
+
 const route = useRoute();
 const router = useRouter();
 
 const product = ref(null);
 const quantity = ref(1);
-const activeImageIndex = ref(0);
 const allProducts = ref([]);
-
-const API_URL=import.meta.env.VITE_API_URL
 
 const maskName = (name) => {
   if (!name) return "匿名用戶";
@@ -24,34 +26,31 @@ const maskName = (name) => {
 const loadProduct = () => {
   const specId = route.params.id;
   
-  axios.get(API_URL+'SProducts/'+specId)
+  axios.get(`${API_URL}SProducts/${specId}`)
     .then(resp => {
       const data = resp.data;
       console.log("單一商品 API 回傳內容：", data);
 
       product.value = {
-        SpecId: data.SpecId || specId,
+        // 根據截圖，後端回傳的是大寫開頭
+        SpecId: data.PId || specId, 
         id: data.PId,
         name: data.PName,
         specName: data.SpecName,     
         price: data.Price,                 
-        discountPrice: data.DiscountPrice,
-        category: data.CategoryName,
-        images: data.ImageList || [],
+        discountPrice: data.DiscountPrice || 0,
+        category: data.CategoryName || '未分類',
+        // 如果 ImagePath 是單一字串，包成陣列給輪播圖使用
+        images: data.ImageList || [data.ImagePath], 
         description: data.Description || '暫無商品描述',
         rating: data.AverageStar || 0,
         reviewCount: data.TotalComments || 0,
-        // 修正後的 map 邏輯
-comments: (data.Comments || []).map(c => {
-    console.log("正在處理的評論原始物件:", c);
-    
-    return {
-        userName: maskName(c.UserName || `User${c.UserId}`),
-        star: c.CommentStar || 0, 
-        content: c.productComment|| c.ProductComment || c.productcomment || "（讀取內容失敗）", 
-        date: c.CommentTime ? c.CommentTime.replace(/-/g, '/').substring(0, 10) : ''
-    };
-})
+        comments: (data.Comments || []).map(c => ({
+            userName: maskName(c.UserName),
+            star: c.CommentStar || 0, 
+            content: c.ProductComment || "（讀取內容失敗）", 
+            date: c.CommentTime || ''
+        }))
       };
     })
     .catch(error => {
@@ -59,26 +58,24 @@ comments: (data.Comments || []).map(c => {
     });
 };
 
-
-
 const loadRelatedProducts = () => {
-  // 這裡路徑要確認，如果是複用列表頁，通常是 SProducts
-  axios.get(API_URL + 'SProducts') 
+  axios.get(`${API_URL}SProducts`) 
     .then(resp => {
       allProducts.value = resp.data.map(p => ({
-        id: p.PId,
-        name: p.PName,
-        specName: p.SpecName,
+        id: p.PId,           // 改為大寫 P
+        name: p.PName,       // 改為大寫 P
+        specName: p.SpecName, // 改為大寫 S
         price: (p.DiscountPrice && p.DiscountPrice > 0) ? p.DiscountPrice : p.Price,
-  originalPrice: p.Price,
-  hasDiscount: !!(p.DiscountPrice && p.DiscountPrice > 0),
-        image: API_URL.replace('/api/', '').replace(/\/$/, '') + p.ImagePath,
+        originalPrice: p.Price,
+        image: BASE_URL + p.ImagePath,
       }));
     })
-    .catch(err => {
-      console.error("抓取列表失敗:", err);
+    .catch(error => {
+      console.error('抓取所有商品失敗:', error);
     });
 };
+
+
 
 const relatedProducts = computed(() => {
   if (allProducts.value.length === 0) return [];
@@ -183,48 +180,51 @@ watch(
 
     <div class="row g-5">
   <div class="col-lg-6" v-if="product.images && product.images.length > 0">
-    <div id="productCarousel" class="carousel slide border rounded shadow-sm overflow-hidden mb-3" data-bs-ride="carousel">
-      <div class="carousel-inner">
-        <div 
-          v-for="(img, index) in product.images" 
-          :key="'main-' + index"
-          class="carousel-item" 
-          :class="{ active: index === 0 }"
-          data-bs-interval="3000"
-        >
-          <img 
-  :src="API_URL.replace('/api/', '') + img" 
-  class="d-block w-100" 
-  style="object-fit: cover; aspect-ratio: 1/1;"
->
-        </div>
-      </div>
-      
-      <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      </button>
-    </div>
-
-    <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar">
+  <div id="productCarousel" class="carousel slide border rounded shadow-sm overflow-hidden mb-3" data-bs-ride="carousel">
+    <div class="carousel-inner">
       <div 
         v-for="(img, index) in product.images" 
-        :key="'thumb-' + index"
-        class="thumb-box border rounded cursor-pointer"
-        data-bs-target="#productCarousel" 
-        :data-bs-slide-to="index"
-        style="width: 80px; height: 80px; flex-shrink: 0; overflow: hidden; cursor: pointer;"
+      
+        :key="'main-' + index"
+        class="carousel-item" 
+        :class="{ active: index === 0 }"
+        data-bs-interval="2500"
       >
         <img 
-  :src="API_URL.replace('/api/', '') + img" 
-  class="w-100 h-100" 
-  style="object-fit: cover;"
->
+          :src="BASE_URL + img" 
+          class="d-block w-100" 
+          style="object-fit: cover; aspect-ratio: 1/1;"
+          alt="產品主圖"
+        >
       </div>
     </div>
+    
+    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
   </div>
+
+  <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar">
+    <div 
+      v-for="(img, index) in product.images" 
+      :key="'thumb-' + index"
+      class="thumb-box border rounded"
+      data-bs-target="#productCarousel" 
+      :data-bs-slide-to="index"
+      style="width: 80px; height: 80px; flex-shrink: 0; overflow: hidden; cursor: pointer;"
+    >
+      <img 
+        :src="BASE_URL + img" 
+        class="w-100 h-100" 
+        style="object-fit: cover;"
+        alt="產品縮圖"
+      >
+    </div>
+  </div>
+</div>
   
   <div class="col-lg-6">
     <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}({{ product.specName }})</h1>

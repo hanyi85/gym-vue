@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import axios from 'axios';
 
 const route = useRoute();
 const orderId = ref('');
+const API_URL = import.meta.env.VITE_API_URL;
 
 // --- 📍 補上遺漏的響應式狀態 ---
 const isCartExpanded = ref(false); // 控制購物車展開/收合
@@ -56,9 +58,17 @@ const orderInfo = ref({
   payment: { method: '信用卡', status: '已付款' },
   note: '無'
 });
-onMounted(() => {
-  orderId.value = route.params.id;
-  orderInfo.value.orderNumber = route.params.id;
+onMounted(async () => {
+  const id = route.params.id;
+  if (id) {
+    try {
+      // 範例：根據 id 取得訂單或商品詳細資料
+      const resp = await axios.get(`${API_URL}SProducts/${id}`);
+      // 處理回傳資料...
+    } catch (error) {
+      console.error("抓取詳細資料失敗", error);
+    }
+  }
 });
 
 const reAddToCart = () => {

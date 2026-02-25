@@ -130,15 +130,22 @@ const handleCategoryClick = (cat) => {
 
 const updateTitle = (name) => { activeCategory.value = name; };
 
-const goToDetail = (id) => {
-  router.push({ name: 'ProductDetail', params: { id: id } });
-};
+// const goToDetail = (id) => {
+//   router.push({ name: 'ProductDetail', params: { id: id } });
+// };
 
 onMounted(() => {
   getProducts();
   getCategories();
 });
 
+const goToDetail = (id) => {
+  if (!id) {
+    console.warn("產品 ID 不存在，無法跳轉");
+    return;
+  }
+  router.push({ name: 'ProductDetail', params: { id: id } });
+};
 </script>
 
 
