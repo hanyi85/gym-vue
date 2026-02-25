@@ -31,12 +31,13 @@
             <div class="skeleton-line title mb-4 mx-auto w-50"></div>
             <div class="skeleton-detail-img rounded-4 mb-5"></div>
             <div class="skeleton-line content mb-3"></div>
+            <div class="skeleton-line content mb-3 w-75"></div>
           </div>
 
           <div v-else class="main-content-card bg-white rounded-4 shadow-sm p-4 p-md-5 animate-up">
             <div class="mb-4 text-center">
               <span class="badge bg-orange-light text-orange mb-3 px-3 py-2 rounded-pill fw-bold">
-                # {{ post.CategoryName }}
+                # {{ post.CategoryName || '未分類' }}
               </span>
               <h1 class="fw-bold text-dark display-6 mb-4">{{ post.Title }}</h1>
 
@@ -53,18 +54,19 @@
 
             <div
               class="detail-image-box rounded-4 bg-light mb-5 d-flex align-items-center justify-content-center overflow-hidden shadow-sm">
-              <img v-if="post.ImageUrl" :src="post.ImageUrl" class="img-fluid w-100 h-100 object-fit-cover" />
+              <img v-if="post.ImageUrl" :src="post.ImageUrl" class="img-fluid w-100 h-100 object-fit-cover"
+                :alt="post.Title" />
               <div v-else class="placeholder-gradient w-100 h-100 d-flex align-items-center justify-content-center">
                 <span class="text-white opacity-25 fw-bold display-4">FitnessBar</span>
               </div>
             </div>
 
             <div class="article-body mb-5">
-              <div v-text="post.Detail" class="detail-text fs-5"></div>
+              <div class="detail-text fs-5" style="white-space: pre-line;">{{ post.Detail }}</div>
             </div>
 
             <div class="d-flex flex-column align-items-center gap-4 border-top pt-5 mt-5">
-              <button v-if="post.PostCategoryId == 6" @click="goToJoinForm(post.Id)"
+              <button v-if="post.PostCategoryId === 6" @click="goToJoinForm(post.Id)"
                 class="btn btn-orange text-white rounded-pill px-5 py-3 fw-bold shadow-orange-hover btn-pulse transition-scale">
                 立即報名活動
               </button>
@@ -85,15 +87,21 @@
                 <div @click="goToOtherDetail(related.Id)"
                   class="related-card bg-white rounded-4 shadow-sm overflow-hidden p-2 transition hover-up pointer">
                   <div class="related-img-sm rounded-3 mb-2 overflow-hidden">
-                    <img v-if="related.ImageUrl" :src="related.ImageUrl" class="w-100 h-100 object-fit-cover" />
+                    <img v-if="related.ImageUrl" :src="related.ImageUrl" class="w-100 h-100 object-fit-cover"
+                      :alt="related.Title" />
                     <div v-else class="placeholder-gradient w-100 h-100"></div>
                   </div>
                   <div class="px-2 pb-2">
-                    <div class="text-orange x-small fw-bold mb-1"># {{ related.CategoryName || '公告' }}</div>
+                    <div class="text-orange x-small fw-bold mb-1">
+                      # {{ related.TagName || '精選內容' }}
+                    </div>
                     <h6 class="fw-bold text-dark mb-1 text-truncate-2 small">{{ related.Title }}</h6>
                     <div class="text-muted x-small">{{ formatDate(related.CreatedAt) }}</div>
                   </div>
                 </div>
+              </div>
+              <div v-if="relatedPosts.length === 0 && !loading" class="text-center text-muted py-4">
+                暫無相關推薦
               </div>
             </div>
           </div>
@@ -111,6 +119,7 @@ import axios from 'axios';
 const route = useRoute();
 const router = useRouter();
 
+// 資料狀態
 const post = ref({});
 const allNews = ref([]);
 const loading = ref(true);
@@ -118,51 +127,67 @@ const isLiked = ref(false);
 const scrollY = ref(0);
 const scrollPercent = ref(0);
 
+// 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return new Date(dateStr).toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
 };
 
+// 抓取單篇文章詳情
 const fetchPostDetail = async (id) => {
   loading.value = true;
   try {
     const response = await axios.get(`https://localhost:7218/api/YPosts/${id}`);
     post.value = response.data;
+    // 每次載入新文章時，回到頁面頂部
     scrollToTop();
   } catch (error) {
     console.error('抓取詳情失敗:', error);
-    router.push('/post/list');
+    router.push('/post/card');
   } finally {
+    // 稍微延遲讓 skeleton 動畫自然一點
     setTimeout(() => { loading.value = false; }, 400);
   }
 };
 
+// 抓取所有文章列表（用於側邊欄推薦）
 const fetchAllPosts = async () => {
   try {
     const response = await axios.get('https://localhost:7218/api/YPosts');
-    allNews.value = response.data;
+    allNews.value = response.data || [];
   } catch (error) {
     console.error('抓取列表失敗:', error);
   }
 };
 
+// 優化後的相關貼文邏輯：排除當前 ID 並限制數量
 const relatedPosts = computed(() => {
+  if (!allNews.value.length) return [];
+  const currentId = Number(route.params.id);
   return allNews.value
-    .filter(item => item.Id !== parseInt(route.params.id))
+    .filter(item => Number(item.Id) !== currentId)
     .slice(0, 4);
 });
 
+// 跳轉邏輯
 const goToOtherDetail = (id) => {
   router.push(`/post/postDetail/${id}`);
 };
 
-// 監聽路由變化，點擊側邊欄文章時切換內容
-watch(() => route.params.id, (newId) => {
-  if (newId) fetchPostDetail(newId);
-});
-
 const goToJoinForm = (id) => router.push(`/post/join/${id}`);
 
+// 監聽路由 ID 變化（當點擊右側推薦文章時）
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    fetchPostDetail(newId);
+  }
+}, { immediate: true });
+
+// 滾動監聽邏輯
 const handleScroll = () => {
   scrollY.value = window.scrollY;
   const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -172,7 +197,6 @@ const handleScroll = () => {
 const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 onMounted(() => {
-  fetchPostDetail(route.params.id);
   fetchAllPosts();
   window.addEventListener('scroll', handleScroll);
 });
@@ -183,7 +207,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 樣式保持你喜愛的精美風格，並確保麵包屑不滿版 */
+/* 原有樣式保持並微調 */
 .reading-progress-bar {
   position: fixed;
   top: 0;
@@ -224,21 +248,6 @@ onUnmounted(() => {
   position: absolute;
 }
 
-.breadcrumb-item+.breadcrumb-item::before {
-  content: "›";
-  font-size: 1.2rem;
-  color: #ddd;
-}
-
-.breadcrumb-link {
-  color: #888;
-  transition: 0.3s;
-}
-
-.breadcrumb-link:hover {
-  color: #f3722c;
-}
-
 @media (min-width: 992px) {
   .sticky-sidebar {
     position: sticky;
@@ -249,48 +258,13 @@ onUnmounted(() => {
 
 .article-body {
   border-left: 3px solid rgba(243, 114, 44, 0.1);
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 }
 
 .detail-text {
   color: #333;
-  white-space: pre-wrap;
   line-height: 1.8;
   letter-spacing: 0.05rem;
-}
-
-.btn-pulse {
-  animation: pulse-orange 2s infinite;
-}
-
-@keyframes pulse-orange {
-  0% {
-    box-shadow: 0 0 0 0 rgba(243, 114, 44, 0.4);
-  }
-
-  70% {
-    box-shadow: 0 0 0 15px rgba(243, 114, 44, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(243, 114, 44, 0);
-  }
-}
-
-.animate-up {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .text-orange {
@@ -308,11 +282,6 @@ onUnmounted(() => {
   border-color: #f3722c;
 }
 
-.btn-outline-orange:hover {
-  background-color: #f3722c;
-  color: white;
-}
-
 .bg-orange-light {
   background-color: rgba(243, 114, 44, 0.1);
 }
@@ -327,13 +296,21 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #f3722c 0%, #f9c74f 100%);
 }
 
-.transition-scale:hover {
-  transform: scale(1.05);
+.hover-up {
+  transition: 0.3s;
 }
 
 .hover-up:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .pointer {
@@ -344,13 +321,7 @@ onUnmounted(() => {
   font-size: 0.75rem;
 }
 
-.text-truncate-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
+/* 骨架屏動畫 */
 .skeleton-line {
   background: #eee;
   border-radius: 8px;
@@ -361,20 +332,42 @@ onUnmounted(() => {
   height: 40px;
 }
 
+.skeleton-line.content {
+  height: 20px;
+}
+
 .skeleton-detail-img {
-  height: 300px;
+  height: 350px;
   background: #eee;
 }
 
 @keyframes shimmer {
-
-  0%,
-  100% {
-    opacity: 0.6;
+  0% {
+    opacity: 0.5;
   }
 
   50% {
     opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.animate-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>
