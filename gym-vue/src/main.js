@@ -12,7 +12,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js' // 這是讓輪播能動的�
 import 'bootstrap'
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia();
+app.use(pinia);
 app.use(router)
 app.mount('#app')
 app.component('Banner', Banner)
