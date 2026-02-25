@@ -64,10 +64,11 @@
             </div>
 
             <div class="d-flex flex-column align-items-center gap-4 border-top pt-5 mt-5">
-              <button @click="goToJoinForm(post.Id)"
+              <button v-if="post.PostCategoryId == 6" @click="goToJoinForm(post.Id)"
                 class="btn btn-orange text-white rounded-pill px-5 py-3 fw-bold shadow-orange-hover btn-pulse transition-scale">
                 立即報名活動
               </button>
+
               <button @click="isLiked = !isLiked" class="btn rounded-pill px-4 btn-sm fw-bold transition-all"
                 :class="isLiked ? 'btn-orange text-white' : 'btn-outline-orange'">
                 <i class="bi" :class="isLiked ? 'bi-heart-fill' : 'bi-heart'"></i> {{ isLiked ? '已收藏' : '按愛心' }}
@@ -78,7 +79,7 @@
 
         <div class="col-lg-3">
           <div class="sticky-sidebar">
-            <h5 class="fw-bold text-dark mb-3 ps-2 border-start border-orange border-4">相關公告</h5>
+            <h5 class="fw-bold text-dark mb-3 ps-2 border-start border-orange border-4">其他貼文</h5>
             <div class="row g-3">
               <div v-for="related in relatedPosts" :key="related.Id" class="col-12">
                 <div @click="goToOtherDetail(related.Id)"
@@ -88,7 +89,7 @@
                     <div v-else class="placeholder-gradient w-100 h-100"></div>
                   </div>
                   <div class="px-2 pb-2">
-                    <div class="text-orange x-small fw-bold mb-1"># {{ related.TagName || post.CategoryName }}</div>
+                    <div class="text-orange x-small fw-bold mb-1"># {{ related.CategoryName || '公告' }}</div>
                     <h6 class="fw-bold text-dark mb-1 text-truncate-2 small">{{ related.Title }}</h6>
                     <div class="text-muted x-small">{{ formatDate(related.CreatedAt) }}</div>
                   </div>
@@ -122,7 +123,6 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
 };
 
-// 封裝 API 請求
 const fetchPostDetail = async (id) => {
   loading.value = true;
   try {
@@ -133,7 +133,6 @@ const fetchPostDetail = async (id) => {
     console.error('抓取詳情失敗:', error);
     router.push('/post/list');
   } finally {
-    // 稍微延遲讓動畫更順
     setTimeout(() => { loading.value = false; }, 400);
   }
 };
@@ -147,19 +146,17 @@ const fetchAllPosts = async () => {
   }
 };
 
-// 計算相關公告 (排除當前文章)
 const relatedPosts = computed(() => {
   return allNews.value
     .filter(item => item.Id !== parseInt(route.params.id))
     .slice(0, 4);
 });
 
-// 跳轉其他文章
 const goToOtherDetail = (id) => {
   router.push(`/post/postDetail/${id}`);
 };
 
-// 監聽路由 ID 變化，當使用者點擊相關公告時，自動重新抓取資料
+// 監聽路由變化，點擊側邊欄文章時切換內容
 watch(() => route.params.id, (newId) => {
   if (newId) fetchPostDetail(newId);
 });
@@ -186,7 +183,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 閱讀進度條 */
+/* 樣式保持你喜愛的精美風格，並確保麵包屑不滿版 */
 .reading-progress-bar {
   position: fixed;
   top: 0;
@@ -197,7 +194,6 @@ onUnmounted(() => {
   transition: width 0.1s ease;
 }
 
-/* 置頂按鈕樣式 (補足原本 template 有但 style 漏掉的部分) */
 .scroll-to-top {
   position: fixed;
   bottom: 30px;
@@ -213,7 +209,7 @@ onUnmounted(() => {
   cursor: pointer;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: 0.3s;
   z-index: 1000;
 }
 
@@ -228,7 +224,6 @@ onUnmounted(() => {
   position: absolute;
 }
 
-/* 麵包屑優化 */
 .breadcrumb-item+.breadcrumb-item::before {
   content: "›";
   font-size: 1.2rem;
@@ -244,7 +239,6 @@ onUnmounted(() => {
   color: #f3722c;
 }
 
-/* 側邊欄固定 */
 @media (min-width: 992px) {
   .sticky-sidebar {
     position: sticky;
@@ -253,7 +247,6 @@ onUnmounted(() => {
   }
 }
 
-/* 內文樣式 */
 .article-body {
   border-left: 3px solid rgba(243, 114, 44, 0.1);
   padding-left: 2rem;
@@ -266,7 +259,6 @@ onUnmounted(() => {
   letter-spacing: 0.05rem;
 }
 
-/* 動畫與特效 */
 .btn-pulse {
   animation: pulse-orange 2s infinite;
 }
@@ -301,7 +293,6 @@ onUnmounted(() => {
   }
 }
 
-/* 通用顏色與小工具 */
 .text-orange {
   color: #f3722c !important;
 }
@@ -326,11 +317,7 @@ onUnmounted(() => {
   background-color: rgba(243, 114, 44, 0.1);
 }
 
-.detail-image-box {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-}
-
+.detail-image-box,
 .related-img-sm {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -364,7 +351,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 骨架屏 */
 .skeleton-line {
   background: #eee;
   border-radius: 8px;
