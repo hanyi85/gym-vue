@@ -10,10 +10,10 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-// ✅ 一律從訂單頁帶進來（沒有就退回）
+//  一律從訂單頁帶進來（沒有就退回）
 const courseBookingId = ref(Number(route.query.courseBookingId || 0))
 
-// ✅ 顯示資訊（不再有假資料）
+// 顯示資訊（不再有假資料）
 const orderId = ref((route.query.orderId || '').toString())
 const course = ref((route.query.course || '').toString())
 const coach = ref((route.query.coach || '').toString())
@@ -30,7 +30,7 @@ const displayDateTime = computed(() => {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 })
 
-// ⭐ 評分
+//  評分
 const overallRating = ref(5)
 const coachRating = ref(5)
 const environmentRating = ref(5)
@@ -62,7 +62,7 @@ function toggleTag(tag) {
 const submitting = ref(false)
 const loading = ref(false)
 
-// ✅ 是否已評論（如果已評論 → 進來顯示內容並鎖住不能改）
+// 是否已評論（如果已評論 → 進來顯示內容並鎖住不能改）
 const isReviewed = ref(false)
 
 onMounted(async () => {
@@ -71,7 +71,7 @@ onMounted(async () => {
     return
   }
 
-  // ✅ 不要 alert，改成：如果已評論就「自動載入並鎖住」
+  // 不要 alert，改成：如果已評論就「自動載入並鎖住」
   loading.value = true
   try {
     const existed = await api.get(`/Reviews/booking/${courseBookingId.value}`)
@@ -123,15 +123,24 @@ async function submitReview() {
     DifficultyScore: atmosphereRating.value,
 
     Comment: comment.value || '',
-    TagIds: [], // ✅ 明天再做 TagName -> TagId / TagMap
+    TagIds: [], // 
   }
 
   submitting.value = true
   try {
     await api.post('/Reviews/course', payload)
 
-    // ✅ 不要 alert，直接回訂單頁（訂單頁會顯示「已評論」）
-    router.push('/courses/booking-history')
+    // 不要 alert，直接回訂單頁（訂單頁會顯示「已評論」）
+  router.push({
+  name: 'courses-review-success',
+  query: {
+    courseBookingId: courseBookingId.value,
+    orderId: orderId.value,
+    course: course.value,
+    coach: coach.value,
+    startTime: startTime.value,
+  },
+})
   } catch (err) {
     console.error(err)
     alert(err.response?.data || err.message)
@@ -144,7 +153,7 @@ async function submitReview() {
 <template>
   <div class="page-wrapper">
     <div class="review-title">
-      <h2>評論系統</h2>
+      <h2>課程評論</h2>
       <p v-if="loading" class="muted">載入中...</p>
       <p v-else-if="isReviewed" class="muted">此訂單已評論（僅供查看）</p>
     </div>

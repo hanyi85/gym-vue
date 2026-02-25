@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Btn from '@/components/btn.vue'
@@ -12,7 +12,34 @@ const course = ref(null)
 const currentImg = ref(0)
 const activeTab = ref('content')
 
+const reviewSummary = ref({
+  courseId: 0,
+  averageRating: 0,
+  reviewCount: 0,
+  averageTeachingQuality: 0,
+  averageEnvironment: 0,
+  averageDifficulty: 0,
+  averageValue: 0,
+})
+const reviews = ref([])
+const avgRating = computed(() => Number(reviewSummary.value?.averageRating || 0))
+const reviewCount = computed(() => Number(reviewSummary.value?.reviewCount || 0))
 
+function starText(rating) {
+  const r = Math.round(Number(rating) || 0)
+  return '★'.repeat(r) + '☆'.repeat(5 - r)
+}
+
+// 顯示日期用（後端回來可能是 ISO）
+function fmtDate(dt) {
+  if (!dt) return ''
+  const d = new Date(dt)
+  if (Number.isNaN(d.getTime())) return String(dt).slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 const displayImages = [
   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
   'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200',
@@ -33,10 +60,20 @@ const displayNotice = [
 ]
 
 onMounted(async () => {
-  const res = await axios.get(
-    `https://localhost:7218/api/CCourses/by-name/${courseSlug}`
-  )
+  const res = await axios.get(`https://localhost:7218/api/CCourses/by-name/${courseSlug}`)
   course.value = res.data
+
+  try {
+    const rr = await axios.get(
+  `https://localhost:7218/api/Reviews/course/${course.value.Id}`
+)
+reviewSummary.value = rr.data
+reviews.value = rr.data.items || []
+  } catch (err) {
+    console.warn('load reviews failed', err)
+    reviewSummary.value = { averageRating: 0, reviewCount: 0 }
+    reviews.value = []
+  }
 })
 
 function goBooking() {
@@ -133,6 +170,15 @@ function goHome() {
   >
     付款方式
   </div>
+
+  <div
+  class="tab"
+  :class="{ active: activeTab === 'reviews' }"
+  @click="activeTab = 'reviews'"
+>
+  學員評論
+  <span class="tab-count" v-if="reviewCount">({{ reviewCount }})</span>
+</div>
 </div>
 
 <!-- 課程內容 -->
@@ -167,7 +213,39 @@ function goHome() {
     完成預約後，請於上課時間提前至場館報到。
   </p>
 </div>
+<!-- 學員評論 -->
+<div class="tab-content reviews" v-if="activeTab === 'reviews' && course">
+  <h4>學員評論</h4>
 
+  <div class="rating-summary">
+    <div class="score">{{ avgRating.toFixed(1) }}</div>
+    <div class="stars">{{ starText(avgRating) }}</div>
+    <div class="count">（{{ reviewCount }} 則評論）</div>
+  </div>
+
+  <div v-if="reviewCount === 0" class="empty-review">
+    目前尚無評論，完成課程後歡迎留下第一則心得！
+  </div>
+
+  <div v-else class="review-list">
+    <div class="review-card" v-for="r in reviews" :key="r.reviewId">
+      <div class="review-head">
+       <div class="name">{{ r.userName || r.UserName || '匿名學員' }}</div>
+        <div class="stars small">{{ starText(r.rating) }}</div>
+      </div>
+
+      <div class="subscores" v-if="r.teachingQuality || r.environmentScore || r.valueScore">
+        <span v-if="r.teachingQuality">教學 {{ r.teachingQuality }}</span>
+        <span v-if="r.environmentScore">環境 {{ r.environmentScore }}</span>
+        <span v-if="r.difficultyScore">難度 {{ r.difficultyScore }}</span>
+        <span v-if="r.valueScore">價值 {{ r.valueScore }}</span>
+      </div>
+
+      <div class="review-body">{{ r.comment }}</div>
+      <div class="review-foot">{{ fmtDate(r.reviewTime) }}</div>
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
@@ -366,5 +444,109 @@ function goHome() {
   color: #6b7280;
 }
 
+/* ===== Tab count ===== */
+.tab-count{
+  margin-left: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+}
 
+/* ===== Reviews ===== */
+.tab-content.reviews {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-top: 32px;
+}
+
+.rating-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 22px;
+}
+
+.rating-summary .score {
+  font-size: 44px;
+  font-weight: 900;
+  color: #f3722c;
+  line-height: 1;
+}
+
+.rating-summary .stars {
+  color: #f59e0b;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+.rating-summary .count {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.empty-review {
+  text-align: center;
+  color: #6b7280;
+  padding: 24px 0;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.review-head .name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.stars.small {
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #f59e0b;
+}
+
+.subscores{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 10px;
+  color:#6b7280;
+  font-size: 12px;
+}
+
+.subscores span{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.review-body {
+  color: #374151;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.review-foot {
+  margin-top: 10px;
+  color: #9ca3af;
+  font-size: 12px;
+  text-align: right;
+}
 </style>
