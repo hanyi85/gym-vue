@@ -51,16 +51,15 @@ function formatTime(dt) {
  * 所以我們用 StartTime + Status 推出 UI 狀態。
  */
 function uiStatus(o) {
-  // 若後端明確是取消類
-  if ((o.Status || '').includes('取消')) return '已取消'
+  const st = o.Status ?? ''
+
+  if (st.includes('取消')) return '已取消'
+  if (st.includes('已報到')) return '已報到'
 
   const start = new Date(o.StartTime)
   const now = new Date()
 
-  // 過去時間 -> 已完成（前提不是取消）
   if (start < now) return '已完成'
-
-  // 未來時間 -> 即將到來
   return '即將到來'
 }
 
@@ -133,7 +132,8 @@ function goReview(o) {
     :class="{
       done: uiStatus(o) === '已完成',
       upcoming: uiStatus(o) === '即將到來',
-      cancel: uiStatus(o) === '已取消'
+      cancel: uiStatus(o) === '已取消',
+    checkin: uiStatus(o) === '已報到'
     }"
   >
     {{ uiStatus(o) }}
@@ -144,8 +144,8 @@ function goReview(o) {
 
               <div class="btn-group">
                 <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
-                <button
-  v-if="o.PaymentStatus === '待付款'"
+            <button
+  v-if="o.PaymentStatus !== '已付款'"
   class="pay-btn"
   @click="goPay(o)"
 >
@@ -160,23 +160,23 @@ function goReview(o) {
                   已取消
                 </button>
 
-                <!-- 已完成 + 已評論 -->
-                <button
-                  v-else-if="uiStatus(o) === '已完成' && o.IsReviewed"
-                  class="review-btn disabled"
-                  disabled
-                >
-                  已評論
-                </button>
+                <!-- 已報到 或 已完成 + 已評論 -->
+<button
+  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && o.IsReviewed"
+  class="review-btn disabled"
+  disabled
+>
+  已評論
+</button>
 
-                <!-- 已完成 + 未評論 -->
-                <button
-                  v-else-if="uiStatus(o) === '已完成' && !o.IsReviewed"
-                  class="review-btn"
-                  @click="goReview(o)"
-                >
-                  去評論
-                </button>
+<!-- 已報到 或 已完成 + 未評論 -->
+<button
+  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && !o.IsReviewed"
+  class="review-btn"
+  @click="goReview(o)"
+>
+  去評論
+</button>
               </div>
             </div>
           </div>
@@ -187,6 +187,9 @@ function goReview(o) {
 </template>
 
 <style scoped>
+/* =========================
+   Layout
+========================= */
 .page-wrapper {
   margin-top: 100px;
   padding-bottom: 80px;
@@ -204,8 +207,11 @@ function goReview(o) {
   gap: 16px;
 }
 
+/* =========================
+   Card
+========================= */
 .order-card {
-  border: 1px solid #ddd;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 16px 20px;
   display: flex;
@@ -216,7 +222,7 @@ function goReview(o) {
 
 .order-left h5 {
   margin-bottom: 6px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .order-left p {
@@ -230,114 +236,39 @@ function goReview(o) {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
-.meta-row{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end; /* 靠右 */
-  gap:8px;
-  margin-bottom:6px;
+
+/* =========================
+   Meta row (付款 + 狀態)
+========================= */
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 6px;
 }
+
+/* badge/status 共用膠囊樣式 */
+.badge,
 .status {
   font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-
-.status.done {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.status.upcoming {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status.cancel {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.price {
   font-weight: 700;
-  color: #111827; /* 改成深灰，不用藍色 */
-}
-.btn-group {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-/* 主行動（橘色） */
-.review-btn{
-  background: #f3722a;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 80px; 
-}
-
-.pay-btn {
- background: #ff9f1c;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 80px; 
-}
-
-
-.review-btn:hover,
-.pay-btn:hover {
-  opacity: 0.92;
-}
-
-/* 次要按鈕 */
-.detail-btn {
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 80px; /* 同一大小 */
-}
-
-.review-btn.disabled {
-  background: #e5e7eb;
-  color: #6b7280;
-  cursor: not-allowed;
-}
-
-/* ===== 狀態標籤 ===== */
-
-.badge {
   padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 999px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-/* 成功：柔綠 */
+/* 付款狀態 */
 .paid {
-  background-color: #ecfdf5;
+  background: #ecfdf5;
   color: #047857;
 }
 
-/* 待付款：柔紅 */
 .unpaid {
-  background-color: #fef2f2;
+  background: #fef2f2;
   color: #b91c1c;
 }
 
@@ -352,8 +283,77 @@ function goReview(o) {
   color: #92400e;
 }
 
+.status.checkin {
+  background: #fff7ed;   /* 淡橘底 */
+  color: #ea580c;        /* 主橘色文字 */
+  border: 1px solid #fdba74; /* 細橘邊框（質感↑） */
+}
+
 .status.cancel {
   background: #f3f4f6;
   color: #6b7280;
+}
+
+/* =========================
+   Price
+========================= */
+.price {
+  font-weight: 800;
+  color: #111827;
+}
+
+/* =========================
+   Buttons
+========================= */
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* 次要按鈕 */
+.detail-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+/* 主行動按鈕 */
+.review-btn,
+.pay-btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 80px;
+  color: #fff;
+}
+
+.review-btn {
+  background: #f3722a;
+}
+
+.pay-btn {
+  background: #ff9f1c;
+}
+
+.detail-btn:hover,
+.review-btn:hover,
+.pay-btn:hover {
+  opacity: 0.92;
+}
+
+.review-btn.disabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 </style>

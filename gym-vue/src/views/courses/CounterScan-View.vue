@@ -1,19 +1,39 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue'
+import axios from 'axios'
 import { Html5Qrcode } from 'html5-qrcode'
+
+const api = axios.create({
+  baseURL: 'https://localhost:7218/api',
+})
 
 const msg = ref('請對準學員 QR Code 進行掃描')
 const result = ref('')
 let qr = null
 let locked = false
 
-function showResult(text) {
-  result.value = text
+async function handleCheckin(text) {
   try {
     const data = JSON.parse(text)
-    msg.value = `掃描成功：bookingId = ${data.bookingId ?? '（無）'}`
-  } catch {
-    msg.value = '掃描成功（內容非 JSON）'
+    const bookingId = Number(data.bookingId || 0)
+
+    if (!bookingId) {
+      msg.value = 'QR 內容錯誤（缺少 bookingId）'
+      locked = false
+      return
+    }
+
+    msg.value = '驗證中...'
+
+    await api.post(`/CourseBookings/checkin/${bookingId}`)
+
+    msg.value = `✅ 報到成功（BK${bookingId}）`
+  } catch (err) {
+    msg.value =
+      err.response?.data ||
+      err.message ||
+      '報到失敗'
+    locked = false
   }
 }
 
@@ -30,19 +50,21 @@ onMounted(async () => {
     await qr.start(
       { deviceId: { exact: cameras[0].id } },
       { fps: 10, qrbox: { width: 260, height: 260 } },
-      (decodedText) => {
+      async (decodedText) => {
         if (locked) return
         locked = true
-        showResult(decodedText)
 
-        // 掃到就停止（掃描框會消失是正常的）
+        result.value = decodedText
+        await handleCheckin(decodedText)
+
+        // 掃描完停止（避免重複掃描）
         qr.stop().catch(() => {})
       },
       () => {}
     )
   } catch (e) {
-    console.error('camera start error:', e)
-    msg.value = `相機啟動失敗：${e?.name || ''} ${e?.message || ''}`
+    console.error(e)
+    msg.value = '相機啟動失敗'
   }
 })
 
