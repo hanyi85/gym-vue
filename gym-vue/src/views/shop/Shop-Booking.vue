@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCartStore } from '@/stores/dist/cart.js'; // 確保路徑與你的專案一致
+import { useCartStore } from '@/stores/cart.js'; // 確保路徑與你的專案一致
 
 const router = useRouter();
 const cartStore = useCartStore();
