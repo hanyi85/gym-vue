@@ -1,16 +1,22 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCartStore } from '@/stores/cart.js'; // 確保路徑與你的專案一致
+import { useCartStore } from '@/stores/cart.js';
+import axios from 'axios';
 
 const router = useRouter();
 const cartStore = useCartStore();
 
-// --- 保留你原本的狀態控制 ---
 const isCartExpanded = ref(false); // 控制手風琴展開狀態
 const syncInfo = ref(false);      // 收件人資料同步勾選
+const cityOptions = ref([]);      // 縣市
+const districtOptions = ref([]);  // 地區
+const selectedCity = ref('');     
+const selectedDistrict = ref('');
+const addressDetail = ref('');
 
-// 取得完整圖片路徑 (與購物車邏輯一致)
+const API_URL=import.meta.env.VITE_API_URL
+
 const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
 const getFullImageUrl = (path) => {
   if (!path) return `${BASE_URL}/images/default.png`;
@@ -31,16 +37,48 @@ const handleSyncInfo = () => {
   }
 };
 
-const goToBookingSuccess = () => {
-  router.push({ name: 'shop-booking-success' });
+const goToBookingSuccess = async () => {
+const payMap = { "貨到付款": 1, "信用卡": 2, "LINE Pay": 3 };
+  const shipMap = { "宅配": 1, "超商取貨": 2, "門市自取": 3 };
+
+  const payload = {
+    mName: cartStore.orderForm.customerName,
+    mPhone: cartStore.orderForm.customerPhone,
+    email: cartStore.orderForm.receiverEmail, 
+    mAddress: `${selectedCity.value}${selectedDistrict.value}${cartStore.orderForm.receiverAddressDetail || ''}`,
+    shipFee: cartStore.shippingFee,
+    total: cartStore.totalAmount,
+    note: cartStore.orderForm.note,
+    payId: payMap[cartStore.paymentMethod],   
+    shipId: shipMap[cartStore.deliveryMethod],
+
+    items: cartStore.cartItems.map(item => ({
+      specId: item.specId || item.SpecId || item.id || item.Id || 0,
+      pName: item.Name,
+      price: item.Price,
+      quantity: item.Quantity
+      }))
+  };
+  console.log("準備送出的訂單明細:", payload.items);
+
+  // 2. 發送
+  try {
+    await axios.post(API_URL + 'SOrder', payload);
+    cartStore.clearCart();
+    router.push({ name: 'shop-booking-success' });
+  } catch (err) {
+    console.log("完整錯誤對象:", err); 
+  if (err.response) {
+      console.error("後端噴出的錯誤內容:", err.response.data);
+  }
+    alert("訂單提交失敗",);
+  }
 };
 
 // --- 一進入頁面就代入假資料 ---
 onMounted(() => {
-  // 1. 確保購物車有資料
-  if (cartStore.cartItems.length === 0) {
-    cartStore.loadCart();
-  }
+  cartStore.loadCart(); // 先讀取購物車
+  fetchCities();
 
   // 2. 代入會員假資料 (模擬 API 未完成)
   const mockMember = {
@@ -53,6 +91,32 @@ onMounted(() => {
   if (!cartStore.orderForm.customerName) cartStore.orderForm.customerName = mockMember.name;
   if (!cartStore.orderForm.receiverEmail) cartStore.orderForm.receiverEmail = mockMember.email;
   if (!cartStore.orderForm.customerPhone) cartStore.orderForm.customerPhone = mockMember.phone;
+});
+
+const fetchCities = async () => {
+  try {
+    const res = await axios.get(API_URL+'SAddress/cities');
+    console.log("API 回傳原始資料:", res.data);
+    if (Array.isArray(res.data)) {
+      cityOptions.value = res.data;
+    }
+  } catch (err) {
+    console.error("縣市 API 尚未就緒");
+  }
+};
+
+watch(selectedCity, async (newCity) => {
+  selectedDistrict.value = ''; // 重置地區選擇
+  districtOptions.value = [];  // 清空選單內容
+  
+  if (newCity) {
+    try {
+      const res = await axios.get(API_URL+`SAddress/districts?cityName=${newCity}`);
+      districtOptions.value = res.data;
+    } catch (err) {
+      console.error("地區 API 尚未就緒");
+    }
+  }
 });
 </script>
 
@@ -176,13 +240,6 @@ onMounted(() => {
                   <input v-model="cartStore.orderForm.customerPhone" type="tel" class="form-control bg-light border-0" placeholder="0912 345 678">
                 </div>
               </div>
-              <div class="form-group">
-                <label class="form-label small fw-bold">性別 (選填)</label>
-                <select class="form-select bg-light border-0 py-2">
-                  <option selected>男</option>
-                  <option>女</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -203,7 +260,8 @@ onMounted(() => {
               <span class="small text-secondary fw-bold">運費: NT${{ cartStore.shippingFee }}</span>
             </div>
             <div class="card-body p-4">
-              <div class="mb-3 small text-secondary">已選擇的送貨方式：{{ cartStore.deliveryMethod || '宅配' }}</div>
+              <div class="mb-3 small text-secondary">已選擇的送貨方式：{{ cartStore.deliveryMethod  }}</div>
+              <div class="mb-3 small text-secondary">已選擇的付款方式：{{ cartStore.paymentMethod  }}</div>
               <div class="form-check mb-4">
                 <input class="form-check-input" type="checkbox" id="syncInfo" v-model="syncInfo" @change="handleSyncInfo">
                 <label class="form-check-label small fw-bold" for="syncInfo">收件人資料與顧客資料相同</label>
@@ -222,17 +280,35 @@ onMounted(() => {
                 </div>
               </div>
               <div class="row g-2 mb-3">
-                <div class="col-12"><label class="form-label small fw-bold">地址</label></div>
-                <div class="col-6">
-                  <select class="form-select bg-light border-0 py-2"><option>城市 / 縣</option></select>
-                </div>
-                <div class="col-6">
-                  <select class="form-select bg-light border-0 py-2"><option>地區</option></select>
-                </div>
-                <div class="col-12 mt-2">
-                  <input v-model="cartStore.orderForm.receiverAddress" type="text" class="form-control bg-light border-0 py-2" placeholder="完整地址">
-                </div>
-              </div>
+  <div class="col-12"><label class="form-label small fw-bold">地址</label></div>
+  
+  <div class="col-6">
+    <select v-model="selectedCity" class="form-select bg-light border-0 py-2">
+      <option value="" disabled>城市 / 縣</option>
+      <option v-for="city in cityOptions" :key="city" :value="city">
+        {{ city }}
+      </option>
+    </select>
+  </div>
+  
+  <div class="col-6">
+    <select v-model="selectedDistrict" class="form-select bg-light border-0 py-2" :disabled="!selectedCity">
+      <option value="" disabled>地區</option>
+      <option v-for="dist in districtOptions" :key="dist" :value="dist">
+        {{ dist }}
+      </option>
+    </select>
+  </div>
+
+  <div class="col-12 mt-2">
+    <input 
+      v-model="cartStore.orderForm.receiverAddressDetail" 
+      type="text" 
+      class="form-control bg-light border-0 py-2" 
+      placeholder="完整地址 (路名、門牌、樓層)"
+    >
+  </div>
+</div>
             </div>
           </div>
 

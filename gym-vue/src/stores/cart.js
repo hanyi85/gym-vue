@@ -1,6 +1,6 @@
 // stores/cart.js
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed ,watch} from 'vue';
 import axios from 'axios';
 
 export const useCartStore = defineStore('cart', () => {
@@ -15,8 +15,8 @@ export const useCartStore = defineStore('cart', () => {
   const loadingCart = ref(false);     
 
   // 結帳頁面所需資料
-  const deliveryMethod = ref('');     // 送貨方式
-  const paymentMethod = ref('');      // 付款方式
+  const deliveryMethod = ref(localStorage.getItem('deliveryMethod') || '');     // 送貨方式
+  const paymentMethod = ref(localStorage.getItem('paymentMethod') || '');      // 付款方式
   const orderForm = ref({
   customerName: '王小明',      // 預填假資料
   customerPhone: '0912345678', // 預填假資料
@@ -25,7 +25,15 @@ export const useCartStore = defineStore('cart', () => {
   receiverPhone: '',
   receiverAddress: '',
   note: ''
+
 });
+
+watch(deliveryMethod, (newVal) => {
+    localStorage.setItem('deliveryMethod', newVal);
+  });
+  watch(paymentMethod, (newVal) => {
+    localStorage.setItem('paymentMethod', newVal);
+  });
 
   // --- 非同步動作 (Actions) ---
 
@@ -190,6 +198,17 @@ const refreshCartSilently = async () => {
     paymentMethod.value = '';
   };
 
+  const clearCart = () => {
+  // 1. 清空商品列表
+  cartItems.value = [];
+  
+  // 2. 呼叫你原本就有的 resetOrderForm 清空表單
+  resetOrderForm();
+  
+  // 3. 如果你有存 LocalStorage，記得同步清除
+  localStorage.removeItem('cart');
+};
+
   return {
     // 狀態
     cartItems,
@@ -204,6 +223,7 @@ const refreshCartSilently = async () => {
     // 方法
     loadCart,
     loadRecommendations,
+    clearCart,
     addAddonToCart,
     updateQty,
     removeItem,
