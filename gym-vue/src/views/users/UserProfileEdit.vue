@@ -64,7 +64,7 @@
                     <div class="grid">
                         <div class="field">
                             <label class="field-label">手機號碼</label>
-                            <input v-model="form.phone" placeholder="09xxxxxxxx" />
+                            <input v-model="form.phone" placeholder="0912345678" />
                         </div>
 
                         <div class="field">
@@ -180,10 +180,27 @@ const password = ref({
 
 const passwordError = ref('')
 
-const onUpload = (event) => {
+const onUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
-    avatar.value = URL.createObjectURL(file)
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+        await api.post("/UUsers/upload-avatar", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        })
+
+        avatar.value = URL.createObjectURL(file)
+
+        alert("頭像上傳成功")
+
+    } catch (err) {
+        alert("上傳失敗")
+    }
 }
 
 const removeAvatar = () => {
@@ -245,6 +262,42 @@ const saveProfile = async () => {
 
     } finally {
         saving.value = false
+    }
+}
+
+//修改密碼
+const changePassword = async () => {
+    passwordError.value = ""
+
+    if (!password.value.current ||
+        !password.value.new ||
+        !password.value.confirm) {
+        passwordError.value = "請填寫所有密碼欄位"
+        return
+    }
+
+    if (password.value.new !== password.value.confirm) {
+        passwordError.value = "新密碼與確認密碼不一致"
+        return
+    }
+
+    try {
+        await api.put("/UUsers/change-password", {
+            oldPassword: password.value.current,
+            newPassword: password.value.new
+        })
+
+        alert("密碼修改成功")
+
+        password.value = {
+            current: '',
+            new: '',
+            confirm: ''
+        }
+
+    } catch (err) {
+        passwordError.value =
+            err.response?.data || "修改失敗"
     }
 }
 </script>

@@ -18,6 +18,10 @@ export function useEmailVerify(verifyFn) {
       const res = await verifyFn(token)
 
       if (res.data.success) {
+         //  存登入 JWT
+  if (res.data.token) {
+    localStorage.setItem("token", res.data.token)
+  }
         status.value = "success"
         message.value = "你的電子郵件已完成驗證"
       } else {
@@ -27,8 +31,11 @@ export function useEmailVerify(verifyFn) {
 
     } catch (err) {
       status.value = "error"
-      message.value =
-        err.response?.data?.message || "驗證失敗或連結已過期"
+      if (err.response && err.response.data && err.response.data.message) {
+  message.value = err.response.data.message
+} else {
+  message.value = "驗證失敗或連結已過期"
+}
     }
   }
 

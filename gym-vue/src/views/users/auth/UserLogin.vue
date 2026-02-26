@@ -123,10 +123,9 @@ async function handleLogin() {
 async function resendEmail() {
   console.log("我被點了")
   try {
-    await api.post(
-  "https://localhost:7218/api/Auth/resend-verify-email", {
-      email: email.value
-    })
+    await api.post("/Auth/resend-verify-email", {
+  email: email.value
+})
     alert("驗證信已重新寄出")
   } catch {
     alert("寄送失敗，請稍後再試")
