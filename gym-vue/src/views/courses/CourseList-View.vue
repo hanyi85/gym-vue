@@ -1,25 +1,19 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
-
 
 const router = useRouter()
 const route = useRoute()
 
-
 const api = axios.create({
-  baseURL: 'https://localhost:7218/api'
+  baseURL: 'https://localhost:7218/api',
 })
-
 
 const city = decodeURIComponent(route.params.city || route.query.city || '')
 const venue = decodeURIComponent(route.params.venue || route.query.venue || '')
 
-
-
 const tab = ref('course')
-
 
 const cityName = ref('')
 const venueName = ref('')
@@ -27,64 +21,128 @@ const venueName = ref('')
 const courses = ref([])
 const categories = ref([])
 
-
 const keyword = ref('')
-const selectedCategoryId = ref('')   
+const selectedCategoryId = ref('')
 const level = ref('')
 const duration = ref('')
 const price = ref('')
+
+// ===== coaches =====
 const coaches = ref([])
+const coachesLoading = ref(false)
+const coachesLoaded = ref(false)
+const coachPlaceholders = [
+  
+  'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+  'https://images.unsplash.com/photo-1619361728853-2542f3864532?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 
 
+  'https://images.unsplash.com/photo-1696563996353-214a3690bb11?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+
+ 'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+
+  'https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+]
+const coachImageResolved = (c) => {
+  const real = coachImage(c)
+  if (real) return real
+  const id = coachId(c) || 0
+  return coachPlaceholders[id % coachPlaceholders.length]
+}
+
+const courseName = (c) => c?.name ?? c?.CourseName ?? ''
+const courseId = (c) => c?.id ?? c?.courseId ?? c?.CourseId ?? c?.courseId ?? 0
+const courseCategoryId = (c) => c?.categoryId ?? c?.CategoryId ?? 0
+const courseLevel = (c) => c?.courseLevel ?? c?.CourseLevel ?? ''
+const courseDuration = (c) => c?.duration ?? c?.Duration ?? 0
+const coursePrice = (c) => c?.price ?? c?.Price ?? 0
+const courseImageUrl = (c) => c?.imageUrl ?? c?.ImageUrl ?? ''
+
+const catId = (x) => x?.id ?? x?.categoryId ?? x?.CategoryId ?? 0
+const catName = (x) => x?.name ?? x?.categoryName ?? x?.CategoryName ?? ''
+
+const coachId = (c) => c?.coachId ?? c?.CoachId ?? c?.id ?? 0
+const coachName = (c) => c?.name ?? c?.Name ?? ''
+const coachDesc = (c) => c?.description ?? c?.Description ?? c?.descrition ?? c?.Descrition ?? ''
+const coachRate = (c) => c?.hourlyRate ?? c?.HourlyRate ?? null
+const coachSkills = (c) => c?.skills ?? c?.Skills ?? []
+const coachImage = (c) => c?.imageUrl ?? c?.ImageUrl ?? ''
+// ===== coach filters =====
+const coachKeyword = ref('')
+const coachMaxPrice = ref('')    // 例如 800/1000/1200
+const coachSkill = ref('')      
+
+const coachSkillOptions = computed(() => {
+  const set = new Set()
+  coaches.value.forEach(c => {
+    ;(coachSkills(c) || []).forEach(s => set.add(s))
+  })
+  return Array.from(set)
+})
+
+// 篩選後教練
+const filteredCoaches = computed(() => {
+  const kw = coachKeyword.value.trim()
+  const maxP = coachMaxPrice.value ? Number(coachMaxPrice.value) : null
+  const skill = coachSkill.value
+
+  return coaches.value.filter(c => {
+    const name = coachName(c)
+    const desc = coachDesc(c)
+    const rate = Number(coachRate(c) ?? 0)
+    const skills = coachSkills(c) || []
+
+    const okKw = !kw || name.includes(kw) || desc.includes(kw) || skills.some(s => s.includes(kw))
+    const okPrice = !maxP || rate <= maxP
+    const okSkill = !skill || skills.includes(skill)
+
+    return okKw && okPrice && okSkill
+  })
+})
+
+function resetCoachFilters() {
+  coachKeyword.value = ''
+  coachMaxPrice.value = ''
+  coachSkill.value = ''
+}
+// ===== init (courses + categories) =====
 onMounted(async () => {
   try {
     if (!city || !venue) return
 
-    // 課程
-    const courseRes = await api.get('/CCourses/search', {
-      params: { city, venue }
-    })
+    const courseRes = await api.get('/CCourses/search', { params: { city, venue } })
+    courses.value = courseRes.data?.courses || []
+    cityName.value = courseRes.data?.city?.name || city
+    venueName.value = courseRes.data?.venue?.name || venue
 
-    courses.value = courseRes.data.courses
-    cityName.value = courseRes.data.city.name
-    venueName.value = courseRes.data.venue.name
-
-    // 類別
     const catRes = await api.get('/CCourseCategories')
-    categories.value = catRes.data
+    categories.value = catRes.data || []
   } catch (err) {
     console.error('初始化失敗', err)
   }
 })
 
-/* ================= 篩選後課程 ================= */
+// ===== courses filter =====
 const filteredCourses = computed(() => {
-  return courses.value.filter(c => {
-    
-const k =
-  !keyword.value ||
-  c.name?.includes(keyword.value)
+  return courses.value.filter((c) => {
+    const name = courseName(c)
+    const k = !keyword.value || name.includes(keyword.value)
 
     const cat =
-      !selectedCategoryId.value ||
-      c.categoryId === Number(selectedCategoryId.value)
+      !selectedCategoryId.value || courseCategoryId(c) === Number(selectedCategoryId.value)
 
-    const lvl =
-      !level.value ||
-      c.courseLevel === level.value
+    const lvl = !level.value || courseLevel(c) === level.value
 
-    const d =
-      !duration.value ||
-      c.duration == duration.value
+    const d = !duration.value || String(courseDuration(c)) === String(duration.value)
 
-    const p =
-      !price.value ||
-      c.price <= price.value
+    const p = !price.value || Number(coursePrice(c)) <= Number(price.value)
 
     return k && cat && lvl && d && p
   })
 })
-
 
 function resetAll() {
   keyword.value = ''
@@ -97,239 +155,302 @@ function resetAll() {
 function goDetail(course) {
   router.push({
     name: 'courses-detail',
-    params: {
-      slug: course.name
-    }
+    params: { slug: courseName(course) },
   })
 }
 
 function goBooking(id) {
   router.push({
     path: '/courses/booking',
-    query: {
-      id,
-      city,
-      venue
-    }
+    query: { id, city, venue },
   })
 }
 
+// ===== fetch coaches (切到 coach 才抓) =====
+async function fetchCoaches() {
+  coachesLoading.value = true
+  try {
+    // 如果你後端目前只有 GET /api/coaches（可選 venueId），先不帶參數也能看到資料
+    const res = await api.get('/coaches')
+    coaches.value = res.data || []
+    coachesLoaded.value = true
+  } catch (err) {
+    console.error('載入教練失敗', err)
+    coaches.value = []
+    coachesLoaded.value = true
+  } finally {
+    coachesLoading.value = false
+  }
+}
+
+watch(
+  tab,
+  (v) => {
+    if (v === 'coach' && !coachesLoaded.value) fetchCoaches()
+  },
+  { immediate: true }
+)
 </script>
 
-
 <template>
-
   <div class="page-wrapper">
-<div class="page-header">
-  <div class="header-bg"></div>
+    <!-- ================= Header ================= -->
+    <div class="page-header">
+      <div class="header-bg"></div>
 
-  <div class="content-wrapper header-inner">
-    <h2 class="page-title">課程與教練一站式搜尋</h2>
+      <div class="content-wrapper header-inner">
+        <h2 class="page-title">課程與教練一站式搜尋</h2>
 
-<div class="header-center">
-    <p class="page-subtitle">
-      <i class="bi bi-geo-alt"></i>
-      目前場館：{{ cityName }} · {{ venueName }}
-    </p>
+        <div class="header-center">
+          <p class="page-subtitle">
+            <i class="bi bi-geo-alt"></i>
+            目前場館：{{ cityName }} · {{ venueName }}
+          </p>
 
-    <!-- 統計泡泡
-    <div class="stats-bubbles">
-      <div class="bubble">
-        <div class="bubble-num">10k+</div>
-        <div class="bubble-label">活躍會員</div>
+          <div class="pill-tabs">
+            <button
+              class="pill"
+              :class="{ active: tab === 'course' }"
+              @click="tab = 'course'"
+            >
+              找課程
+            </button>
+            <button
+              class="pill"
+              :class="{ active: tab === 'coach' }"
+              @click="tab = 'coach'"
+            >
+              找教練
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="bubble">
-        <div class="bubble-num">50+</div>
-        <div class="bubble-label">專業教練</div>
-      </div>
-      <div class="bubble">
-        <div class="bubble-num">200+</div>
-        <div class="bubble-label">精選課程</div>
-      </div>
-      <div class="bubble">
-        <div class="bubble-num">95%</div>
-        <div class="bubble-label">滿意度</div>
-      </div>
-    </div> -->
-
-    <!-- 找課程 / 找教練 -->
-    <div class="pill-tabs">
-      <button
-        class="pill"
-        :class="{ active: tab === 'course' }"
-        @click="tab = 'course'"
-      >
-        找課程
-      </button>
-      <button
-        class="pill"
-        :class="{ active: tab === 'coach' }"
-        @click="tab = 'coach'"
-      >
-        找教練
-      </button>
     </div>
-  </div>
-</div>
-</div>
+
     <!-- ================= Content ================= -->
     <div class="content-wrapper">
+      <!-- ================= 課程 ================= -->
+      <template v-if="tab === 'course'">
+        <!-- 類別快速標籤 -->
+        <div class="quick-tags">
+          <div class="tags-left">
+            <span
+              :class="{ active: !selectedCategoryId }"
+              @click="selectedCategoryId = ''"
+            >
+              全部
+            </span>
 
-      <!-- ===== 類別快速標籤 ===== -->
-      <div class="quick-tags" v-if="tab === 'course'">
-        <div class="tags-left">
-          <span
-            :class="{ active: !selectedCategoryId }"
-            @click="selectedCategoryId = ''"
-          >
-            全部
-          </span>
-
-          <span
-            v-for="c in categories"
-            :key="c.id"
-            :class="{ active: selectedCategoryId === c.id }"
-            @click="selectedCategoryId = c.id"
-          >
-            {{ c.name }}
-          </span>
-        </div>
-
-        <button class="view-all-btn" @click="resetAll">
-          清空全部
-        </button>
-      </div>
-
-      <!-- ===== 篩選區 ===== -->
-      <div class="filter-panel" v-if="tab === 'course'">
-        <div class="filter-keyword">
-          <i class="bi bi-search"></i>
-          <input
-            v-model="keyword"
-            class="form-control"
-            placeholder="輸入課程關鍵字（例如：重訓、瑜珈）"
-          />
-        </div>
-
-        <div class="filter-row">
-          <select v-model="selectedCategoryId" class="form-select" :class="{ 'has-value': selectedCategoryId }" >
-            <option value="">類別</option>
-            <option v-for="c in categories" :key="c.id" :value="c.id">
-              {{ c.name }}
-            </option>
-          </select>
-
-          <select v-model="duration" class="form-select" :class="{ 'has-value': duration }">
-            <option value="">時長</option>
-            <option value="60">60 分鐘</option>
-            <option value="90">90 分鐘</option>
-            <option value="120">120 分鐘</option>
-          </select>
-
-          <select v-model="level" class="form-select"  :class="{ 'has-value': level }">
-            <option value="">難度</option>
-            <option value="初級">初級</option>
-            <option value="中級">中級</option>
-            <option value="進階">進階</option>
-          </select>
-
-          <select v-model="price" class="form-select"  :class="{ 'has-value': price }"
->
-            <option value="">價格</option>
-            <option value="500">500 以下</option>
-            <option value="1000">1000 以下</option>
-            <option value="2000">2000 以下</option>
-          </select>
-        </div>
-      </div>
-
-   
-     <div v-if="tab === 'course'" class="row g-4 mt-3">
-  <div
-    class="col-lg-4 col-md-6"
-    v-for="c in filteredCourses"
-    :key="c.id"
-  >
-    <div class="course-card">
-      <!-- 圖片區 -->
-      <div class="card-img">
-        <img
-          :src="`https://localhost:7218${c.imageUrl}`"
-          alt="課程圖片"
-        />
-    
-      </div>
-
-      <!-- 內容區 -->
-       <div class="card-body">
-     <div class="card-header">
-  <h5 class="course-title">
-    {{ c.name }}
-  </h5>
-
-  <span class="level-tag">
-    {{ c.courseLevel }}
-  </span>
-</div>
-        <div class="course-meta">
-          <div class="meta-row">
-            <i class="bi bi-clock"></i>
-            {{ c.duration }} 分鐘
+            <span
+              v-for="c in categories"
+              :key="catId(c)"
+              :class="{ active: String(selectedCategoryId) === String(catId(c)) }"
+              @click="selectedCategoryId = String(catId(c))"
+            >
+              {{ catName(c) }}
+            </span>
           </div>
 
-          <div class="meta-row">
-            <i class="bi bi-cash-stack"></i>
-            NT$ {{ c.price }}
+          <button class="view-all-btn" @click="resetAll">清空全部</button>
+        </div>
+
+        <!-- 篩選 -->
+        <div class="filter-panel">
+          <div class="filter-keyword">
+            <i class="bi bi-search"></i>
+            <input
+              v-model="keyword"
+              class="form-control"
+              placeholder="輸入課程關鍵字（例如：重訓、瑜珈）"
+            />
+          </div>
+
+          <div class="filter-row">
+            <select
+              v-model="selectedCategoryId"
+              class="form-select"
+              :class="{ 'has-value': selectedCategoryId }"
+            >
+              <option value="">類別</option>
+              <option
+                v-for="c in categories"
+                :key="catId(c)"
+                :value="String(catId(c))"
+              >
+                {{ catName(c) }}
+              </option>
+            </select>
+
+            <select
+              v-model="duration"
+              class="form-select"
+              :class="{ 'has-value': duration }"
+            >
+              <option value="">時長</option>
+              <option value="60">60 分鐘</option>
+              <option value="90">90 分鐘</option>
+              <option value="120">120 分鐘</option>
+            </select>
+
+            <select
+              v-model="level"
+              class="form-select"
+              :class="{ 'has-value': level }"
+            >
+              <option value="">難度</option>
+              <option value="初級">初級</option>
+              <option value="中級">中級</option>
+              <option value="進階">進階</option>
+            </select>
+
+            <select
+              v-model="price"
+              class="form-select"
+              :class="{ 'has-value': price }"
+            >
+              <option value="">價格</option>
+              <option value="500">500 以下</option>
+              <option value="1000">1000 以下</option>
+              <option value="2000">2000 以下</option>
+            </select>
           </div>
         </div>
 
-        <div class="course-actions">
-          <button class="btn-outline" @click="goDetail(c)">
-  查看課程
-</button>
+        <!-- 課程列表 -->
+        <div class="row g-4 mt-3">
+          <div
+            class="col-lg-4 col-md-6"
+            v-for="c in filteredCourses"
+            :key="courseId(c)"
+          >
+            <div class="course-card">
+              <div class="card-img">
+                <img
+                  :src="
+                    courseImageUrl(c)
+                      ? `https://localhost:7218${courseImageUrl(c)}`
+                      : 'https://via.placeholder.com/640x360?text=Course'
+                  "
+                  alt="課程圖片"
+                />
+              </div>
 
-          <button class="btn-primary" @click="goBooking(c.id)">
-            立即預約
-          </button>
+              <div class="card-body">
+                <div class="card-header">
+                  <h5 class="course-title">{{ courseName(c) }}</h5>
+                  <span class="level-tag">{{ courseLevel(c) }}</span>
+                </div>
+
+                <div class="course-meta">
+                  <div class="meta-row">
+                    <i class="bi bi-clock"></i>
+                    {{ courseDuration(c) }} 分鐘
+                  </div>
+
+                  <div class="meta-row">
+                    <i class="bi bi-cash-stack"></i>
+                    NT$ {{ coursePrice(c) }}
+                  </div>
+                </div>
+
+                <div class="course-actions">
+                  <button class="btn-outline" @click="goDetail(c)">查看課程</button>
+                  <button class="btn-primary" @click="goBooking(courseId(c))">
+                    立即預約
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
+
+      <!-- ================= 教練 ================= -->
+      <template v-else-if="tab === 'coach'">
+        <!-- 教練篩選區 -->
+        <div class="filter-panel">
+          <div class="filter-keyword">
+            <i class="bi bi-search"></i>
+            <input
+              v-model="coachKeyword"
+              class="form-control"
+              placeholder="搜尋教練（姓名 / 描述 / 技能）"
+            />
+          </div>
+
+          <div class="filter-row">
+            <select
+              v-model="coachMaxPrice"
+              class="form-select"
+              :class="{ 'has-value': coachMaxPrice }"
+            >
+              <option value="">價格（每小時）</option>
+              <option value="800">800 以下</option>
+              <option value="1000">1000 以下</option>
+              <option value="1200">1200 以下</option>
+              <option value="1500">1500 以下</option>
+            </select>
+
+            <select
+              v-model="coachSkill"
+              class="form-select"
+              :class="{ 'has-value': coachSkill }"
+            >
+              <option value="">技能</option>
+              <option v-for="s in coachSkillOptions" :key="s" :value="s">
+                {{ s }}
+              </option>
+            </select>
+
+            <button class="view-all-btn" @click="resetCoachFilters">
+              清空全部
+            </button>
+          </div>
+        </div>
+
+        <div v-if="coachesLoading" class="text-center text-muted mt-4">
+          載入教練中...
+        </div>
+
+        <div v-else-if="filteredCoaches.length === 0" class="text-center text-muted mt-4">
+          找不到符合條件的教練
+        </div>
+
+        <div v-else class="row g-4 mt-3">
+          <div
+            class="col-lg-4 col-md-6"
+            v-for="c in filteredCoaches"
+            :key="coachId(c)"
+          >
+            <div class="coach-card">
+              <div class="coach-img">
+                <img :src="coachImageResolved(c)" alt="教練圖片" />
+                <div class="coach-name">
+                  <h4>{{ coachName(c) }}</h4>
+                  <span v-if="coachRate(c) !== null">NT$ {{ coachRate(c) }}/hr</span>
+                </div>
+              </div>
+
+              <div class="coach-body">
+                <p class="desc">{{ coachDesc(c) }}</p>
+
+                <div v-if="coachSkills(c)?.length" class="coach-skills">
+                  <span class="skill" v-for="s in coachSkills(c)" :key="s">
+                    {{ s }}
+                  </span>
+                </div>
+
+                <div class="actions">
+                  <button class="btn-primary">查看教練</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
-</div>
-</div>
-</div>
-<!-- ================= 教練 ================= -->
-<div v-if="tab === 'coach'" class="row g-4 mt-3">
-  <div class="col-lg-4 col-md-6" v-for="c in coaches" :key="c.id">
-    <div class="coach-card">
-      <div class="coach-img">
-        <img :src="c.imageUrl" />
-        <div class="coach-name">
-          <h4>{{ c.name }}</h4>
-          <span>{{ c.specialty }}</span>
-        </div>
-      </div>
-
-      <div class="coach-body">
-        <div class="coach-meta">
-          <span class="rating">⭐ {{ c.rating }}</span>
-          <span>{{ c.experience }} 年經驗</span>
-        </div>
-
-        <p class="desc">{{ c.description }}</p>
-
-        <div class="actions">
-          <button class="btn-primary">
-            查看教練
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 </template>
-
 
 <style scoped>
 .page-wrapper {
