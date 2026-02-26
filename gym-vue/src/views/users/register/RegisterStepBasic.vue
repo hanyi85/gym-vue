@@ -21,7 +21,7 @@
             <div class="card">
 
                 <!-- 基本資料區塊 -->
-                <div class="form-section">
+              <div class="form-section">
                     <h4 class="form-title">會員基本資料</h4>
 
 
@@ -93,30 +93,7 @@
                 <!-- 聯絡地址 -->
                 <div class="form-section">
 
-                    <div class="grid">
-                        <div class="field">
-                            <label class="field-label">縣市</label>
-                            <select v-model="city">
-                                <option value="">選擇縣市</option>
-                                <option>台北市</option>
-                                <option>新北市</option>
-                            </select>
-                        </div>
-
-                        <div class="field">
-                            <label class="field-label">區域</label>
-                            <select v-model="area">
-                                <option value="">選擇區域</option>
-                                <option>中山區</option>
-                                <option>板橋區</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="field-label">路名與門牌號碼</label>
-                        <input placeholder="例：中山路一段 100 號" />
-                    </div>
+                    <AddressSelector v-model="form.address" />
                 </div>
 
                 <!-- 操作按鈕 -->
@@ -134,14 +111,22 @@
 
 
 <script setup>
-import { ref } from 'vue'
-
+import { ref,reactive } from 'vue'
+import AddressSelector from "@/components/AddressSelector.vue"
 const currentStep = ref(0)
 const gender = ref('男')
 
 const city = ref('')
 const area = ref('')
-
+const form = reactive({
+  name: '',
+  phone: '',
+  email: '',
+  birthday: '',
+  address: '',
+  city: '',
+  area: '',
+})
 const steps = [
     { title: '基本資料', desc: '填寫個人資訊' },
     { title: '驗證電子信箱', desc: '' },

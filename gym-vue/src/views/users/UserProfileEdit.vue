@@ -69,7 +69,7 @@
 
                         <div class="field">
                             <label class="field-label email-group">電子信箱</label>
-                            <input type="email" disabled v-model="form.email" />
+                            <input type="email" v-model="form.email" disabled name="email" autocomplete="email" />
                             <!-- 驗證完成 -->
                             <span class="email-verified">
                                 <i class="fa fa-icon fa-check"></i> 驗證完成
@@ -83,30 +83,53 @@
                 <div class="form-section">
 
                     <div class="grid">
+                        <!-- 縣市 -->
                         <div class="field">
                             <label class="field-label">縣市</label>
-                            <select v-model="city">
+                            <select v-model="city" @change="area = ''">
                                 <option value="">選擇縣市</option>
-                                <option>台北市</option>
-                                <option>新北市</option>
+                                <option v-for="c in taiwanAddress" :key="c.name" :value="c.name">
+                                    {{ c.name }}
+                                </option>
                             </select>
                         </div>
 
+                        <!-- 區域 -->
                         <div class="field">
                             <label class="field-label">區域</label>
-                            <select v-model="area">
+                            <select v-model="area" :disabled="!city">
                                 <option value="">選擇區域</option>
-                                <option>中山區</option>
-                                <option>板橋區</option>
+                                <option v-for="d in districts" :key="d.name" :value="d.name">
+                                    {{ d.name }}
+                                </option>
                             </select>
                         </div>
                     </div>
 
+                    <!-- 郵遞區號 (自動帶出) -->
+                    <div class="field">
+                        <label class="field-label">郵遞區號</label>
+                        <input :value="zipcode" readonly />
+                    </div>
+
+                    <!-- 詳細地址 -->
                     <div class="field">
                         <label class="field-label">路名與門牌號碼</label>
-                        <input placeholder="例：中山路一段 100 號" v-model="form.address" />
+                        <input v-model="detailAddress" placeholder="例：中山路一段 100 號" />
+                        <div class="full-address-preview">
+  {{ fullAddress }}
+</div>
                     </div>
                 </div>
+                <!-- 儲存基本資料 -->
+                <div class="actions profile-actions">
+                    <button class="next btn-next" :disabled="savingProfile" @click="saveProfile">
+                        {{ savingProfile ? "儲存中..." : "儲存基本資料" }}
+                    </button>
+                </div>
+
+
+                <hr class="section-divider" />
 
                 <!-- 修改密碼 -->
                 <div class="form-section">
@@ -135,13 +158,10 @@
                     </p>
                 </div>
 
-
-                <!-- 操作按鈕 -->
-                <div class="actions">
-
-
-                    <button class="next btn-next" :disabled="saving" @click="saveProfile">
-                        {{ saving ? "儲存中..." : "儲存並返回會員首頁⭢" }}
+                <!-- 修改密碼按鈕 -->
+                <div class="actions" style="margin-top:16px;">
+                    <button class="next btn-next" :disabled="savingPassword" @click="changePassword">
+                        {{ savingPassword ? "修改中..." : "修改密碼" }}
                     </button>
                 </div>
 
@@ -153,24 +173,25 @@
 
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from "@/services/api"
+import { taiwanAddress } from '@/data/twzipcode'
 
 const router = useRouter()
-
+//地址
+const detailAddress = ref("")
+const gender = ref('')
+const city = ref('')
+const area = ref('')
+const avatar = ref(null)
 const form = ref({
     email: '',
     name: '',
     phone: '',
     birthday: '',
-    address: ''
+    address:  ''
 })
-
-const gender = ref('')
-const city = ref('')
-const area = ref('')
-const avatar = ref(null)
 
 const password = ref({
     current: '',
@@ -179,6 +200,29 @@ const password = ref({
 })
 
 const passwordError = ref('')
+const districts = computed(() => {
+  return (
+    taiwanAddress.find(c => c.name === city.value)?.districts || []
+  )
+})
+const zipcode = computed(() => {
+    return (
+        districts.value.find(d => d.name === area.value)?.zipcode || ""
+    )
+})
+const fullAddress = computed(() => {
+  return `${zipcode.value}${city.value}${area.value}${detailAddress.value}`
+})
+
+
+watch(fullAddress, (val) => {
+  form.value.address = val
+})
+
+
+
+
+
 
 const onUpload = async (event) => {
     const file = event.target.files[0]
@@ -203,8 +247,14 @@ const onUpload = async (event) => {
     }
 }
 
-const removeAvatar = () => {
-    avatar.value = null
+const removeAvatar = async () => {
+    try {
+        await api.delete("/UUsers/avatar")
+        avatar.value = null
+        alert("已移除頭像")
+    } catch {
+        alert("移除失敗")
+    }
 }
 
 onMounted(async () => {
@@ -227,16 +277,65 @@ onMounted(async () => {
             avatar.value = `data:image/jpeg;base64,${res.data.Image}`
         }
 
+        if (res.data.Address) {
+  const rawAddress = res.data.Address.trim()
+
+  let parsed = false
+
+  // ===== ① 先嘗試解析「有郵遞區號」格式 =====
+  if (/^\d{3}/.test(rawAddress)) {
+    const zip = rawAddress.slice(0, 3)
+
+    for (const c of taiwanAddress) {
+      const district = c.districts.find(d => d.zipcode === zip)
+
+      if (district) {
+        city.value = c.name
+        area.value = district.name
+
+        const prefix = zip + c.name + district.name
+        detailAddress.value = rawAddress.slice(prefix.length)
+
+        parsed = true
+        break
+      }
+    }
+  }
+
+  // ===== ② 如果沒有郵遞區號，就用舊格式解析 =====
+  if (!parsed) {
+    for (const c of taiwanAddress) {
+      if (rawAddress.startsWith(c.name)) {
+        city.value = c.name
+
+        for (const d of c.districts) {
+          if (rawAddress.includes(d.name)) {
+            area.value = d.name
+
+            const prefix = c.name + d.name
+            detailAddress.value = rawAddress.slice(prefix.length)
+
+            break
+          }
+        }
+
+        break
+      }
+    }
+  }
+}
+
+
     } catch (err) {
         console.error(err)
     }
 })
-const saving = ref(false)
+const savingProfile = ref(false)
+const savingPassword = ref(false)
 
 const saveProfile = async () => {
-    if (saving.value) return
-
-    saving.value = true
+    if (savingProfile.value) return
+    savingProfile.value = true
 
     try {
         await api.put("/UUsers/profile", {
@@ -247,13 +346,9 @@ const saveProfile = async () => {
             address: form.value.address
         })
 
-        alert("更新成功")
-
-        router.push("/users/home")
+        alert("基本資料更新成功")
 
     } catch (err) {
-        console.error(err)
-
         const message =
             err.response?.data?.message ||
             "更新失敗，請稍後再試"
@@ -261,12 +356,14 @@ const saveProfile = async () => {
         alert(message)
 
     } finally {
-        saving.value = false
+        savingProfile.value = false
     }
 }
 
 //修改密碼
 const changePassword = async () => {
+    if (savingPassword.value) return
+
     passwordError.value = ""
 
     if (!password.value.current ||
@@ -280,6 +377,8 @@ const changePassword = async () => {
         passwordError.value = "新密碼與確認密碼不一致"
         return
     }
+
+    savingPassword.value = true
 
     try {
         await api.put("/UUsers/change-password", {
@@ -297,7 +396,12 @@ const changePassword = async () => {
 
     } catch (err) {
         passwordError.value =
-            err.response?.data || "修改失敗"
+            err.response?.data?.message ||
+            err.response?.data ||
+            "修改失敗"
+
+    } finally {
+        savingPassword.value = false
     }
 }
 </script>
@@ -549,4 +653,16 @@ select:focus {
     font-size: 14px;
     color: #e74c3c;
 }
+
+.section-divider {
+    margin: 48px 0;
+    border: none;
+    border-top: 3px solid #b88686;
+}
+.full-address-preview {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #666;
+}
+
 </style>
