@@ -7,13 +7,13 @@
           <div class="process-steps mb-5 px-md-5">
             <div class="d-flex justify-content-between position-relative">
               <div class="step-line"></div>
-              <div v-for="n in 3" :key="n" class="step-item d-flex flex-column align-items-center z-1">
+              <div v-for="n in 2" :key="n" class="step-item d-flex flex-column align-items-center z-1">
                 <div class="step-circle mb-2" :class="{ 'active': currentStep === n, 'completed': currentStep > n }">
                   <i v-if="currentStep > n" class="bi bi-check-lg"></i>
                   <span v-else>{{ n }}</span>
                 </div>
                 <span class="step-label fw-bold" :class="currentStep >= n ? 'text-dark' : 'text-muted'">
-                  {{ n === 1 ? '基本資料' : n === 2 ? '付款方式' : '完成報名' }}
+                  {{ n === 1 ? '基本資料' : '完成報名' }}
                 </span>
               </div>
             </div>
@@ -265,17 +265,23 @@ const goToLogin = () => {
 // 處理 reCAPTCHA 手動渲染
 let recaptchaWidgetId = null;
 const renderRecaptcha = () => {
-  const checkInterval = setInterval(() => {
-    if (window.grecaptcha && window.grecaptcha.render) {
-      const element = document.getElementById('recaptcha-element');
-      if (element) {
+  // 檢查 grecaptcha 是否存在
+  if (window.grecaptcha && window.grecaptcha.render) {
+    const element = document.getElementById('recaptcha-element');
+    if (element) {
+      // 如果已經渲染過，先重置或不處理，避免重複渲染報錯
+      try {
         recaptchaWidgetId = window.grecaptcha.render('recaptcha-element', {
           'sitekey': '6LcNAHcsAAAAAFgudKK9KwtxBbWF7yrTTDZODESg'
         });
-        clearInterval(checkInterval);
+      } catch (e) {
+        console.warn("reCAPTCHA 已經渲染過了");
       }
     }
-  }, 500);
+  } else {
+    // 如果還沒載入完，過 500ms 再試一次
+    setTimeout(renderRecaptcha, 500);
+  }
 };
 
 // 表單提交邏輯
@@ -296,64 +302,69 @@ const handleFormSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    // 2. 費用確認邏輯
-    if (postData.value?.EventInfo?.Fee > 0) {
-      currentStep.value = 2;
-      const result = await Swal.fire({
-        title: '確認報名資訊？',
-        text: `費用：$${postData.value.EventInfo.Fee} / 付款方式：${form.PaymentMethod}`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#f3722c',
-        confirmButtonText: '確定，前往付款',
-        cancelButtonText: '再檢查一下'
-      });
-
-      if (!result.isConfirmed) {
-        currentStep.value = 1;
-        isSubmitting.value = false;
-        return;
-      }
-    }
-
-    // 3. 組合 Payload
+    // 2. 組合 Payload (對應你的 yJoinForm 資料表)
     const userData = JSON.parse(localStorage.getItem('userInfo') || '{}');
     const payload = {
-      PostId: Number(form.PostId),  // 確保是數字
+      EventId: Number(postData.value.EventInfo.EventId), // 修改為 EventId 
       UserId: userData.userId ? Number(userData.userId) : null,
       Name: form.Name,
-      Sex: String(form.Sex),        // 傳送字串 "1", "0" 給後端
+      Sex: Number(form.Sex), // 轉為數字對應 SQL INT
       Email: form.Email,
       Phone: form.Phone,
-      PaymentMethod: form.PaymentMethod,
+      Fee: postData.value.EventInfo.Fee,
+      PayMethod: form.PaymentMethod === 'LINEPAY' ? 1 : 2, // 1:LINEPay, 2:ATM
       CaptchaToken: token
     };
 
-    // 4. API 請求
-    const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
+    // 3. 費用確認與金流判定
+    if (postData.value?.EventInfo?.Fee > 0 && form.PaymentMethod === 'LINEPAY') {
+      const result = await Swal.fire({
+        title: '確認報名並付款？',
+        text: `報名費用：$${payload.Fee}，將跳轉至 LINE Pay 付款頁面`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#f3722c',
+        confirmButtonText: '前往 LINE Pay',
+        cancelButtonText: '取消'
+      });
 
-    // 5. 成功後續處理
-    currentStep.value = 3;
-    await Swal.fire({
-      icon: 'success',
-      title: '報名完成！',
-      text: response.data.message || '已成功收到您的報名資料',
-      confirmButtonColor: '#f3722c'
-    });
+      if (!result.isConfirmed) {
+        isSubmitting.value = false;
+        return;
+      }
 
-    router.push('/post/card');
+      // --- 重點：呼叫後端發起 LINE Pay ---
+      // 這裡呼叫你的後端 API (例如 RegisterWithLinePay)
+      const response = await axios.post('https://localhost:7218/api/YPosts/RegisterWithLinePay', payload);
+
+      if (response.data.returnCode === '0000') {
+        // 成功取得連結，執行跳轉
+        window.location.href = response.data.info.paymentUrl.web;
+      } else {
+        throw new Error(response.data.returnMessage || 'LINE Pay 發起失敗');
+      }
+
+    } else {
+      // 4. 免費活動或 ATM 的一般報名流程
+      const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
+
+      await Swal.fire({
+        icon: 'success',
+        title: '報名完成！',
+        text: response.data.message || '已成功收到您的報名資料',
+        confirmButtonColor: '#f3722c'
+      });
+      router.push('/post/card');
+    }
 
   } catch (error) {
-    // 失敗則重設 reCAPTCHA
     if (window.grecaptcha) window.grecaptcha.reset(recaptchaWidgetId);
-
-    const errorMsg = error.response?.data?.message || '報名失敗，請稍後再試';
+    const errorMsg = error.response?.data?.message || error.message || '報名失敗，請稍後再試';
     Swal.fire('系統錯誤', errorMsg, 'error');
   } finally {
     isSubmitting.value = false;
   }
 };
-
 onMounted(() => {
   window.scrollTo(0, 0);
   checkUserStatus();
