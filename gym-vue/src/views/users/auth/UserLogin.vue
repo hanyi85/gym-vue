@@ -34,10 +34,14 @@
 
       <div class="social-section">
         <div class="divider"><span>或使用其他方式</span></div>
-        <div class="d-flex justify-content-center gap-4">
-          <button class="social-circle google" @click="socialLogin('Google')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
-          </button>
+        <div class="d-flex justify-content-center gap-4"> <!-- Google 登入按鈕 -->
+          <GoogleLogin
+          :callback="handleGoogleCallback"
+          class="google-btn"
+          />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+          <!-- <button class="social-circle google" @click="googleLogin">
+          </button> -->
           <button class="social-circle line" @click="socialLogin('LINE')">
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE">
           </button>
@@ -72,8 +76,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { GoogleLogin } from 'vue3-google-login'
 import api from '@/services/api'
 import Btn from '@/components/btn.vue'
 
@@ -86,7 +91,6 @@ const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
 const showVerifyModal = ref(false)
-
 // 登入
 async function handleLogin() {
   if (loading.value) return
@@ -124,8 +128,8 @@ async function resendEmail() {
   console.log("我被點了")
   try {
     await api.post("/Auth/resend-verify-email", {
-  email: email.value
-})
+      email: email.value
+    })
     alert("驗證信已重新寄出")
   } catch {
     alert("寄送失敗，請稍後再試")
@@ -133,8 +137,38 @@ async function resendEmail() {
 }
 
 // 第三方登入
-const socialLogin = (platform) => {
-  console.log(`${platform} 登入啟動`)
+const handleGoogleCallback = async (response) => {
+  try {
+    console.log('Google 回傳：', response)
+
+    const idToken = response.credential
+
+    const res = await fetch('https://localhost:7218/api/auth/google-login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        idToken: idToken
+      })
+    })
+
+    if (!res.ok) {
+      throw new Error('API 回傳錯誤')
+    }
+
+    const data = await res.json()
+
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('userId', data.userId)
+    localStorage.setItem('name', data.name)
+
+    router.push('/users/home')
+
+  } catch (err) {
+    console.error('Google 登入失敗', err)
+    errorMessage.value = 'Google 登入失敗'
+  }
 }
 </script>
 
