@@ -141,6 +141,10 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
 </div>
   <section class="form-wrapper">
     <form class="order-form" @submit.prevent="submitOrder">
+      <div class="text-end text-muted small">
+  <span class="text-danger">*</span> 所有欄位皆為必填
+</div>
+
       <!-- 姓名 -->
       <div class="mb-3">
         <label class="form-label">姓名</label>

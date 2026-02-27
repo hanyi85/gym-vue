@@ -210,11 +210,12 @@ onMounted(() => {
             </div>
           </div>
 
-          <hr class="opacity-10 my-4" />
-
+          <hr class="opacity-10 " /><div class="text-end text-muted small">
+  <span class="text-danger">*</span> 所有欄位皆為必填
+</div>
           <div class="order-options">
             <div class="mb-4">
-              <label class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>取餐日期*</label>
+              <label class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>取餐日期</label>
               <input type="date" v-model="selectedDate" class="form-control custom-input" 
               :class="{ 'is-invalid': errors.date }"
               :min="minDate" :max="maxDate" />
@@ -224,7 +225,7 @@ onMounted(() => {
             </div>
             <div class="row mb-4">
               <div class="col-7">
-                <label class="form-label fw-bold"><i class="bi bi-clock me-2"></i>取餐時段*</label>
+                <label class="form-label fw-bold"><i class="bi bi-clock me-2"></i>取餐時段</label>
                 <select class="form-select custom-input" v-model="selectedTimeSlotId"
                 :class="{ 'is-invalid': errors.timeSlot }">
                   <option disabled :value="null">請選擇</option>
@@ -235,7 +236,7 @@ onMounted(() => {
                 </div>
               </div>
               <div class="col-5">
-                <label class="form-label fw-bold"><i class="bi bi-basket me-2"></i>份數*</label>
+                <label class="form-label fw-bold"><i class="bi bi-basket me-2"></i>份數</label>
                 <div class="input-group">
                   <!-- <button class="btn btn-outline-secondary" @click="quantity > 1 ? quantity-- : null">-</button> -->
                   <input type="number"
