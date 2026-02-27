@@ -52,7 +52,7 @@
           您現在可以使用新密碼登入。
         </p>
 
-        <router-link to="/users/auth/login" class="btn-outline-tech w-100 d-block">
+        <router-link to="/users/login" class="btn-outline-tech w-100 d-block">
           前往登入
         </router-link>
       </div>

@@ -25,7 +25,7 @@
           {{ errorMessage }}
         </p>
         <div class="text-start mb-5">
-          <router-link to="/users/auth/forgot-password" class="forgot-link">忘記密碼？</router-link>
+          <router-link to="/users/forgot-password" class="forgot-link">忘記密碼？</router-link>
         </div>
 
         <Btn add-text="登入" :single="true" :disabled="loading" @add="handleLogin" />

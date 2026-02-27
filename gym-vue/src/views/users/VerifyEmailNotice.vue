@@ -46,13 +46,13 @@
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useEmailVerify } from '@/composables/useEmailVerify'
-import { verifyEmailChange } from '@/services/auth' // 引入 API
+import { resendVerifyEmail } from '@/services/auth' // 引入 API
 
 const route = useRoute()
 
 //  把 API 傳進去
 const { status, message, execute } =
-  useEmailVerify(verifyEmailChange)
+  useEmailVerify(resendVerifyEmail)
 
 onMounted(() => {
   execute(route.query.token)

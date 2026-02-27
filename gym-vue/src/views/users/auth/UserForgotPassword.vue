@@ -39,7 +39,7 @@
       </div>
 
       <div class="text-center mt-5">
-        <router-link to="/users/auth/login" class="back-link small">
+        <router-link to="/users/login" class="back-link small">
           <i class="fa fa-arrow-left me-2"></i>返回登入
         </router-link>
       </div>
@@ -67,7 +67,7 @@ const handleResetRequest = async () => {
   try {
     isLoading.value = true
 
-    await axios.post('https://localhost:7218/api/Auth/forgot-password', {
+    await axios.post('https://localhost:7218/api/forgot-password', {
       email: email.value
     })
 
