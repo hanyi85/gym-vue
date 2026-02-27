@@ -7,7 +7,9 @@ import { useAuthStore } from '@/stores/mealAuthStore'
 import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
-const logout=()=>authStore.logout()
+
+/* 登出 */
+// const logout=()=>authStore.logout()
 
 
 const apiUrl="https://localhost:7218/api"
@@ -127,11 +129,23 @@ router.push({ name: 'User-login' })
 
   try {
     await axios.post(`${apiUrl}/TMealCarts/MealAddToCart`, payload)
-    alert('加入成功')
+    Swal.fire({
+    icon: 'success',
+    title: '加入成功！',
+    text: '餐點已加入購物車',
+    timer: 2000,
+    showConfirmButton: false
+  })
     return true
   } catch (err) {
     console.error(err)
-    alert('加入失敗')
+    Swal.fire({
+    icon: 'fail',
+    title: '加入失敗！',
+    text: '餐點未成功加入購物車',
+    timer: 2000,
+    showConfirmButton: false
+  })
     return false
   }
 }
@@ -149,7 +163,7 @@ async function buyNow() {
 onMounted(() => {
   fetchTimeSlots()
   fetchMeal()
-  logout()
+  // logout()
 })
 
 </script>
