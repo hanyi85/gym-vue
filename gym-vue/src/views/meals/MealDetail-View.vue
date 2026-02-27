@@ -26,6 +26,9 @@ const selectedDate = ref('')
 const selectedTimeSlotId = ref(null)
 const quantity = ref(1)
 
+/* 錯誤訊息 */
+const errors = ref({})
+
 /* 日期限制 */
 const today = new Date()
 const tomorrow = new Date(today)
@@ -70,6 +73,25 @@ async function fetchMeal() {
   }
 }
 
+/* 建立驗證 */
+const validateForm = () => {
+  errors.value = {}
+
+  if (!selectedDate.value) {
+    errors.value.date = '請選擇取餐日期'
+  }
+
+  if (!selectedTimeSlotId.value) {
+    errors.value.timeSlot = '請選擇取餐時段'
+  }
+
+  if (!quantity.value || quantity.value < 1) {
+    errors.value.quantity = '份數至少為 1'
+  }
+
+  return Object.keys(errors.value).length === 0
+}
+
 
 
 /* 加入購物車 */
@@ -80,6 +102,11 @@ async function addToCart() {
     router.push({ name: 'User-login' })
     return false
   }
+
+  if (!validateForm()) return
+
+  // 通過驗證才執行
+  console.log('加入購物車')
 
   const payload = {
     FUserId: authStore.member.UserId,
@@ -167,25 +194,40 @@ onMounted(() => {
 
           <div class="order-options">
             <div class="mb-4">
-              <label class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>取餐日期</label>
-              <input type="date" v-model="selectedDate" class="form-control custom-input" :min="minDate" :max="maxDate" />
+              <label class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>取餐日期*</label>
+              <input type="date" v-model="selectedDate" class="form-control custom-input" 
+              :class="{ 'is-invalid': errors.date }"
+              :min="minDate" :max="maxDate" />
+              <div class="invalid-feedback">
+              {{ errors.date }}
             </div>
-
+            </div>
             <div class="row mb-4">
               <div class="col-7">
-                <label class="form-label fw-bold"><i class="bi bi-clock me-2"></i>取餐時段</label>
-                <select class="form-select custom-input" v-model="selectedTimeSlotId">
-                  <option disabled value="null">請選擇</option>
+                <label class="form-label fw-bold"><i class="bi bi-clock me-2"></i>取餐時段*</label>
+                <select class="form-select custom-input" v-model="selectedTimeSlotId"
+                :class="{ 'is-invalid': errors.timeSlot }">
+                  <option disabled :value="null">請選擇</option>
                   <option v-for="slot in timeSlots" :key="slot.id" :value="slot.id">{{ slot.label }}</option>
                 </select>
+                <div class="invalid-feedback">
+                  {{ errors.timeSlot }}
+                </div>
               </div>
               <div class="col-5">
-                <label class="form-label fw-bold"><i class="bi bi-basket me-2"></i>份數</label>
+                <label class="form-label fw-bold"><i class="bi bi-basket me-2"></i>份數*</label>
                 <div class="input-group">
-                  <button class="btn btn-outline-secondary" @click="quantity > 1 ? quantity-- : null">-</button>
-                  <input type="number" class="form-control text-center custom-input border-x-0" v-model="quantity" min="1" />
-                  <button class="btn btn-outline-secondary" @click="quantity++">+</button>
+                  <!-- <button class="btn btn-outline-secondary" @click="quantity > 1 ? quantity-- : null">-</button> -->
+                  <input type="number"
+                    class="form-control text-center custom-input border-x-0"
+                    v-model="quantity"
+                    min="1"
+                    :class="{ 'is-invalid': errors.quantity }" />
+                  <!-- <button class="btn btn-outline-secondary" @click="quantity++">+</button> -->
                 </div>
+                <div class="invalid-feedback d-block">
+                      {{ errors.quantity }}
+                    </div>
               </div>
             </div>
 
