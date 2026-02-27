@@ -1,10 +1,8 @@
 <template>
   <div class="row g-2">
-    
-
-    
       <button
         class="btn w-100 py-2 fw-bold text-white btn-buy-now"
+        :disabled="disabled"
         @click="$emit('buy')"
       >
         {{ buyText }}
@@ -18,6 +16,10 @@ defineProps({
   buyText: {
     type: String,
     default: '立即購買'
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 </script>

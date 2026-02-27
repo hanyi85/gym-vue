@@ -209,8 +209,7 @@ onMounted(() => {
       <h4 class="mb-0 fw-bold  ">總金額</h4>
     </div>
     <div class="text-end">
-      <h2 class="price-text fw-bold mb-2">${{ totalAmount }}</h2>
-      
+      <h2 class="price-text fw-bold mb-2">${{ totalAmount }}</h2>  
     </div>
   </div>
 </div>
