@@ -4,8 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/mealAuthStore'
+import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
+const logout=()=>authStore.logout()
 
 
 const apiUrl="https://localhost:7218/api"
@@ -98,8 +100,15 @@ const validateForm = () => {
 async function addToCart() {
 
   if (!authStore.member?.UserId) {
-    alert('請先登入')
-    router.push({ name: 'User-login' })
+   await Swal.fire({
+  icon: 'warning',
+  title: '尚未登入',
+  text: '請先登入會員後再加入購物車',
+  confirmButtonText: '前往登入',
+  confirmButtonColor: '#f3722c'
+})
+
+router.push({ name: 'User-login' })
     return false
   }
 
@@ -140,6 +149,7 @@ async function buyNow() {
 onMounted(() => {
   fetchTimeSlots()
   fetchMeal()
+  logout()
 })
 
 </script>
