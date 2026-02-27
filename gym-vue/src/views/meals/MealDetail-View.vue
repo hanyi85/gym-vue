@@ -8,10 +8,6 @@ import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
 
-/* 登出 */
-// const logout=()=>authStore.logout()
-
-
 const apiUrl="https://localhost:7218/api"
 
 /* 路由 */
@@ -102,13 +98,13 @@ const validateForm = () => {
 async function addToCart() {
 
   if (!authStore.member?.UserId) {
-   await Swal.fire({
-  icon: 'warning',
-  title: '尚未登入',
-  text: '請先登入會員後再加入購物車',
-  confirmButtonText: '前往登入',
-  confirmButtonColor: '#f3722c'
-})
+    await Swal.fire({
+    icon: 'warning',
+    title: '尚未登入',
+    text: '請先登入會員後再加入購物車',
+    confirmButtonText: '前往登入',
+    confirmButtonColor: '#f3722c'
+  })
 
 router.push({ name: 'User-login' })
     return false
@@ -163,7 +159,7 @@ async function buyNow() {
 onMounted(() => {
   fetchTimeSlots()
   fetchMeal()
-  // logout()
+  
 })
 
 </script>

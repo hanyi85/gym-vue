@@ -5,6 +5,7 @@ import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 import { useAuthStore } from '@/stores/mealAuthStore'
 
 const authStore = useAuthStore()
@@ -79,10 +80,39 @@ async function getCart() {
 // 刪除
 
 async function deleteItem(orderItemId) {
-  if (!confirm('確定刪除？')) return
+  const result = await Swal.fire({
+    title: '確定要刪除嗎？',
+    text: '刪除後將無法恢復',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f3722c',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  })
 
-  await axios.delete(`${apiUrl}/TMealCarts/Item/${orderItemId}`)
-  getCart()
+  // 如果按取消
+  if (!result.isConfirmed) return
+
+  try {
+    await axios.delete(`${apiUrl}/TMealCarts/Item/${orderItemId}`)
+
+    await Swal.fire({
+      icon: 'success',
+      title: '刪除成功',
+      timer: 1500,
+      showConfirmButton: false
+    })
+
+    getCart()
+
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: '刪除失敗',
+      text: '請稍後再試'
+    })
+  }
 }
 
 // 下一步
@@ -106,7 +136,13 @@ async function goConfirm() {
 
   } catch (err) {
     console.error(err)
-    alert('更新失敗')
+    Swal.fire({
+    icon: 'fail',
+    title: '更新失敗！',
+    text: '請稍後再試',
+    timer: 2000,
+    showConfirmButton: false
+  })
   }
 }
 
@@ -190,7 +226,7 @@ onMounted(() => {
 </div>
       
     
- 
+
 </template>
 
 
