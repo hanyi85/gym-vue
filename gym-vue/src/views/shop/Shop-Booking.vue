@@ -39,53 +39,41 @@ const handleSyncInfo = () => {
 
 // 🔹 下單送出
 const goToBookingSuccess = async () => {
-  // 付款方式對應 payId
   const method = cartStore.paymentMethod || localStorage.getItem('paymentMethod');
-
-  const payMap = {
-    '信用卡': 1,
-    '貨到付款': 2,
-    'PayPal': 3
-  };
-
+  const payMap = { '信用卡': 1, '貨到付款': 2, 'PayPal': 3 };
   const payId = payMap[method];
+
   if (!payId) {
     alert('付款方式遺失，請重新選擇');
     router.replace({ name: 'shop-cart' });
     return;
   }
 
-  // ⚡ 組 payload
   const payload = {
-  mName: cartStore.orderForm.customerName,
-  mPhone: cartStore.orderForm.customerPhone,
-  email: cartStore.orderForm.receiverEmail,
-  mAddress: `${selectedCity.value}${selectedDistrict.value}${cartStore.orderForm.receiverAddressDetail || ''}`.substring(0, 30),
-  shipFee: Number(cartStore.shippingFee),
-  total: Number(cartStore.totalAmount),
-  note: cartStore.orderForm.note || '',
-  payId,
-  shipId: 1,
-  items: cartStore.cartItems.map(item => ({
-    specId: Number(item.SpecId),
-    pName: item.PName || item.pName || item.Name || '', // 🔹 保證傳字串
-    price: Number(item.Price),
-    quantity: Number(item.Quantity)
-  }))
-};
-
-  console.log('🚀 最終 payload', payload);
-
-  // 檢查商品 ID
-  if (payload.items.some(i => i.specId === 0)) {
-    alert('偵測到商品 ID 為 0，請重新整理購物車！');
-    return;
-  }
+    mName: cartStore.orderForm.customerName,
+    mPhone: cartStore.orderForm.customerPhone,
+    email: cartStore.orderForm.receiverEmail,
+    mAddress: `${selectedCity.value}${selectedDistrict.value}${cartStore.orderForm.receiverAddressDetail || ''}`.substring(0, 30),
+    shipFee: Number(cartStore.shippingFee),
+    total: Number(cartStore.totalAmount),
+    note: cartStore.orderForm.note || '',
+    payId,
+    shipId: 1,
+    items: cartStore.cartItems.map(item => ({
+      specId: Number(item.SpecId),
+      pName: item.PName || item.pName || item.Name || '',
+      price: Number(item.Price),
+      quantity: Number(item.Quantity)
+    }))
+  };
 
   try {
-    await axios.post(API_URL + 'SOrder', payload);
+    const res = await axios.post(API_URL + 'SOrder', payload);
+    const orderNumber = res.data.orderNo; // ✅ 拿到訂單號碼
     cartStore.clearCart();
-    router.push({ name: 'shop-booking-success' });
+
+    // 帶 orderNumber 到完成頁
+    router.push({ path: '/shop/booking-success', query: { orderNumber } });
   } catch (err) {
     console.error('❌ 訂單送出失敗:', err.response?.data || err);
     alert('訂單提交失敗，請檢查資料或重新整理');

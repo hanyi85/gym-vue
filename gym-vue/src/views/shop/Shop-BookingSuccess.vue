@@ -1,58 +1,102 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
 
-// 模擬訂單資料
-const orderInfo = ref({
-  orderNumber: '202405200001',
-  orderDate: '2024-05-20 14:30',
-  orderStatus: '已確認',
-  totalAmount: 864, // 總金額
-  customer: { 
-    name: '王小明', 
-    phone: '0912 345 678',
-    email: 'aaa****@gmail.com' 
-  },
-  delivery: {
-    receiver: '王小明',
-    phone: '0912 345 678',
-    method: '宅配',
-    status: '備貨中',
-    address: '台南市安平區建平十一街24巷30號'
-  },
-  payment: { method: '信用卡', status: '已付款' },
-  note: '無'
-});
+const route = useRoute();
+const router = useRouter();
+const API_URL = import.meta.env.VITE_API_URL;
 
-// 手風琴所需的計算數值
-const subtotal = ref(784);
-const shippingFee = ref(80);
-
-// 模擬購物車商品清單
-const cartItems = ref([
-  { 
-    id: 1, 
-    name: '濃縮乳清蛋白【純粹那堤】隨身包35克-GOpower果果能量', 
-    price: 55, 
-    originalPrice: 80,
-    quantity: 1, 
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href 
-  },
-  { 
-    id: 2, 
-    name: '水解乳清蛋白【可可歐蕾】500克-GOpower果果能量', 
-    price: 729, 
-    originalPrice: 1100,
-    quantity: 1, 
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href 
-  }
-]);
-
+const orderInfo = ref(null);  // 訂單主資訊
+const cartItems = ref([]);    // 訂單明細
+const subtotal = ref(0);
+const shippingFee = ref(0);
 const isCartExpanded = ref(false);
 const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
+
+onMounted(async () => {
+  const orderNumber = route.query.orderNumber;
+  
+  if (!orderNumber) {
+    alert('找不到訂單號碼');
+    router.replace('/shop/products');
+    return;
+  }
+
+  try {
+    const res = await axios.get(`${API_URL}SOrder/byOrderNumber/${orderNumber}`);
+    const data = res.data;
+    console.log("1. 後端回傳原始資料:", data);
+
+    // 訂單主資訊
+    orderInfo.value = {
+      orderNumber: data.OrderNumber,
+      orderDate: new Date(data.Date).toLocaleString(),
+      orderStatus: data.oStatus,
+      totalAmount: data.Total,
+      customer: { 
+        name: data.MName,
+        phone: data.MPhone,
+        email: data.Email
+      },
+      delivery: {
+        receiver: data.MName,
+        phone: data.MPhone,
+        method: data.ship?.Shipping || '',
+        status: '備貨中',
+        address: data.MAddress,
+        fee: data.ShipFee
+      },
+      payment: {
+        method: data.pay?.Payment || '',
+        status: data.PayStatus
+      },
+      note: data.Note || ''
+    };
+
+    // --- 訂單明細圖片路徑優化處理 ---
+    cartItems.value = data.sOrderDetails.map(item => {
+      let finalImage = item.spec?.ImagePath;
+
+      // 1. 處理路徑：確保 API_URL 結尾沒斜線，ImagePath 開頭有斜線
+      // 這樣拼起來才會是標準的 https://localhost:7218/images/...
+      if (finalImage && !finalImage.startsWith('http')) {
+        const baseUrl = API_URL.replace(/\/$/, ''); // 去除結尾斜線
+        const purePath = finalImage.startsWith('/') ? finalImage : `/${finalImage}`; // 確保開頭有斜線
+        finalImage = `${baseUrl}${purePath}`;
+      }
+
+      // 2. 強制將 http 轉為 https (防止本地開發環境埠號衝突)
+      if (finalImage && finalImage.startsWith('http://localhost:7218')) {
+        finalImage = finalImage.replace('http://', 'https://');
+      }
+
+      return {
+        id: item.OdId,
+        name: item.PName,
+        price: item.SPrice,
+        originalPrice: item.SPrice,
+        quantity: item.Quantity,
+        // 如果沒有圖片路徑，則指向預設圖
+        image: finalImage || `${API_URL.replace(/\/$/, '')}/images/products/default.jpg`
+      };
+    });
+
+    subtotal.value = cartItems.value.reduce((acc, cur) => acc + cur.price * cur.quantity, 0);
+    shippingFee.value = orderInfo.value.delivery.fee || (orderInfo.value.totalAmount - subtotal.value);
+    
+    console.log("2. 處理後的 cartItems:", cartItems.value);
+    
+  } catch (err) {
+    console.error("API 請求出錯:", err);
+    alert('取得訂單資料失敗');
+    router.replace('/shop/products');
+  }
+});
 </script>
 
 <template>
-  <div class="booking-success-page bg-light min-vh-100 py-5">
+  <div v-if="orderInfo" class="booking-success-page bg-light min-vh-100 py-5">
     <div class="container" style="max-width: 900px;">
       
       <div class="checkout-stepper mb-5">
@@ -74,7 +118,20 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
         </div>
       </div>
 
-       <div class="row justify-content-center mb-4">
+      <div class="text-center mb-4">
+        <div class="success-check-icon bg-gym-orange text-white mx-auto mb-3 d-flex align-items-center justify-content-center shadow-sm">
+          <i class="bi bi-check-lg" style="font-size: 2.5rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-3">謝謝您！您的訂單已經成立！</h3>
+        <div class="order-simple-info mb-4">
+          <p class="mb-1 text-secondary">訂單號碼 {{ orderInfo.orderNumber }}</p>
+          <p class="small text-secondary">訂單確認電郵已經發送到您的電子郵箱：<br>
+            <strong class="text-dark">{{ orderInfo.customer.email }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="row justify-content-center mb-4">
         <div class="col-12 px-0">
           <div class="card border-0 shadow-sm rounded overflow-hidden">
             <div 
@@ -147,81 +204,67 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
         </div>
       </div>
 
-      <div class="text-center mb-4">
-  <div class="success-check-icon bg-success text-white mx-auto mb-3 d-flex align-items-center justify-content-center shadow-sm">
-    <i class="bi bi-check-lg" style="font-size: 2.5rem;"></i>
-  </div>
-  <h3 class="fw-bold mb-3">謝謝您！您的訂單已經成立！</h3>
-  <div class="order-simple-info mb-4">
-    <p class="mb-1 text-secondary">訂單號碼 {{ orderInfo.orderNumber }}</p>
-    <p class="small text-secondary">訂單確認電郵已經發送到您的電子郵箱：<br>
-      <strong class="text-dark">{{ orderInfo.customer.email || 'strg85****@gmail.com' }}</strong>
-    </p>
-  </div>
-</div>
+      <div class="card border-0 shadow-sm bg-white mb-4 overflow-hidden rounded-3">
+        <div class="p-4 border-bottom">
+          <h5 class="fw-bold mb-3 text-dark">訂單資訊</h5>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">訂單日期:</span>
+            <span>{{ orderInfo.orderDate }}</span>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span class="text-secondary">訂單狀態:</span>
+            <span class="fw-bold">{{ orderInfo.orderStatus }}</span>
+          </div>
+        </div>
 
-<div class="card border-0 shadow-sm bg-white mb-4 overflow-hidden rounded-3">
-  
-  <div class="p-4 border-bottom">
-    <h5 class="fw-bold mb-3 text-dark">訂單資訊</h5>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">訂單日期:</span>
-      <span>{{ orderInfo.orderDate }}</span>
-    </div>
-    <div class="d-flex justify-content-between small">
-      <span class="text-secondary">訂單狀態:</span>
-      <span class="fw-bold">{{ orderInfo.orderStatus }}</span>
-    </div>
-  </div>
+        <div class="p-4 border-bottom">
+          <h5 class="fw-bold mb-3 text-dark">顧客資訊</h5>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">名稱:</span>
+            <span>{{ orderInfo.customer.name }}</span>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span class="text-secondary">電話號碼:</span>
+            <span>{{ orderInfo.customer.phone }}</span>
+          </div>
+        </div>
 
-  <div class="p-4 border-bottom">
-    <h5 class="fw-bold mb-3 text-dark">顧客資訊</h5>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">名稱:</span>
-      <span>{{ orderInfo.customer.name }}</span>
-    </div>
-    <div class="d-flex justify-content-between small">
-      <span class="text-secondary">電話號碼:</span>
-      <span>{{ orderInfo.customer.phone }}</span>
-    </div>
-  </div>
+        <div class="p-4 border-bottom">
+          <h5 class="fw-bold mb-3 text-dark">送貨資訊</h5>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">收件人名稱:</span>
+            <span>{{ orderInfo.delivery.receiver }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">收件人電話號碼:</span>
+            <span>{{ orderInfo.delivery.phone }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">送貨方式:</span>
+            <span>{{ orderInfo.delivery.method }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">送貨狀態:</span>
+            <span class="fw-bold">{{ orderInfo.delivery.status }}</span>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span class="text-secondary">送貨方式簡述:</span>
+            <span class="text-end" style="max-width: 60%;">{{ orderInfo.delivery.address }}</span>
+          </div>
+        </div>
 
-  <div class="p-4 border-bottom">
-    <h5 class="fw-bold mb-3 text-dark">送貨資訊</h5>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">收件人名稱:</span>
-      <span>{{ orderInfo.delivery.receiver }}</span>
-    </div>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">收件人電話號碼:</span>
-      <span>{{ orderInfo.delivery.phone }}</span>
-    </div>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">送貨方式:</span>
-      <span>{{ orderInfo.delivery.method }}</span>
-    </div>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">送貨狀態:</span>
-      <span class="fw-bold">{{ orderInfo.delivery.status }}</span>
-    </div>
-    <div class="d-flex justify-content-between small">
-      <span class="text-secondary">送貨方式簡述:</span>
-      <span class="text-end" style="max-width: 60%;">{{ orderInfo.delivery.address || '台南市安平區建平十＿街24巷30號' }}</span>
-    </div>
-  </div>
-
-  <div class="p-4">
-    <h5 class="fw-bold mb-3 text-dark">付款資訊</h5>
-    <div class="d-flex justify-content-between mb-2 small">
-      <span class="text-secondary">付款方式:</span>
-      <span>{{ orderInfo.payment.method }}</span>
-    </div>
-    <div class="d-flex justify-content-between small">
-      <span class="text-secondary">付款狀態:</span>
-      <span class="fw-bold">{{ orderInfo.payment.status }}</span>
-    </div>
-  </div>
-</div>
+        <div class="p-4">
+          <h5 class="fw-bold mb-3 text-dark">付款資訊</h5>
+          <div class="d-flex justify-content-between mb-2 small">
+            <span class="text-secondary">付款方式:</span>
+            <span>{{ orderInfo.payment.method }}</span>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span class="text-secondary">付款狀態:</span>
+            <span class="fw-bold">{{ orderInfo.payment.status }}</span>
+          </div>
+        </div>
+      </div>
 
       <div class="d-flex justify-content-end">
         <router-link to="/shop/products" class="btn btn-gym-green px-5 py-2 fw-bold rounded shadow-sm">
@@ -234,19 +277,36 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
 </template>
 
 <style scoped>
+
+.btn-gym-orange {
+  background-color: #f3722c;
+  color: white;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-gym-orange:hover {
+  opacity: 0.9;
+  color: white;
+}
+
+/* 📍 橘色打勾圖示樣式 */
+.success-check-icon {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+}
+
+.bg-gym-orange {
+  background-color: #f3722c !important; /* 換成橘色 */
+}
 .btn-gym-green {
   background-color: #f3722c;
   color: white;
   border: none;
 }
 
-/* 📍 成功打勾圖示 (綠底白勾) */
-.success-check-icon {
-  width: 75px;
-  height: 75px;
-  border-radius: 50%;
-  background-color: #28a745 !important; /* 綠色背景 */
-}
+
 
 /* 📍 訂單詳細資訊樣式優化 */
 .card h5 {
@@ -258,29 +318,12 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
   color: #6c757d !important;
 }
 
-/* 調整字體大小與對齊細節 */
-.small {
-  font-size: 0.9rem;
-}
+.small { font-size: 0.9rem; }
+.order-simple-info p { line-height: 1.6; }
 
-.order-simple-info p {
-  line-height: 1.6;
-}
+.btn-secondary { background-color: #d1d5db; color: #374151; border: none; border-radius: 8px; }
+.btn-secondary:hover { background-color: #9ca3af; color: white; }
 
-/* 按鈕樣式 (配合圖中視覺，維持您原本的設定或微調) */
-.btn-secondary {
-  background-color: #d1d5db;
-  color: #374151;
-  border: none;
-  border-radius: 8px;
-}
-
-.btn-secondary:hover {
-  background-color: #9ca3af;
-  color: white;
-}
-
-/* 📍 進度條樣式與填寫頁面保持一致 */
 .step-item { position: relative; width: 80px; }
 .step-circle {
   width: 32px; height: 32px; border-radius: 50%;
@@ -295,19 +338,5 @@ const toggleCart = () => isCartExpanded.value = !isCartExpanded.value;
 .step-item.completed .step-circle::after { content: '✓'; font-size: 16px; }
 .step-line { height: 2px; width: 100px; background: #dee2e6; margin-bottom: 25px; }
 .step-line.filled { background: #8fa1b3; }
-
-/* 📍 成功打勾圖示樣式 */
-.success-icon {
-  width: 64px; height: 64px; border-radius: 50%;
-  background-color: #e9ecef; border: 1px solid #dee2e6;
-}
-
-/* 📍 訂單資訊列表樣式 */
-.order-section h5 { font-size: 1.1rem; }
-.text-gym-green { color: #62b562; }
 .cursor-pointer { cursor: pointer; }
-
-/* 按鈕樣式 */
-.btn-secondary { background-color: #8fa1b3; border: none; }
-.btn-secondary:hover { background-color: #7a8c9e; }
 </style>
