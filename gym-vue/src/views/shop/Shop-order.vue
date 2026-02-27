@@ -1,30 +1,50 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
+const API_URL = import.meta.env.VITE_API_URL;
 
-// 模擬會員的所有訂單資料
-const orders = ref([
-  {
-    orderNumber: '123456789',
-    orderDate: '2026/01/01',
-    totalAmount: 864,
-    status: '訂單處理中'
-  },
-  {
-    orderNumber: '202512191534',
-    orderDate: '2025/12/19',
-    totalAmount: 1300,
-    status: '已完成'
+// 儲存從 API 抓回來的訂單列表
+const orders = ref([]);
+
+// 📍 模擬登入：因為 API 回傳 1 號會員有資料，我們這裡先設為 1
+const mockUserId = 1; 
+
+const fetchOrders = async () => {
+  try {
+    const res = await axios.get(`${API_URL}SOrder/byMember/${mockUserId}`);
+    
+    // 💡 修正點：根據後端回傳的大寫屬性進行對應
+    orders.value = res.data.map(order => ({
+      // 如果後端回傳的是 OrderNumber 就用 order.OrderNumber，否則用 order.orderNumber
+      orderNumber: order.OrderNumber || order.orderNumber, 
+      
+      // 處理日期：確保 order.Date 有值
+      orderDate: (order.Date || order.date) 
+        ? new Date(order.Date || order.date).toLocaleDateString('zh-TW') 
+        : '無日期',
+        
+      totalAmount: order.Total || order.total,
+      status: order.oStatus || order.OStatus
+    }));
+    
+    console.log("前端轉換後的資料：", orders.value);
+  } catch (err) {
+    console.error("抓取訂單清單失敗：", err);
   }
-]);
+};
 
-// 查閱按鈕的點擊事件
-const viewOrder = (orderId) => {
+onMounted(() => {
+  fetchOrders();
+});
+
+// 查閱按鈕點擊事件
+const viewOrder = (orderNo) => {
   router.push({
     name: 'shop-order-detail',
-    params: { id: orderId }
+    params: { id: orderNo }
   });
 };
 </script>
