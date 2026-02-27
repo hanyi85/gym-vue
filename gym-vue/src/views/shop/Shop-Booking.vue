@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted,watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCartStore } from '@/stores/cart.js';
 import axios from 'axios';
@@ -7,17 +7,16 @@ import axios from 'axios';
 const router = useRouter();
 const cartStore = useCartStore();
 
-const isCartExpanded = ref(false); // 控制手風琴展開狀態
-const syncInfo = ref(false);      // 收件人資料同步勾選
-const cityOptions = ref([]);      // 縣市
-const districtOptions = ref([]);  // 地區
-const selectedCity = ref('');     
+const isCartExpanded = ref(false); // 控制手風琴展開
+const syncInfo = ref(false);       // 收件人資料同步
+const cityOptions = ref([]);       // 縣市
+const districtOptions = ref([]);   // 地區
+const selectedCity = ref('');
 const selectedDistrict = ref('');
-const addressDetail = ref('');
 
-const API_URL=import.meta.env.VITE_API_URL
-
+const API_URL = import.meta.env.VITE_API_URL;
 const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+
 const getFullImageUrl = (path) => {
   if (!path) return `${BASE_URL}/images/default.png`;
   const str = String(path).trim();
@@ -25,11 +24,12 @@ const getFullImageUrl = (path) => {
   return `${BASE_URL}/${str.replace(/\\/g, '/').replace(/^\/+/, '')}`;
 };
 
+// 手風琴切換
 const toggleCart = () => {
   isCartExpanded.value = !isCartExpanded.value;
 };
 
-// 同步收件人邏輯
+// 同步收件人資訊
 const handleSyncInfo = () => {
   if (syncInfo.value) {
     cartStore.orderForm.receiverName = cartStore.orderForm.customerName;
@@ -37,85 +37,105 @@ const handleSyncInfo = () => {
   }
 };
 
+// 🔹 下單送出
 const goToBookingSuccess = async () => {
-const payMap = { "貨到付款": 1, "信用卡": 2, "LINE Pay": 3 };
-  const shipMap = { "宅配": 1, "超商取貨": 2, "門市自取": 3 };
+  // 付款方式對應 payId
+  const method = cartStore.paymentMethod || localStorage.getItem('paymentMethod');
 
-  const payload = {
-    mName: cartStore.orderForm.customerName,
-    mPhone: cartStore.orderForm.customerPhone,
-    email: cartStore.orderForm.receiverEmail, 
-    mAddress: `${selectedCity.value}${selectedDistrict.value}${cartStore.orderForm.receiverAddressDetail || ''}`,
-    shipFee: cartStore.shippingFee,
-    total: cartStore.totalAmount,
-    note: cartStore.orderForm.note,
-    payId: payMap[cartStore.paymentMethod],   
-    shipId: shipMap[cartStore.deliveryMethod],
-
-    items: cartStore.cartItems.map(item => ({
-      specId: item.specId || item.SpecId || item.id || item.Id || 0,
-      pName: item.Name,
-      price: item.Price,
-      quantity: item.Quantity
-      }))
+  const payMap = {
+    '信用卡': 1,
+    '貨到付款': 2,
+    'PayPal': 3
   };
-  console.log("準備送出的訂單明細:", payload.items);
 
-  // 2. 發送
+  const payId = payMap[method];
+  if (!payId) {
+    alert('付款方式遺失，請重新選擇');
+    router.replace({ name: 'shop-cart' });
+    return;
+  }
+
+  // ⚡ 組 payload
+  const payload = {
+  mName: cartStore.orderForm.customerName,
+  mPhone: cartStore.orderForm.customerPhone,
+  email: cartStore.orderForm.receiverEmail,
+  mAddress: `${selectedCity.value}${selectedDistrict.value}${cartStore.orderForm.receiverAddressDetail || ''}`.substring(0, 30),
+  shipFee: Number(cartStore.shippingFee),
+  total: Number(cartStore.totalAmount),
+  note: cartStore.orderForm.note || '',
+  payId,
+  shipId: 1,
+  items: cartStore.cartItems.map(item => ({
+    specId: Number(item.SpecId),
+    pName: item.PName || item.pName || item.Name || '', // 🔹 保證傳字串
+    price: Number(item.Price),
+    quantity: Number(item.Quantity)
+  }))
+};
+
+  console.log('🚀 最終 payload', payload);
+
+  // 檢查商品 ID
+  if (payload.items.some(i => i.specId === 0)) {
+    alert('偵測到商品 ID 為 0，請重新整理購物車！');
+    return;
+  }
+
   try {
     await axios.post(API_URL + 'SOrder', payload);
     cartStore.clearCart();
     router.push({ name: 'shop-booking-success' });
   } catch (err) {
-    console.log("完整錯誤對象:", err); 
-  if (err.response) {
-      console.error("後端噴出的錯誤內容:", err.response.data);
-  }
-    alert("訂單提交失敗",);
+    console.error('❌ 訂單送出失敗:', err.response?.data || err);
+    alert('訂單提交失敗，請檢查資料或重新整理');
   }
 };
 
-// --- 一進入頁面就代入假資料 ---
+// --- 初始化頁面 ---
 onMounted(() => {
-  cartStore.loadCart(); // 先讀取購物車
+  cartStore.loadCart();
   fetchCities();
 
-  // 2. 代入會員假資料 (模擬 API 未完成)
+  if (!cartStore.paymentMethod) {
+    cartStore.paymentMethod = localStorage.getItem('paymentMethod') || '';
+  }
+  if (!cartStore.deliveryMethod) {
+    cartStore.deliveryMethod = localStorage.getItem('deliveryMethod') || '';
+  }
+
   const mockMember = {
     name: '王小明',
     email: 'ming@example.com',
     phone: '0912345678'
   };
 
-  // 填入顧客資料欄位 (如果目前是空的才填入)
   if (!cartStore.orderForm.customerName) cartStore.orderForm.customerName = mockMember.name;
   if (!cartStore.orderForm.receiverEmail) cartStore.orderForm.receiverEmail = mockMember.email;
   if (!cartStore.orderForm.customerPhone) cartStore.orderForm.customerPhone = mockMember.phone;
 });
 
+// 取得縣市
 const fetchCities = async () => {
   try {
-    const res = await axios.get(API_URL+'SAddress/cities');
-    console.log("API 回傳原始資料:", res.data);
-    if (Array.isArray(res.data)) {
-      cityOptions.value = res.data;
-    }
+    const res = await axios.get(API_URL + 'SAddress/cities');
+    if (Array.isArray(res.data)) cityOptions.value = res.data;
   } catch (err) {
-    console.error("縣市 API 尚未就緒");
+    console.error('縣市 API 尚未就緒');
   }
 };
 
+// 監控縣市選擇，更新地區
 watch(selectedCity, async (newCity) => {
-  selectedDistrict.value = ''; // 重置地區選擇
-  districtOptions.value = [];  // 清空選單內容
-  
-  if (newCity) {
-    try {
-      const res = await axios.get(API_URL+`SAddress/districts?cityName=${newCity}`);
-      districtOptions.value = res.data;
-    } catch (err) {
-      console.error("地區 API 尚未就緒");
-    }
+  selectedDistrict.value = '';
+  districtOptions.value = [];
+  if (!newCity) return;
+
+  try {
+    const res = await axios.get(API_URL + `SAddress/districts?cityName=${newCity}`);
+    districtOptions.value = res.data;
+  } catch (err) {
+    console.error('地區 API 尚未就緒');
   }
 });
 </script>
