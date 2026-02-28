@@ -131,7 +131,7 @@ const goQrcode = () => {
 <div class="container py">
   <h2 class="text-center mt-4 order-title"><i class="bi bi-receipt order-title"></i> 全部健康餐訂單</h2>
   <div class="justify-content-end d-flex  container pb-3"><btn
-        buyText="取餐QR Code"
+        buyText="尚未取餐QR Code"
         @buy="goQrcode"
       >
       </btn></div>
