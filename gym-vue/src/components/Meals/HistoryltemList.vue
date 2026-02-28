@@ -43,7 +43,7 @@ const props = defineProps({
         <div 
           class="col-12 col-md-6" 
           v-for="item in items" 
-          :key="item.fOrderItemId"
+          :key="item.FOrderItemId"
         >
           <OrderItemCard :item="item" />
         </div>

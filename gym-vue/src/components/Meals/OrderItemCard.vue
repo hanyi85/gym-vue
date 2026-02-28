@@ -19,7 +19,7 @@ const showQr = ref(false)
 
       <div class="flex-grow-1">
         <div class="d-flex justify-content-between align-items-center w-100">
-  <h6 class="fw-bold mb-0">{{ item.FMealName }}</h6>
+  <h6 class="fw-bold mb-0">{{ item.FMeal.FMealName }}</h6>
 
   <span
     class="badge"

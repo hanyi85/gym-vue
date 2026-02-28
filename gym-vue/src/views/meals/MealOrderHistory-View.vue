@@ -16,52 +16,11 @@ const orders = ref([])
 
 async function fetchOrders() {
   try {
-    // 1. 抓訂單基本資料
-    const resOrders = await axios.get(`${apiUrl}/TMealOrders/user/${authStore.member.UserId}`)
-    const orderList = resOrders.data
+    
+    const res = await axios.get(`${apiUrl}/TMealOrders/user/${authStore.member.UserId}`)
+    orders.value = res.data
 
-    // 2. 抓訂單明細
-    const resItems = await axios.get(`${apiUrl}/TMealOrderItems/user/${authStore.member.UserId}`)
-    const itemList = resItems.data
-
-    // 3. 整合成前端需要的結構
-    orders.value = orderList.map(order => {
-      return {
-        info: {
-          FOrderId: order.FOrderId,
-          FOrderName: order.FOrderName,
-          FOrderPhone: order.FOrderPhone,
-          FOrderEmail: order.FOrderEmail,
-          FCartCreateAt: order.FCartCreateAt,
-          FOrderAt: order.FOrderAt,
-          FVenueId: order.FVenueId,
-          FTotalAmount: order.FTotalAmount,
-          FOrderStatus: order.FOrderStatus,
-          FPayMethod: order.FPayMethod,
-          FVenue: order.FVenue,
-          // FVenueName: order.FVenue?.VenueName // 關聯場館
-        },
-        items: itemList
-          .filter(i => i.FOrderId === order.FOrderId) // 對應同一張訂單
-          .map(i => ({
-            FOrderItemId: i.FOrderItemId,
-            FOrderId: i.FOrderId,
-            fFMealId: i.FMealId,
-            FMealName: i.FMeal?.FMealName,
-            FQty: i.FQty,
-            FUnitPrice: i.FUnitPrice,
-            FSubtotal: i.FSubtotal,
-            FPickDate: i.FPickDate,
-            // FPickTimeID: i.FPickTimeID,
-            FPickTime: i.FPickTime,
-            FQrContent: i.FQrContent,
-            FPickupStatus: i.FPickupStatus,
-            showQr: false,
-            FMeal: i.FMeal,
-            // FMealImage: i.FImageUrl
-          }))
-      }
-    })
+    
   } catch (err) {
     console.error("載入訂單失敗", err)
   }
@@ -177,11 +136,11 @@ const goQrcode = () => {
       >
       </btn></div>
   
-    <div v-for="order in orders" :key="order.info.fOrderId" class="orange-box mb-3 py-3">
+    <div v-for="order in orders" :key="order.FOrderId" class="orange-box mb-3 py-3">
 <!-- 單筆訂單主檔 -->
-<OrderInfoCard :order="order.info" />
+<OrderInfoCard :order="order" />
 <!-- 單筆訂單明細 -->
-<HistoryltemList :items="order.items" />
+<HistoryltemList :items="order.Items" />
 </div>
 
  
