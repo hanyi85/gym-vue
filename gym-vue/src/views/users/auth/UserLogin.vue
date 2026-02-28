@@ -35,13 +35,11 @@
       <div class="social-section">
         <div class="divider"><span>或使用其他方式</span></div>
         <div class="d-flex justify-content-center gap-4"> <!-- Google 登入按鈕 -->
-          <GoogleLogin
-          :callback="handleGoogleCallback"
-          class="google-btn"
-          />
+          <GoogleLogin :callback="handleGoogleCallback" class="google-btn" />
           <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
           <!-- <button class="social-circle google" @click="googleLogin">
           </button> -->
+          
           <button class="social-circle line" @click="socialLogin('LINE')">
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE">
           </button>
@@ -76,8 +74,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref} from 'vue'
+import { useRouter} from 'vue-router'
 import { GoogleLogin } from 'vue3-google-login'
 import api from '@/services/api'
 import Btn from '@/components/btn.vue'
@@ -136,7 +134,7 @@ async function resendEmail() {
   }
 }
 
-// 第三方註冊登入
+// 第三方註冊登入 google
 const handleGoogleCallback = async (response) => {
   try {
     console.log('Google 回傳：', response)
@@ -164,10 +162,30 @@ const handleGoogleCallback = async (response) => {
     localStorage.setItem('name', data.name)
 
 
-router.push("/users/profile");
+    router.push("/users/profile");
   } catch (err) {
     console.error('Google 登入失敗', err)
     errorMessage.value = 'Google 登入失敗'
+  }
+}
+
+// 第三方註冊登入 line
+function socialLogin(provider) {
+  if (provider === "LINE") {
+    const clientId = "2009268953"
+    const redirectUri = "http://localhost:5173/line-callback"
+    const state = Math.random().toString(36).substring(2)
+    const scope = "profile openid"
+
+    const url =
+      `https://access.line.me/oauth2/v2.1/authorize?` +
+      `response_type=code` +
+      `&client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&state=${state}` +
+      `&scope=${encodeURIComponent(scope)}`
+
+    window.location.href = url
   }
 }
 </script>

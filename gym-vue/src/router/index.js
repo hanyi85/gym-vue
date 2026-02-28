@@ -62,6 +62,10 @@ const routes = [
     name: 'user-profile-finished',
     component: () => import('@/views/users/register/RegisterComplete.vue'),
   },
+  {
+  path: "/line-callback",
+  component: () => import("@/views/users/auth/UserLogin-LineCallback.vue")
+},
 
   // 忘記密碼
   {
