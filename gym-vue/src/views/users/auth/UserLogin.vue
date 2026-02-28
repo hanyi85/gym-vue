@@ -136,7 +136,7 @@ async function resendEmail() {
   }
 }
 
-// 第三方登入
+// 第三方註冊登入
 const handleGoogleCallback = async (response) => {
   try {
     console.log('Google 回傳：', response)
@@ -163,8 +163,8 @@ const handleGoogleCallback = async (response) => {
     localStorage.setItem('userId', data.userId)
     localStorage.setItem('name', data.name)
 
-    router.push('/users/home')
 
+router.push("/users/profile");
   } catch (err) {
     console.error('Google 登入失敗', err)
     errorMessage.value = 'Google 登入失敗'

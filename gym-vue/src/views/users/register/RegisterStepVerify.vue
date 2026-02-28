@@ -90,11 +90,17 @@ const { status, message, execute } =
 
 onMounted(() => {
   const token = route.query.token
+   const verified = route.query.verified
 console.log('token =', token)
-  if (token) {
-    console.log('準備執行驗證')
+
+if (token) {
+  console.log('loading') //準備執行驗證
     execute(token)
-  } else {
+  }else if (verified === 'true') {
+    status.value = 'success'
+    message.value = '您的電子郵件已由第三方平台完成驗證。'
+  } 
+  else {
     status.value = 'notice'
     message.value =
       '我們已寄送驗證信至您的信箱，請前往收信並點擊驗證連結完成註冊。'
