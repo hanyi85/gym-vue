@@ -9,9 +9,44 @@
             <UserHeader />
           </div>
         </div>
+        <!-- 功能區塊 -->
+        <div class="row mb-5">
+          <div class="col-12 mt-4">
+            <div class="quick-links">
+              <router-link to="/courses" class="quick-card">
 
+                <div class="quick-icon">
+                  <i class="fa fa-calendar"></i>
+                </div>
+                <p>課程專區</p>
+
+              </router-link>
+              <div class="quick-card">
+                <div class="quick-icon">
+                  <i class="fa fa-weight"></i>
+                </div>
+                <p>體重紀錄</p>
+              </div>
+
+              <div class="quick-card">
+                <div class="quick-icon">
+                  <i class="fa fa-shopping-bag"></i>
+                </div>
+                <p>商城專區</p>
+              </div>
+
+              <div class="quick-card">
+                <div class="quick-icon">
+                  <i class="fa fa-chart-bar"></i>
+                </div>
+                <p>健康餐點</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
         <div class="row g-4">
-          
+
           <div class="col-lg-4 col-12">
             <div class="card ambition-card h-100">
               <div class="card-header-custom mb-4">
@@ -33,14 +68,7 @@
               </div>
 
               <div class="range-slider-wrapper">
-                <input 
-                  type="range" 
-                  class="custom-range" 
-                  v-model="targetWeight" 
-                  min="45" 
-                  max="150" 
-                  step="0.1"
-                >
+                <input type="range" class="custom-range" v-model="targetWeight" min="45" max="150" step="0.1">
                 <div class="range-labels d-flex justify-content-between">
                   <span>45 KG</span>
                   <span class="current-label">目前體重: 84 KG</span>
@@ -81,7 +109,11 @@
                   </div>
                 </div>
               </div>
-            </div> </div> </div> </div> </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -101,7 +133,7 @@ import BodyProgressCard from '@/components/Users/BodyProgressCard.vue'
 
 
 
-import { ref,computed } from 'vue'
+import { ref, computed } from 'vue'
 const targetWeight = ref(72.5) // 預設值
 const quotes = [
   { text: '今天流的汗，都是明天的底氣', author: 'GYM+' },
@@ -124,6 +156,7 @@ const author = computed(() => random.author)
   padding: 28px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
 }
+
 .card {
   background: #fff;
   border-radius: 20px;
@@ -131,6 +164,7 @@ const author = computed(() => random.author)
   padding: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
+
 .title {
   font-weight: 600;
   margin-bottom: 12px;
@@ -198,7 +232,7 @@ const author = computed(() => random.author)
   transition: all 0.2s ease;
 }
 
-.resource-item + .resource-item {
+.resource-item+.resource-item {
   margin-top: 12px;
 }
 
@@ -216,6 +250,7 @@ const author = computed(() => random.author)
 .resource-left i {
   color: #f97316;
 }
+
 /* 目標卡片專屬樣式 */
 .ambition-card {
   border: none;
@@ -316,5 +351,53 @@ const author = computed(() => random.author)
 
 .current-label {
   color: #94a3b8;
+}
+
+/* 功能捷徑區塊 */
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.quick-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.quick-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 16px;
+  background: #fff7ed;
+  color: #f97316;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.quick-card:hover .quick-icon {
+  transform: scale(1.1);
+  background: #ffedd5;
+
+}
+
+.quick-card p {
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
 </style>

@@ -1,6 +1,20 @@
 <template>
   <Banner title="詳細體重紀錄" subtitle="管理您的身體數值與照片" />
-
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb custom-breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <router-link to="/users/home">會員首頁</router-link>
+      </li>
+      <li class="breadcrumb-item">
+        <router-link to="/users/weight">體重專區</router-link>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">
+        體重紀錄
+      </li>
+    </ol>
+  </nav>
+</div>
   <div class="container py-5 metrics-page">
     <div class="card metric-card mb-5 border-0 shadow-sm">
       <div class="card-body p-4">
@@ -32,12 +46,6 @@
             <input type="number" step="0.1" v-model="form.muscle" class="form-control custom-input" placeholder="例如: 34.1" />
           </div>
 
-          <div class="col-md-8">
-            <label class="form-label fw-bold small text-dark-blue">體態照片 </label>
-            <div class="input-group">
-              <input type="file" accept="image/*" class="form-control custom-input" @change="onFileChange" />
-            </div>
-          </div>
 
           <div class="col-md-4 d-flex align-items-end gap-2">
             <button class="btn btn-save flex-grow-1" @click="saveRecord">
@@ -66,7 +74,6 @@
                 <th>體重 (KG)</th>
                 <th>體脂率 (%)</th>
                 <th>肌肉量 (KG)</th>
-                <th>體態照片</th>
                 <th class="text-end pe-4">操作</th>
               </tr>
             </thead>
@@ -76,13 +83,7 @@
                 <td class="fw-bold text-dark-blue">{{ item.weight }} <span class="unit-text">kg</span></td>
                 <td class="text-muted-custom">{{ item.fat }} <span class="unit-text">%</span></td>
                 <td class="text-muted-custom">{{ item.muscle }} <span class="unit-text">kg</span></td>
-                <td>
-                  <div v-if="item.photo" class="thumb-wrapper" @click="preview(item.photo)">
-                    <img :src="item.photo" class="thumb-img" />
-                    <div class="thumb-overlay"><i class="fa fa-search-plus"></i></div>
-                  </div>
-                  <span v-else class="text-light-grey small">—</span>
-                </td>
+
                 <td class="text-end pe-4">
                   <button class="btn btn-icon-action me-2" @click="edit(item)" title="編輯">
                     <i class="fa fa-pencil-square-o"></i>
@@ -93,57 +94,77 @@
                 </td>
               </tr>
               <tr v-if="history.length === 0">
-                <td colspan="6" class="text-center py-5 text-muted-custom">目前尚無數據，請先新增量測紀錄。</td>
+                <td colspan="5" class="text-center py-5 text-muted-custom">目前尚無數據，請先新增量測紀錄。</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-
-    <div v-if="previewImg" class="img-preview-mask" @click="previewImg = null">
-      <div class="preview-content" @click.stop>
-        <img :src="previewImg" />
-        <button class="close-btn" @click="previewImg = null"><i class="fa fa-times-circle"></i></button>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import Banner from '@/components/banner.vue'
+import api from '@/services/api'
 
-// 定義歷史資料
-const history = ref([
-  { id: 1, date: '2023-10-24', weight: '75.4', fat: '15.2', muscle: '34.1', photo: null },
-  { id: 2, date: '2023-10-21', weight: '75.8', fat: '15.4', muscle: '34.0', photo: null }
-])
+//記錄歷史資料
+const history = ref([])
+const fetchRecords = async () => {
+  try {
+    const res = await api.get('/weightrecords')
 
-// 表單初始狀態
-const initialForm = { id: null, date: '', weight: '', fat: '', muscle: '', photo: null }
-const form = ref({ ...initialForm })
-const previewImg = ref(null)
+    console.log(res.data)
 
-const onFileChange = (e) => {
-  const file = e.target.files[0]
-  if (!file) return
-  form.value.photo = URL.createObjectURL(file)
+    history.value = res.data.map(x => ({
+      id: x.RecordId,
+      date: x.RecordDate,
+      weight: x.Weight,
+      fat: x.BodyFat,
+      muscle: x.MuscleMass ?? ''
+    }))
+  } catch (err) {
+    console.error(err)
+    alert('載入資料失敗')
+  }
 }
 
-const saveRecord = () => {
+onMounted(() => {
+  fetchRecords()
+})
+// 表單初始狀態
+const initialForm = { id: null, date: '', weight: '', bodyFat: '', muscle: ''}
+const form = ref({ ...initialForm })
+
+const saveRecord = async () => {
   if (!form.value.date || !form.value.weight) {
     alert('請填寫日期與體重')
     return
   }
 
-  if (form.value.id) {
-    const index = history.value.findIndex(i => i.id === form.value.id)
-    if (index !== -1) history.value[index] = { ...form.value }
-  } else {
-    history.value.unshift({ ...form.value, id: Date.now() })
+  const payload = {
+    recordDate: form.value.date,
+    weight: Number(form.value.weight),
+    bodyFat: form.value.fat ? Number(form.value.fat) : null,
+    muscleMass: form.value.muscle ? Number(form.value.muscle) : null
   }
-  resetForm()
+
+  try {
+    if (form.value.id) {
+      await api.put(`/weightrecords/${form.value.id}`, payload)
+      alert('更新成功')
+    } else {
+      await api.post('/weightrecords', payload)
+      alert('新增成功')
+    }
+
+    resetForm()
+    fetchRecords()
+  } catch (err) {
+    console.error(err)
+    alert('儲存失敗')
+  }
 }
 
 const edit = (item) => {
@@ -151,9 +172,16 @@ const edit = (item) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const remove = (id) => {
-  if (confirm('確定要刪除此筆紀錄嗎？')) {
-    history.value = history.value.filter(i => i.id !== id)
+const remove = async (id) => {
+  if (!confirm('確定要刪除此筆紀錄嗎？')) return
+
+  try {
+    await api.delete(`/weightrecords/${id}`)
+    alert('刪除成功')
+    fetchRecords()
+  } catch (err) {
+    console.error(err)
+    alert('刪除失敗')
   }
 }
 
@@ -161,12 +189,31 @@ const resetForm = () => {
   form.value = { ...initialForm }
 }
 
-const preview = (src) => {
-  previewImg.value = src
-}
 </script>
 
 <style scoped>
+
+/* 麵包屑樣式 */
+.custom-breadcrumb {
+  background: transparent;
+  font-size: 0.9rem;
+}
+
+.custom-breadcrumb .breadcrumb-item a {
+  text-decoration: none;
+  color: #64748b;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.custom-breadcrumb .breadcrumb-item a:hover {
+  color: #f59e0b;
+}
+
+.custom-breadcrumb .breadcrumb-item.active {
+  color: #1e293b;
+  font-weight: 600;
+}
 /* 繼承 Dashboard 風格 */
 .metrics-page { background-color: #f8fafc; min-height: 100vh; font-family: 'Noto Sans TC', sans-serif; }
 .metric-card { border-radius: 16px; background: #ffffff; }
@@ -217,19 +264,6 @@ const preview = (src) => {
 }
 .table-row-hover:hover { background-color: #fcfcfc; }
 
-/* 縮圖設計 */
-.thumb-wrapper {
-  position: relative; width: 44px; height: 44px;
-  border-radius: 8px; overflow: hidden; cursor: pointer;
-  border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.thumb-img { width: 100%; height: 100%; object-fit: cover; }
-.thumb-overlay {
-  position: absolute; inset: 0; background: rgba(0,0,0,0.3);
-  color: white; display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s;
-}
-.thumb-wrapper:hover .thumb-overlay { opacity: 1; }
 
 /* 操作按鈕 */
 .btn-icon-action {
@@ -238,16 +272,4 @@ const preview = (src) => {
 }
 .btn-icon-action:hover { color: #f59e0b; }
 
-/* 燈箱燈效 */
-.img-preview-mask {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 2000; backdrop-filter: blur(4px);
-}
-.preview-content { position: relative; max-width: 85%; max-height: 85%; }
-.preview-content img { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-.close-btn {
-  position: absolute; top: -45px; right: -5px;
-  background: transparent; border: none; color: white; font-size: 2.2rem;
-}
 </style>
