@@ -44,6 +44,9 @@ const order = ref({
   paymentMethod: 'cash'
 })
 
+// 錯誤訊息
+const errors = ref({})
+
 /* 後台抓取餐分店 */
 async function fetchVenues() {
   const res = await axios.get(`${apiUrl}/TMealOrders/MealVenues`)
@@ -72,63 +75,102 @@ onMounted(() => fetchVenues()
 )
 
 
+//驗證規則
+const validateForm = () => {
+  errors.value = {}
 
+  // 姓名
+  if (!order.value.name?.trim()) {
+    errors.value.name = '請輸入姓名'
+  }
 
-// 假送出訂單
-// const submitOrder = () => {
+  // 手機
+  if (!order.value.phone?.trim()) {
+    errors.value.phone = '請輸入電話'
+  } else if (!/^09\d{8}$/.test(order.value.phone)) {
+    errors.value.phone = '請輸入正確的手機格式 (09開頭10碼)'
+  }
 
+  // Email
+  if (!order.value.email?.trim()) {
+    errors.value.email = '請輸入Email'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.value.email)) {
+    errors.value.email = 'Email格式不正確'
+  }
 
-//   // 🔹 信用卡例外
-//   if (order.value.paymentMethod === 'credit') {
-//     alert('導向第三方信用卡付款（假）')
-//     return
-//   }
+  // 店家
+  if (!order.value.storeId) {
+    errors.value.storeId = '請選擇取餐店家'
+  }
 
-//   // ✅ 成功後導頁
-//   router.push({
-//     name: 'meals-result',
-//     params: {
-//       orderId: fakeOrderId
-//     }
-//   })
-// }
+  return Object.keys(errors.value).length === 0
+}
+
+//防止重複送訂單
+const loading = ref(false)
 
 // 送出訂單
 async function submitOrder() {
-const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
-    name: order.value.name,
-    phone: order.value.phone,
-    email: order.value.email,
-    venueId: order.value.storeId,
-    payMethod: order.value.paymentMethod
-  })
+  // 防止重複送出
+  if (loading.value) return
 
-  const orderId = res.data
+  // 驗證失敗就停止
+  if (!validateForm()) return
 
-  // 👇 判斷付款方式
-  if (order.value.paymentMethod === 'credit') {
-    // 呼叫後端產生綠界表單
-    const payRes = await axios.post(`${apiUrl}/ECPayPayment/Create`, {orderId} )
+  try {
+    loading.value = true
 
-    const div = document.createElement('div')
-  div.innerHTML = payRes.data
+    const res = await axios.post(
+      `${apiUrl}/TMealCarts/Checkout/${UserId}`,
+      {
+        name: order.value.name,
+        phone: order.value.phone,
+        email: order.value.email,
+        venueId: order.value.storeId,
+        payMethod: order.value.paymentMethod
+      }
+    )
 
-  const form = div.querySelector('form')
-  document.body.appendChild(form)
-  form.submit()
-    // // 直接寫入綠界自動提交表單
-    // document.open()
-    // document.write(payRes.data)
-    // document.close()
-  } else {
-    // 現金或其他方式 → 直接去完成頁
-    await axios.post(`${apiUrl}/TMealCarts/OrderFinish/${UserId}`)
-    router.push({
-      name: 'meals-result',
-      params: { orderId }
-    })
+    const orderId = res.data
+
+    // 信用卡付款
+    if (order.value.paymentMethod === 'credit') {
+      const payRes = await axios.post(
+        `${apiUrl}/ECPayPayment/Create`,
+        { orderId }
+      )
+
+      const div = document.createElement('div')
+      div.innerHTML = payRes.data
+      const form = div.querySelector('form')
+
+      document.body.appendChild(form)
+      form.submit()
+
+      return   //  重要：這裡直接結束
+
+    } else {
+
+      await axios.post(`${apiUrl}/TMealCarts/OrderFinish/${UserId}`)
+
+      router.push({
+        name: 'meals-result',
+        params: { orderId }
+      })
+    }
+
+  } catch (err) {
+    console.error(err)
+  } finally {
+    loading.value = false
   }
 }
+
+//自動清除錯誤
+
+watch(order, () => {
+  errors.value = {}
+}, { deep: true })
 
 </script>
 
@@ -151,9 +193,13 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
         <input
           type="text"
           class="form-control"
+          :class="{ 'is-invalid': errors.name }"
           v-model="order.name"
           placeholder="請輸入姓名"
         />
+        <div class="invalid-feedback">
+          {{ errors.name }}
+        </div>
       </div>
 
       <!-- 電話 -->
@@ -163,8 +209,12 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
           type="text"
           class="form-control"
           v-model="order.phone"
+          :class="{ 'is-invalid': errors.phone }"
           placeholder="請輸入電話"
         />
+        <div class="invalid-feedback">
+          {{ errors.phone }}
+        </div>
       </div>
 
       <!-- Email -->
@@ -173,15 +223,19 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
         <input
           type="email"
           class="form-control"
+          :class="{ 'is-invalid': errors.email }"
           v-model="order.email"
           placeholder="example@mail.com"
         />
+        <div class="invalid-feedback">
+          {{ errors.email }}
+        </div>
       </div>
 
       <!-- 取餐店家 -->
       <div class="mb-3">
         <label class="form-label">取餐店家</label>
-        <select class="form-select" v-model="order.storeId">
+        <select class="form-select"  :class="{ 'is-invalid': errors.storeId }" v-model="order.storeId">
           <option disabled value="">請選擇</option>
           <option
             v-for="store in stores"
@@ -191,6 +245,9 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
             {{ store.name }}
           </option>
         </select>
+        <div class="invalid-feedback">
+          {{ errors.storeId }}
+        </div>
       </div>
 
       <!-- 付款方式 -->
@@ -214,7 +271,7 @@ const res = await axios.post(`${apiUrl}/TMealCarts/Checkout/${UserId}`, {
       </div>
 
       <!-- 按鈕 -->
-      <!-- <button type="submit" class="btn-submit">
+      <!-- <button type="submit" class="btn-submit :loading="loading"">
         送出訂單
       </button> -->
       <Btn buyText="下一步" type="submit" />
