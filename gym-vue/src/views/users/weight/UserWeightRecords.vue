@@ -1,19 +1,37 @@
 <template>
   <Banner title="體重專區" subtitle="管理您的身體數值與進展" />
-<div class="container mt-4">
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb custom-breadcrumb mb-0">
-      <li class="breadcrumb-item">
-        <router-link to="/users/home">會員首頁</router-link>
-      </li>
+  <div class="container mt-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb custom-breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <router-link to="/users/home">會員首頁</router-link>
+        </li>
 
-      <li class="breadcrumb-item active" aria-current="page">
-        體重專區
-      </li>
-    </ol>
-  </nav>
-</div>
+        <li class="breadcrumb-item active" aria-current="page">
+          體重專區
+        </li>
+      </ol>
+    </nav>
+  </div>
   <div class="container py-5 metrics-page">
+    <!--  目標體重設定 -->
+    <div class="card metric-card mb-5 border-0 shadow-sm">
+      <div class="card-body p-4 d-flex justify-content-between align-items-center">
+
+        <div>
+          <h6 class="fw-bold text-dark-blue mb-2">目前目標體重</h6>
+          <div class="display-6 text-orange fw-bold">
+            {{ Number(targetWeight).toFixed(1) }} 
+          </div>
+        </div>
+
+        <button class="btn btn-save" @click="openTargetModal">
+          設定目標
+        </button>
+
+      </div>
+    </div>
+
     <div class="card metric-card mb-5 border-0 shadow-sm">
       <div class="card-body p-4">
         <div class="d-flex align-items-center mb-4">
@@ -33,15 +51,18 @@
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-dark-blue">體重 (kg)</label>
-            <input type="number" step="0.1" v-model="form.weight" class="form-control custom-input" placeholder="例如: 75.4" />
+            <input type="number" step="0.1" v-model="form.weight" class="form-control custom-input"
+              placeholder="例如: 75.4" />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-dark-blue">體脂率 (%)</label>
-            <input type="number" step="0.1" v-model="form.fat" class="form-control custom-input" placeholder="例如: 15.2" />
+            <input type="number" step="0.1" v-model="form.fat" class="form-control custom-input"
+              placeholder="例如: 15.2" />
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold small text-dark-blue">肌肉量 (kg)</label>
-            <input type="number" step="0.1" v-model="form.muscle" class="form-control custom-input" placeholder="例如: 34.1" />
+            <input type="number" step="0.1" v-model="form.muscle" class="form-control custom-input"
+              placeholder="例如: 34.1" />
           </div>
 
 
@@ -56,7 +77,7 @@
         </div>
       </div>
     </div>
-<WeightDashboard :history="history" />
+    <WeightDashboard :history="history"  :goalWeight="targetWeight" />
     <div class="card metric-card border-0 shadow-sm">
       <div class="card-body p-0">
         <div class="p-4 border-bottom border-light d-flex justify-content-between align-items-center">
@@ -100,6 +121,35 @@
       </div>
     </div>
   </div>
+  <div v-if="showTargetModal" class="modal-overlay">
+    <div class="modal-box">
+
+      <h5 class="fw-bold mb-4">設定目標體重</h5>
+
+      <div class="target-value-row">
+        <button class="btn-circle" @click="changeTempWeight(-0.5)">−</button>
+
+        <div class="target-value">
+          {{ tempTargetWeight.toFixed(1) }}
+          <span class="unit-text">kg</span>
+        </div>
+
+        <button class="btn-circle" @click="changeTempWeight(0.5)">＋</button>
+      </div>
+
+      <input type="range" min="40" max="120" step="0.5" v-model.number="tempTargetWeight" class="custom-range" />
+
+      <div class="text-end mt-4">
+        <button class="btn btn-cancel me-2" @click="showTargetModal = false">
+          取消
+        </button>
+        <button class="btn btn-save" @click="confirmTargetWeight">
+          確認儲存
+        </button>
+      </div>
+
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -107,9 +157,26 @@ import { ref, onMounted } from 'vue'
 import Banner from '@/components/banner.vue'
 import api from '@/services/api'
 import WeightDashboard from '@/components/Users/WeightDashboard.vue'
+const showTargetModal = ref(false)
+const tempTargetWeight = ref(60)
+const targetWeight = ref(60)
 
 
 
+const fetchProfile = async () => {
+  try {
+    const res = await api.get('/healthprofile/profile')
+
+    targetWeight.value = Number(res.data.TargetWeight ?? 60)
+
+  } catch (err) {
+    console.error(err)
+  }
+}
+onMounted(() => {
+  fetchProfile()
+  fetchRecords()
+})
 //記錄歷史資料
 const history = ref([])
 const fetchRecords = async () => {
@@ -120,7 +187,7 @@ const fetchRecords = async () => {
 
     history.value = res.data.map(x => ({
       id: x.RecordId,
-      date: x.RecordDate,
+      date: x.RecordDate.split('T')[0],
       weight: x.Weight,
       fat: x.BodyFat,
       muscle: x.MuscleMass ?? ''
@@ -131,15 +198,19 @@ const fetchRecords = async () => {
   }
 }
 
-onMounted(() => {
-  fetchRecords()
-})
+
+const changeTempWeight = (step) => {
+  const newValue = tempTargetWeight.value + step
+  if (newValue >= 40 && newValue <= 120) {
+    tempTargetWeight.value = Number(newValue.toFixed(1))
+  }
+}
 // 表單初始狀態
-const initialForm = { id: null, date: '', weight: '', bodyFat: '', muscle: ''}
+const initialForm = { id: null, date: '', weight: '', fat: '', muscle: '' }
 const form = ref({ ...initialForm })
 
 const saveRecord = async () => {
- console.log('送出的日期:', form.value.date)
+  console.log('送出的日期:', form.value.date)
   if (!form.value.date || !form.value.weight) {
     alert('請填寫日期與體重')
     return
@@ -190,11 +261,30 @@ const remove = async (id) => {
 const resetForm = () => {
   form.value = { ...initialForm }
 }
+const openTargetModal = () => {
+  tempTargetWeight.value = targetWeight.value
+  showTargetModal.value = true
+}
 
+const confirmTargetWeight = async () => {
+  try {
+    await api.put('/healthprofile/target-weight', {
+      targetWeight: tempTargetWeight.value
+    })
+
+    // 直接更新畫面，不用再 call API
+    targetWeight.value = tempTargetWeight.value
+
+    showTargetModal.value = false
+
+  } catch (err) {
+    console.error(err)
+    alert('儲存失敗')
+  }
+}
 </script>
 
 <style scoped>
-
 /* 麵包屑樣式 */
 .custom-breadcrumb {
   background: transparent;
@@ -216,62 +306,190 @@ const resetForm = () => {
   color: #1e293b;
   font-weight: 600;
 }
+
 /* 繼承 Dashboard 風格 */
-.metrics-page { background-color: #f8fafc; min-height: 100vh; font-family: 'Noto Sans TC', sans-serif; }
-.metric-card { border-radius: 16px; background: #ffffff; }
+.metrics-page {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.metric-card {
+  border-radius: 16px;
+  background: #ffffff;
+}
 
 /* 顏色定義 */
-.text-dark-blue { color: #1e293b; }
-.text-orange { color: #f59e0b; }
-.text-muted-custom { color: #64748b; }
-.text-light-grey { color: #cbd5e1; }
-.unit-text { font-size: 0.85rem; color: #94a3b8; font-weight: normal; margin-left: 2px; }
+.text-dark-blue {
+  color: #1e293b;
+}
+
+.text-orange {
+  color: #f59e0b;
+}
+
+.text-muted-custom {
+  color: #64748b;
+}
+
+.text-light-grey {
+  color: #cbd5e1;
+}
+
+.unit-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: normal;
+  margin-left: 2px;
+}
 
 /* 圖示方塊 */
 .icon-box-orange {
-  width: 44px; height: 44px;
-  background-color: #fffbeb; color: #f59e0b;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 12px; font-size: 1.2rem;
+  width: 44px;
+  height: 44px;
+  background-color: #fffbeb;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.2rem;
 }
 
 /* 輸入框 */
 .custom-input {
-  border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;
-  background-color: #fcfcfc; transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background-color: #fcfcfc;
+  transition: all 0.2s ease;
 }
+
 .custom-input:focus {
-  border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
   outline: none;
 }
 
 /* 按鈕 */
 .btn-save {
-  background-color: #f59e0b; color: white; border: none;
-  border-radius: 12px; padding: 12px 24px; font-weight: 600;
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
   transition: all 0.2s;
 }
-.btn-save:hover { background-color: #d97706; transform: translateY(-1px); }
+
+.btn-save:hover {
+  background-color: #d97706;
+  transform: translateY(-1px);
+}
 
 .btn-cancel {
-  background-color: #f1f5f9; color: #64748b; border: none;
-  border-radius: 12px; padding: 12px 20px; font-weight: 600;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-weight: 600;
 }
 
 /* 表格優化 */
 .table-header-custom th {
-  background-color: #f8fafc; color: #64748b; font-size: 0.75rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-  padding: 16px 12px; border-bottom: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 12px;
+  border-bottom: 1px solid #f1f5f9;
 }
-.table-row-hover:hover { background-color: #fcfcfc; }
+
+.table-row-hover:hover {
+  background-color: #fcfcfc;
+}
 
 
 /* 操作按鈕 */
 .btn-icon-action {
-  border: none; background: transparent; color: #94a3b8;
-  font-size: 1.1rem; padding: 5px 8px; transition: color 0.2s;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  padding: 5px 8px;
+  transition: color 0.2s;
 }
-.btn-icon-action:hover { color: #f59e0b; }
 
+.btn-icon-action:hover {
+  color: #f59e0b;
+}
+
+.target-card {
+  text-align: center;
+}
+
+.target-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.target-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.btn-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-circle:hover {
+  background-color: #f8fafc;
+  transform: scale(1.05);
+}
+
+.custom-range {
+  width: 80%;
+  margin: 20px auto;
+  display: block;
+}
+
+.target-hint {
+  display: flex;
+  justify-content: space-between;
+  width: 80%;
+  margin: 0 auto;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-box {
+  background: white;
+  width: 420px;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
 </style>

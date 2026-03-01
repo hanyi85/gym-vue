@@ -95,6 +95,10 @@ const props = defineProps({
   history: {
     type: Array,
     required: true
+  },
+  goalWeight: {
+    type: Number,
+    required: true
   }
 })
 const period = ref('30d')
@@ -103,7 +107,7 @@ const chartRef = ref(null)
 let chartInstance = null
 
 
-const goalWeight = 70
+
 
 // ============================
 // 篩選資料
@@ -142,13 +146,15 @@ const filteredHistory = computed(() => {
 // ============================
 
 const currentWeight = computed(() => {
-  if (!filteredHistory.value.length) return '--'
-  return filteredHistory.value[filteredHistory.value.length - 1].weight
+  if (!filteredHistory.value.length) return 0
+  return Number(
+    filteredHistory.value[filteredHistory.value.length - 1].weight
+  )
 })
 
 const firstWeight = computed(() => {
   if (!filteredHistory.value.length) return 0
-  return filteredHistory.value[0].weight
+  return Number(filteredHistory.value[0].weight)
 })
 
 const totalLoss = computed(() => {
@@ -158,18 +164,27 @@ const totalLoss = computed(() => {
 })
 
 const goalPercent = computed(() => {
-  if (!firstWeight.value) return 0
-  const totalNeed = firstWeight.value - goalWeight
+  if (!firstWeight.value || !props.goalWeight) return 0
+
+  const start = firstWeight.value
+  const current = currentWeight.value
+  const goal = props.goalWeight
+
+  const totalNeed = start - goal
+
   if (totalNeed === 0) return 100
+  if (totalNeed < 0) return 0  // 目標比起始重，直接 0%
 
-  const percent =
-    ((firstWeight.value - currentWeight.value) / totalNeed) * 100
+  const progress = start - current
+  const percent = (progress / totalNeed) * 100
 
-  return Math.max(0, Math.min(100, percent.toFixed(0)))
+  return Math.max(0, Math.min(100, Math.round(percent)))
 })
 
 const remainingWeight = computed(() => {
-  const diff = currentWeight.value - goalWeight
+  if (!currentWeight.value || !props.goalWeight) return 0
+
+  const diff = currentWeight.value - props.goalWeight
   return diff > 0 ? diff.toFixed(1) : 0
 })
 
@@ -230,7 +245,6 @@ const renderChart = async () => {
 }
 onMounted(renderChart)
 watch(filteredHistory, renderChart, { immediate: true })
-watch(period, renderChart)
 onUnmounted(() => {
   if (chartInstance) chartInstance.destroy()
 })
