@@ -1,16 +1,14 @@
 <template>
-  <Banner title="詳細體重紀錄" subtitle="管理您的身體數值與照片" />
+  <Banner title="體重專區" subtitle="管理您的身體數值與進展" />
 <div class="container mt-4">
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb custom-breadcrumb mb-0">
       <li class="breadcrumb-item">
         <router-link to="/users/home">會員首頁</router-link>
       </li>
-      <li class="breadcrumb-item">
-        <router-link to="/users/weight">體重專區</router-link>
-      </li>
+
       <li class="breadcrumb-item active" aria-current="page">
-        體重紀錄
+        體重專區
       </li>
     </ol>
   </nav>
@@ -58,7 +56,7 @@
         </div>
       </div>
     </div>
-
+<WeightDashboard :history="history" />
     <div class="card metric-card border-0 shadow-sm">
       <div class="card-body p-0">
         <div class="p-4 border-bottom border-light d-flex justify-content-between align-items-center">
@@ -108,6 +106,9 @@
 import { ref, onMounted } from 'vue'
 import Banner from '@/components/banner.vue'
 import api from '@/services/api'
+import WeightDashboard from '@/components/Users/WeightDashboard.vue'
+
+
 
 //記錄歷史資料
 const history = ref([])
@@ -138,6 +139,7 @@ const initialForm = { id: null, date: '', weight: '', bodyFat: '', muscle: ''}
 const form = ref({ ...initialForm })
 
 const saveRecord = async () => {
+ console.log('送出的日期:', form.value.date)
   if (!form.value.date || !form.value.weight) {
     alert('請填寫日期與體重')
     return

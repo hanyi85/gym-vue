@@ -64,7 +64,7 @@
                         </router-link>
                       </li>
                       <li>
-                        <router-link to="/users/weight" class="dropdown-item-plain" @click="closeAccount">
+                        <router-link to="/users/weight-records" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-speedometer2 me-2"></i>體重紀錄
                         </router-link>
                       </li>

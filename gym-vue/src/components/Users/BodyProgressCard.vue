@@ -9,7 +9,7 @@
             <h6 class="fw-bold text-dark-blue mb-0">體重變化趨勢</h6>
 
             <RouterLink
-              to="/users/weight"
+              to="/users/weight-records"
               class="btn btn-go-weight"
               title="前往體重專區"
             >

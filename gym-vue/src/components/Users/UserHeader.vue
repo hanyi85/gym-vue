@@ -3,14 +3,16 @@
     <!-- 左側：頭像 + 資訊 -->
     <div class="left">
       <div class="avatar-wrapper">
-        <img :src="user.avatar" class="avatar" />
-        <span class="status-dot"></span>
+<img 
+  :src="avatarSrc || '/assets/img/default.png'" 
+  class="avatar" 
+/>        <span class="status-dot"></span>
       </div>
 
       <div class="info">
-        <h2 class="name">{{ user.name }}</h2>
+        <h2 class="name">{{ user.Name }}</h2>
         <div class="meta">
-          <span class="joined">加入於 {{ user.joined }}</span>
+          <span class="joined">加入於 {{ user.Joined }}</span>
         </div>
       </div>
     </div>
@@ -26,11 +28,21 @@
 </template>
 
 <script setup>
-const user = {
-  name: '王小明',
-  joined: '2023 年 1 月',
-  avatar: 'https://i.pravatar.cc/100'
-}
+import { ref, onMounted } from 'vue'
+import api from '@/services/api'
+
+const user = ref({})
+const avatarSrc = ref(null)
+
+onMounted(async () => {
+  const res = await api.get('/UUsers/profile')
+
+  user.value = res.data
+
+  if (res.data.Image) {
+    avatarSrc.value = `data:image/png;base64,${res.data.Image}`
+  }
+})
 </script>
 
 <style scoped>

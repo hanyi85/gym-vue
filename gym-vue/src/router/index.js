@@ -86,12 +86,6 @@ const routes = [
     component: () => import('@/views/users/UserProfileEdit.vue'),
   },
   // 體重紀錄
-  {
-    path: '/users/weight',
-    name: 'user-weight',
-    component: () => import('@/views/users/weight/UserWeightHome.vue'),
-  },
-
     {
     path: '/users/weight-records',
     name: 'user-weight-record',
