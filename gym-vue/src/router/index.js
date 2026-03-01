@@ -147,6 +147,11 @@ const routes = [
   component: () => import('@/views/courses/BookingPayment-View.vue'),
 },
 {
+  path: '/courses/:slug/booking/payment/by-booking/:bookingId',
+  name: 'courses-booking-payment-by-booking',
+  component: () => import('@/views/courses/BookingPayment-View.vue'),
+},
+{
   path: '/courses/booking-success',
   name: 'courses-booking-success',
   component: () => import('@/views/courses/BookingSuccess-View.vue'),
