@@ -12,7 +12,17 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-// 依你的後端：GET /api/coursebookings/history?userId=1
+function minutesToStart(o) {
+  const start = new Date(o.StartTime)
+  const now = new Date()
+  return Math.floor((start - now) / 60000) 
+}
+
+function canCancel(o) {
+  if (uiStatus(o) === '已報到' || uiStatus(o) === '已取消') return false
+  // 開課前 5小時不可取消
+  return minutesToStart(o) > 3000
+}
 async function fetchOrders() {
   loading.value = true
   try {
@@ -220,13 +230,19 @@ function goReview(o) {
   去評論
 </button>
 <button
-  v-if="uiStatus(o) !== '已報到' && uiStatus(o) !== '已取消'"
-class="cancel-btn"
- @click="openCancel(o)"
+  class="cancel-btn"
+  :disabled="!canCancel(o)"
+  @click="canCancel(o) ? openCancel(o) : alert('開課前 1 小時內不可取消')"
 >
   取消預約
 </button>
               </div>
+              <small
+  v-if="!canCancel(o) && uiStatus(o) !== '已報到' && uiStatus(o) !== '已取消'"
+  class="hint"
+>
+  距離上課不足 5 小時，無法取消
+</small>
             </div>
           </div>
         </div>
@@ -580,5 +596,17 @@ class="cancel-btn"
 .btn-base:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+.hint{
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.cancel-btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>
