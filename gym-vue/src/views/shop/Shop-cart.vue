@@ -237,7 +237,6 @@ onMounted(() => {
                 <select class="form-select bg-light border-0 py-2" v-model="cartStore.paymentMethod">
                   <option value="">請選擇付款方式</option>
                   <option value="貨到付款">貨到付款</option>
-                  <option value="LinePay">LinePay</option>
                   <option value="PayPal">PayPal</option>
                 </select>
               </div>

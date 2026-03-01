@@ -125,7 +125,7 @@ onMounted(async () => {
         <h3 class="fw-bold mb-3">謝謝您！您的訂單已經成立！</h3>
         <div class="order-simple-info mb-4">
           <p class="mb-1 text-secondary">訂單號碼 {{ orderInfo.orderNumber }}</p>
-          <p class="small text-secondary">訂單確認電郵已經發送到您的電子郵箱：<br>
+          <p class="small text-secondary">訂單確認郵件已經發送到您的電子郵箱：<br>
             <strong class="text-dark">{{ orderInfo.customer.email }}</strong>
           </p>
         </div>
