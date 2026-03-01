@@ -92,11 +92,10 @@ onMounted(async () => {
 
 function goBooking() {
   router.push({
-    path: '/courses/booking',
-    query: { id: course.value.Id }
+    name: 'courses-booking',
+    params: { slug: courseSlug }, 
   })
 }
-
 function goBack() {
   router.back()
 }

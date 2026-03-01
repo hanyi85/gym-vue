@@ -112,85 +112,87 @@ const routes = [
   /* =========================
    * 課程 Courses
    * ========================= */
+/* =========================
+ * 課程 Courses
+ * ========================= */
 
-  // 課程入口（選場館）
-  {
-    path: '/courses',
-    name: 'courses',
-    component: () => import('@/views/courses/Course-View.vue'),
-  },
+// 課程入口（選場館）
+{
+  path: '/courses',
+  name: 'courses',
+  component: () => import('@/views/courses/Course-View.vue'),
+},
 
-  // 場館內課程列表（找課 / 找教練）
- {
+// 教練詳細
+{
+  path: '/courses/coach-detail/:id',
+  name: 'courses-coach-detail',
+  component: () => import('@/views/courses/CoachDetail-View.vue'),
+},
+
+//  預約流
+{
+  path: '/courses/:slug/booking',
+  name: 'courses-booking',
+  component: () => import('@/views/courses/Booking-View.vue'),
+},
+{
+  path: '/courses/:slug/booking/confirm/:scheduleId',
+  name: 'courses-booking-confirm',
+  component: () => import('@/views/courses/BookingConfirm-View.vue'),
+},
+{
+  path: '/courses/:slug/booking/payment/:scheduleId',
+  name: 'courses-booking-payment',
+  component: () => import('@/views/courses/BookingPayment-View.vue'),
+},
+{
+  path: '/courses/:slug/booking/success',
+  name: 'courses-booking-success',
+  component: () => import('@/views/courses/BookingSuccess-View.vue'),
+},
+{
+  path: '/courses/:slug/booking/fail',
+  name: 'courses-booking-fail',
+  component: () => import('@/views/courses/BookingFail-View.vue'),
+},
+
+// 預約紀錄 / 評論
+{
+  path: '/courses/booking-history',
+  name: 'courses-booking-history',
+  component: () => import('@/views/courses/BookingHistory-View.vue'),
+},
+{
+  path: '/courses/review',
+  name: 'courses-review',
+  component: () => import('@/views/courses/Review-View.vue'),
+},
+{
+  path: '/courses/review-success',
+  name: 'courses-review-success',
+  component: () => import('@/views/courses/ReviewSuccess-View.vue'),
+},
+
+// demo
+{
+  path: '/counter/demo',
+  name: 'CounterDemo',
+  component: () => import('@/views/courses/CounterScan-View.vue'),
+},
+
+// 場館內課程列表
+{
   path: '/courses/:city/:venue',
   name: 'courses-list',
   component: () => import('@/views/courses/CourseList-View.vue'),
 },
 
-
-  // 課程詳細
- {
+// 課程詳細（最寬鬆，放最後避免吃掉其他路由）
+{
   path: '/courses/:slug',
   name: 'courses-detail',
-  component: () => import('@/views/courses/CourseDetail-View.vue')
-},
-
-  // 教練詳細
-  {
-    path: '/courses/coach-detail/:id',
-    name: 'courses-coach-detail',
-    component: () => import('@/views/courses/CoachDetail-View.vue'),
-  },
-
-  // 預約流程
-  {
-    path: '/courses/booking',
-    name: 'courses-booking',
-    component: () => import('@/views/courses/Booking-View.vue'),
-  },
-  {
-    path: '/courses/booking-confirm',
-    name: 'courses-booking-confirm',
-    component: () => import('@/views/courses/BookingConfirm-View.vue'),
-  },
-  {
-    path: '/courses/booking-payment',
-    name: 'courses-booking-payment',
-    component: () => import('@/views/courses/BookingPayment-View.vue'),
-  },
-  
-  {
-    path: '/courses/booking-success',
-    name: 'courses-booking-success',
-    component: () => import('@/views/courses/BookingSuccess-View.vue'),
-  },
-  {
-    path: '/courses/booking-fail',
-    name: 'courses-booking-fail',
-    component: () => import('@/views/courses/BookingFail-View.vue'),
-  },
-
-  // 預約紀錄 / 評論
-  {
-    path: '/courses/booking-history',
-    name: 'courses-booking-history',
-    component: () => import('@/views/courses/BookingHistory-View.vue'),
-  },
-  {
-    path: '/courses/review',
-    name: 'courses-review',
-    component: () => import('@/views/courses/Review-View.vue'),
-  },
-  //  評論成功
-  {
-  path: '/courses/review-success',
-  name: 'courses-review-success',
-  component: () => import('@/views/courses/ReviewSuccess-View.vue'),
-},
-{
-  path: '/counter/demo',
-  name: 'CounterDemo',
-  component: () => import('@/views/courses/CounterScan-View.vue')
+  component: () => import('@/views/courses/CourseDetail-View.vue'),
 },
 
   /* =========================

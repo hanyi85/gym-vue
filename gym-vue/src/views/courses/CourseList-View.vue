@@ -159,10 +159,10 @@ function goDetail(course) {
   })
 }
 
-function goBooking(id) {
+function goBooking(course) {
   router.push({
-    path: '/courses/booking',
-    query: { id, city, venue },
+    name: 'courses-booking',
+    params: { slug: courseName(course) },
   })
 }
 
@@ -355,7 +355,7 @@ watch(
 
                 <div class="course-actions">
                   <button class="btn-outline" @click="goDetail(c)">查看課程</button>
-                  <button class="btn-primary" @click="goBooking(courseId(c))">
+                  <button class="btn-primary" @click="goBooking(c)">
                     立即預約
                   </button>
                 </div>

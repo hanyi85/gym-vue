@@ -7,7 +7,8 @@ import BookingStepper from '@/components/Course/BookingStepper.vue'
 const router = useRouter()
 const route = useRoute()
 
-const courseId = computed(() => Number(route.query.id) || null)
+const courseSlug = computed(() => route.params.slug || '')
+const courseId = ref(null)
 const courseInfo = ref(null)
 
 const VISIBLE_COUNT = 7
@@ -49,7 +50,8 @@ function nextDates() {
     visibleStart.value += VISIBLE_COUNT
   }
 }
-/*課程時段*/
+
+/* 課程時段 */
 const allSchedules = ref([])
 const selectedDate = ref('')
 const todaySlots = ref([])
@@ -75,25 +77,25 @@ function selectSlot(slot) {
   selectedSlotId.value = slot.scheduleId
 }
 
-/* 課程資料*/
+/* 課程資料 */
 async function fetchCourseDetail() {
-  if (!courseId.value) return
+  if (!courseSlug.value) return
 
   const res = await axios.get(
-    `https://localhost:7218/api/CCourses/${courseId.value}`
+    `https://localhost:7218/api/CCourses/by-name/${courseSlug.value}`
   )
 
   const d = res.data
+  courseId.value = d.Id
+
   courseInfo.value = {
-    name: d.CourseName,
-    level: d.Courselevel,
+    name: d.Title ?? d.CourseName,
+    level: d.Level ?? d.Courselevel ?? d.CourseLevel,
     duration: d.Duration,
     price: d.Price,
     description: d.Description,
     imageUrl: d.ImageUrl,
   }
-
-  console.log('[courseInfo]', courseInfo.value)
 }
 
 function goNext() {
@@ -104,7 +106,8 @@ function goNext() {
 
   router.push({
     name: 'courses-booking-confirm',
-    query: {
+    params: {
+      slug: courseSlug.value,
       scheduleId: slot.scheduleId,
     },
   })
@@ -119,16 +122,19 @@ function goBack() {
   }
 }
 
-watch(visibleDates, list => {
-  if (list.length) selectDate(list[0].date)
-}, { immediate: true })
+watch(
+  visibleDates,
+  (list) => {
+    if (list.length) selectDate(list[0].date)
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
   await fetchCourseDetail()
   await fetchSchedules()
 })
 </script>
-
 <template>
   <div class="booking-wrapper">
     <div class="container">

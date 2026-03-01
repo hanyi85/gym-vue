@@ -7,7 +7,8 @@ import BookingStepper from '@/components/Course/BookingStepper.vue'
 const route = useRoute()
 const router = useRouter()
 
-const scheduleId = Number(route.query.scheduleId || 0)
+const courseSlug = computed(() => route.params.slug || '')
+const scheduleId = computed(() => Number(route.params.scheduleId || 0))
 
 const api = axios.create({
   baseURL: 'https://localhost:7218/api'
@@ -130,17 +131,17 @@ function clearDiscount() {
 }
 
 onMounted(async () => {
-  if (!scheduleId) {
+  if (!scheduleId.value) {
     showToast('缺少 scheduleId，請重新選擇時段')
     router.back()
     return
   }
 
   try {
-    const res = await api.get(`/CCourses/schedule-detail/${scheduleId}`)
+    const res = await api.get(`/CCourses/schedule-detail/${scheduleId.value}`)
     booking.value = res.data
   } catch (err) {
-   showToast(err.response?.data || err.message)
+    showToast(err.response?.data || err.message)
     router.back()
   }
 })
@@ -156,16 +157,20 @@ function goNext() {
   if (!nameOk || !phoneOk || !agree.value) return
 
   showToast('資料已確認，前往付款', 'success')
+
   setTimeout(() => {
     router.push({
       name: 'courses-booking-payment',
-      query: {
+      params: {
+        slug: courseSlug.value,
         scheduleId: booking.value.scheduleId,
-         discountCode: discountCode.value || '',
+      },
+      query: {
+        discountCode: discountCode.value || '',
         name: name.value,
         phone: phone.value,
         note: note.value,
-        price: finalPrice.value
+        price: finalPrice.value,
       },
     })
   }, 350)
@@ -297,7 +302,9 @@ function goNext() {
   已超過報名截止時間
 </p>
       <div class="btn-row">
-        <button class="back-btn" @click="$router.back()">上一步</button>
+    <button class="back-btn" @click="router.push({ name:'courses-booking', params:{ slug: courseSlug } })">
+  上一步
+</button>
         <button
   class="next-btn"
   :disabled="booking.full || !booking.canEnroll"
