@@ -35,10 +35,28 @@
       <div class="social-section">
         <div class="divider"><span>或使用其他方式</span></div>
         <div class="d-flex justify-content-center gap-4"> <!-- Google 登入按鈕 -->
-          <GoogleLogin :callback="handleGoogleCallback" class="google-btn" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
-          <!-- <button class="social-circle google" @click="googleLogin">
-          </button> -->
+<GoogleLogin
+  ref="googleBtn"
+  :callback="handleGoogleCallback"
+  style="display: none"
+/>
+<button class="social-circle google" @click="triggerGoogle">
+  <img
+    src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+    alt="Google"
+  />
+</button>
+          <!-- <GoogleLogin
+  :callback="handleGoogleCallback"
+
+>
+  <button class="social-circle google" @click="login">
+    <img
+      src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+      alt="Google"
+    />
+  </button>
+</GoogleLogin>         -->
           
           <button class="social-circle line" @click="socialLogin('LINE')">
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE">
@@ -74,22 +92,34 @@
 </template>
 
 <script setup>
-import { ref} from 'vue'
-import { useRouter} from 'vue-router'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { GoogleLogin } from 'vue3-google-login'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 import Btn from '@/components/btn.vue'
+const googleBtn = ref(null)
 
+function triggerGoogle() {
+  // 觸發隱藏的官方按鈕
+  googleBtn.value?.$el.querySelector('div[role=button]')?.click()
+}
 const router = useRouter()
+const auth = useAuthStore()
 
-// 狀態
+/* =====================
+   狀態
+===================== */
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
 const showVerifyModal = ref(false)
-// 登入
+
+/* =====================
+   一般登入
+===================== */
 async function handleLogin() {
   if (loading.value) return
 
@@ -97,85 +127,76 @@ async function handleLogin() {
   errorMessage.value = ''
 
   try {
-    const res = await api.post("/Auth/login", {
+    const res = await api.post('/Auth/login', {
       email: email.value,
       password: password.value
     })
 
-    //  如果需要驗證信箱
-    if (res.data.needVerify) {
+    const { data } = res
+
+    if (data.needVerify) {
       showVerifyModal.value = true
       return
     }
 
-    //  正常登入
-    localStorage.setItem("token", res.data.token)
-    router.push("/users/home")
+    // 使用 Pinia 存登入資訊
+    auth.login(data.token, data.name, data.userId)
+
+    router.push('/')
 
   } catch (err) {
     errorMessage.value =
-      err.response?.data ||
-      "登入失敗，請檢查帳號密碼"
+      err.response?.data || '登入失敗，請檢查帳號密碼'
   } finally {
     loading.value = false
   }
 }
 
-// 重新寄送驗證信
+/* =====================
+   重寄驗證信
+===================== */
 async function resendEmail() {
-  console.log("我被點了")
   try {
-    await api.post("/Auth/resend-verify-email", {
+    await api.post('/Auth/resend-verify-email', {
       email: email.value
     })
-    alert("驗證信已重新寄出")
+
+    alert('驗證信已重新寄出')
+
   } catch {
-    alert("寄送失敗，請稍後再試")
+    alert('寄送失敗，請稍後再試')
   }
 }
 
-// 第三方註冊登入 google
-const handleGoogleCallback = async (response) => {
+/* =====================
+   Google 登入
+===================== */
+const handleGoogleCallback = async ({ credential }) => {
+  if (!credential) return
+
   try {
-    console.log('Google 回傳：', response)
-
-    const idToken = response.credential
-
-    const res = await fetch('https://localhost:7218/api/auth/google-login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        idToken: idToken
-      })
+    const { data } = await api.post('/Auth/google-login', {
+      IdToken: credential
     })
 
-    if (!res.ok) {
-      throw new Error('API 回傳錯誤')
-    }
+    // 假設後端回傳 { token, name }
+    auth.login(data.token, data.name)
 
-    const data = await res.json()
-
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('userId', data.userId)
-    localStorage.setItem('name', data.name)
-
-
-    router.push("/users/profile");
-  } catch (err) {
-    console.error('Google 登入失敗', err)
+    router.push('/')
+  } catch (error) {
     errorMessage.value = 'Google 登入失敗'
   }
 }
 
-// 第三方註冊登入 line
+/* =====================
+   LINE 登入
+===================== */
 function socialLogin(provider) {
-  if (provider === "LINE") {
-    const clientId = "2009268953"
-    const redirectUri = "http://localhost:5173/line-callback"
+  if (provider === 'LINE') {
+    const clientId = '2009268953'
+    const redirectUri = 'http://localhost:5173/line-callback'
     const state = Math.random().toString(36).substring(2)
-    const scope = "profile openid"
+    const scope = 'profile openid'
 
     const url =
       `https://access.line.me/oauth2/v2.1/authorize?` +

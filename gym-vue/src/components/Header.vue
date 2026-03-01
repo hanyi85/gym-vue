@@ -44,11 +44,12 @@
                 <li class="account position-relative">
                   <a href="javascript:void(0)" @click.stop="toggleAccount" class="nav-icon-btn">
                     <i class="fa fa-user" aria-hidden="true"></i>
-                    <span v-if="isLoggedIn" class="user-label">{{ userName }}</span>
-                  </a>
+<span v-if="auth.isLoggedIn" class="user-label">
+  {{ auth.userName }}
+</span>                  </a>
 
                   <ul v-if="isAccountOpen" class="account_selection shadow">
-                    <template v-if="!isLoggedIn">
+                    <template v-if="!auth.isLoggedIn">
                       <li><a href="javascript:void(0)" @click="handleLogin">假登入</a></li>
                       <li><router-link to="/users/login" @click="closeAccount">登入系統</router-link></li>
                       <li><router-link to="/users/forgot-password" @click="closeAccount">忘記密碼</router-link></li>
@@ -56,7 +57,7 @@
                     </template>
 
                     <template v-else>
-                      <li class="user_info">{{ userName }} 您好</li>
+                      <li class="user_info">{{  auth.userName }} 您好</li>
                                             <li>
                         <router-link to="/users/home" class="dropdown-item-plain" @click="closeAccount">
                           <i class="bi bi-person-vcard me-2"></i>會員首頁
@@ -127,7 +128,7 @@
                   <i class="fa fa-times" aria-hidden="true"></i>
                 </div>
                 <ul class="hamburger_menu_content">
-                  <li><router-link to="/">首頁</router-link></li>
+                  <li><router-link to="/" @click="toggleMobileNav">首頁</router-link></li>
                   <li><router-link to="/shop/products">線上商城</router-link></li>
                   <li><router-link to="/meals">健康餐購買</router-link></li>
                   <li><router-link to="/post/card">資訊公告</router-link></li>
@@ -144,9 +145,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed,watchEffect  } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import 練吧logo from '@/assets/練吧logo.png'
+import { useAuthStore } from '@/stores/auth'
 
 /* =====================
    廣告輪播
@@ -165,13 +167,18 @@ const listStyle = computed(() => ({
   transition: 'transform 0.6s ease-in-out'
 }))
 
+let timer = null
+
 onMounted(() => {
-  setInterval(() => {
+  timer = window.setInterval(() => {
     currentIndex.value =
       (currentIndex.value + 1) % messages.length
   }, 4000)
 })
 
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
 
 
 /* =====================
@@ -183,8 +190,8 @@ const isMobileNavOpen = ref(false)
 const isCartOpen = ref(false)
 const isAccountOpen = ref(false)
 
-const isLoggedIn = ref(false)
-const userName = ref('王小明')
+
+const auth = useAuthStore()
 
 /* =====================
    共用關閉
@@ -226,17 +233,20 @@ const closeAccount = () => {
    模擬登入 / 登出
 ===================== */
 const handleLogin = () => {
-  isLoggedIn.value = true
+  auth.login('fake-token', '王小明')
   closeAll()
-  alert('模擬登入成功！')
 }
 
 const handleLogout = () => {
-  isLoggedIn.value = false
-  closeAll()
-  alert('已登出')
+  auth.logout()
+   closeAll()
   router.push('/')
 }
+
+/* =====================
+   真實登入 / 登出
+===================== */
+
 </script>
 
 
