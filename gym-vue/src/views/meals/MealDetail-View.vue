@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted} from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
 import axios from 'axios'
@@ -43,6 +43,45 @@ function formatDate(date) {
 
 const minDate = formatDate(tomorrow)
 const maxDate = formatDate(threeMonthsLater)
+
+// 圖片部分放大功能
+const lensVisible = ref(false)
+const lensStyle = ref({})
+
+function move(e) {
+
+  const rect = e.currentTarget.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  // 設定參數
+  const zoomScale = 2    // 想要放大幾倍
+  const containerSize = 400 // 你的容器是 400px
+  const lensSize = 100      // 你的鏡片是 100px
+  
+  // 計算背景圖應該縮放到多少像素
+  // 公式：容器寬度 * 放大倍率
+  const bgWidth = containerSize * zoomScale
+  const bgHeight = containerSize * zoomScale
+const url = meal.value?.imageUrl ? 'https://localhost:7218' + meal.value.imageUrl : '';
+  lensVisible.value = true
+  lensStyle.value = {
+    left: `${x - lensSize / 2}px`,
+    top: `${y - lensSize / 2}px`,
+    backgroundImage: `url("${url}")`, // 建議加上雙引號包裹網址
+    backgroundRepeat: "no-repeat",
+    // 這裡改用具體的像素值，最不容易出錯
+    backgroundSize: `${bgWidth}px ${bgHeight}px`,
+    // 修正位移邏輯：(滑鼠位置 * 倍率) - 鏡片中心補償
+    backgroundPosition: `-${x * zoomScale - lensSize / 2}px -${y * zoomScale - lensSize / 2}px`,
+    // 確保鏡片在最上層
+    zIndex: 10
+  }
+}
+
+function leave() {
+  lensVisible.value = false
+}
 
 /* 後台抓取餐時間 */
 async function fetchTimeSlots() {
@@ -176,13 +215,25 @@ onMounted(() => {
             </ol>
           </nav>
     <div class="container meal-detail rounded-4 shadow-sm p-4 p-md-5">
-      <div class="row justify-content-center g-5">
-        
-        <div class="col-12 col-md-6 col-lg-5">
-          <div class="image-wrapper shadow-sm rounded-4 overflow-hidden">
-            <img :src="'https://localhost:7218' + meal.imageUrl" class="img-fluid w-100 h-100 object-fit-cover" :alt="meal.name" v-if="meal"/>
+      <div class="row justify-content-center g-5">   
+        <div class="col-12 col-md-6 col-lg-5">         
+          <div
+            class="zoom-container"
+            @mousemove="move"
+            @mouseleave="leave"
+          >
+            <img
+              :src="'https://localhost:7218' + meal.imageUrl"
+              class="img-fluid w-100 h-100 object-fit-cover"
+              :alt="meal.name"
+              v-if="meal"
+            />
+            <!-- 放大鏡框 -->
+            <div v-if="lensVisible" class="zoom-lens" :style="lensStyle"></div>
           </div>
+          <h6 class=" text-muted small mt-2">滑鼠移至圖片，可局部放大。</h6>
         </div>
+        
 
         <div class="col-12 col-md-6 col-lg-5">
           <h1 class="fw-bold text-dark mb-3" v-if="meal">{{ meal.name }}</h1>
@@ -358,4 +409,33 @@ onMounted(() => {
 .price-amount {
   font-size: 2rem;
 }
+
+/* 圖片部分放大功能 */
+
+.zoom-container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.zoom-container img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.zoom-lens {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border: 2px solid #fff; /* 改用白色或亮色邊框較明顯 */
+  box-shadow: 0 0 8px rgba(0,0,0,0.5); /* 增加陰影，讓方框更清晰 */
+  background-color: #eee; /* 沒讀到圖時的底色 */
+  pointer-events: none;
+}
+
+
+
 </style>
