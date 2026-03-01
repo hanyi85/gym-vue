@@ -79,6 +79,7 @@ function selectSlot(slot) {
 
 /* 課程資料 */
 async function fetchCourseDetail() {
+  
   if (!courseSlug.value) return
 
   const res = await axios.get(
@@ -90,12 +91,14 @@ async function fetchCourseDetail() {
 
   courseInfo.value = {
     name: d.Title ?? d.CourseName,
-    level: d.Level ?? d.Courselevel ?? d.CourseLevel,
+    level: (d.courseLevel ?? d.CourseLevel ?? '').trim() || '未提供',
     duration: d.Duration,
     price: d.Price,
     description: d.Description,
     imageUrl: d.ImageUrl,
   }
+  console.log('detail raw =', d)
+console.log('detail keys =', Object.keys(d || {}))
 }
 
 function goNext() {
