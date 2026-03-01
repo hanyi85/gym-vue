@@ -85,7 +85,7 @@ function syncBookingIdToUrl(id) {
 async function markPaidAndSyncUrl(id) {
   if (!id) return
 
-  // ✅ 先存起來，QR 會用到
+  // 先存起來，QR 會用到
   bookingId.value = Number(id)
 
   try {
@@ -97,7 +97,18 @@ async function markPaidAndSyncUrl(id) {
     syncBookingIdToUrl(id)
   }
 }
+function cleanUrlKeepPaidAndBookingId() {
+  const keep = {}
 
+  // 只保留 paid / bookingId（你想保留什麼再加）
+  if (route.query.paid) keep.paid = route.query.paid
+  if (route.query.bookingId) keep.bookingId = route.query.bookingId
+
+  router.replace({
+    path: route.path,   // /courses/booking-success
+    query: keep,        // 乾淨
+  })
+}
 // ===== main flow =====
 onMounted(async () => {
   console.log('booking-success mounted', route.fullPath)
@@ -141,7 +152,7 @@ onMounted(async () => {
   bookingNo.value = cachedBk
 
   const cachedId = Number(cachedBk.replace('BK', ''))
-  if (cachedId > 0) bookingId.value = cachedId   // ✅ 先顯示 QR
+  if (cachedId > 0) bookingId.value = cachedId   //  先顯示 QR
 
   localStorage.removeItem('pending_booking')
   if (cachedId) await markPaidAndSyncUrl(cachedId)
@@ -164,15 +175,15 @@ onMounted(async () => {
   }
 })
 
-// ✅ QR Code：只放 bookingId（最穩、最適合你後端 checkin/{bookingId}）
+// QR Code：只放 bookingId（最穩、最適合你後端 checkin/{bookingId}）
 const qrValue = computed(() =>
   JSON.stringify({
     bookingId: bookingId.value,
   })
 )
 
-// 讓 UI 控制：沒 bookingId 就不要畫（避免畫出 bookingId=0 的假 QR）
 const canShowQr = computed(() => bookingId.value > 0)
+cleanUrlKeepPaidAndBookingId()
 </script>
 
 <template>

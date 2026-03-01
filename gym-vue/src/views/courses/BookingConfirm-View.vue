@@ -3,9 +3,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
+import { useBookingFlowStore } from '@/stores/Course/bookingFlowStore'
 
 const route = useRoute()
 const router = useRouter()
+const flow = useBookingFlowStore()
 
 const courseSlug = computed(() => route.params.slug || '')
 const scheduleId = computed(() => Number(route.params.scheduleId || 0))
@@ -156,6 +158,19 @@ function goNext() {
 
   if (!nameOk || !phoneOk || !agree.value) return
 
+  // 把資料存進 Pinia
+  flow.setStep2Payload({
+    slug: courseSlug.value,
+    scheduleId: booking.value.scheduleId,
+    name: name.value,
+    phone: phone.value,
+    note: note.value,
+    discountCode: discountCode.value,
+    discountAmount: discountAmount.value,
+    price: booking.value.price,
+    finalPrice: finalPrice.value,
+  })
+
   showToast('資料已確認，前往付款', 'success')
 
   setTimeout(() => {
@@ -164,13 +179,6 @@ function goNext() {
       params: {
         slug: courseSlug.value,
         scheduleId: booking.value.scheduleId,
-      },
-      query: {
-        discountCode: discountCode.value || '',
-        name: name.value,
-        phone: phone.value,
-        note: note.value,
-        price: finalPrice.value,
       },
     })
   }, 350)
