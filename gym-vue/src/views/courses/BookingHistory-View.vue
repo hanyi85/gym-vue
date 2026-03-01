@@ -76,37 +76,23 @@ function goDetail(o) {
     },
   })
 }
+
 async function goPay(o) {
-  try {
-    // 1) 先拿 scheduleId（兼容大小寫）
-    let scheduleId = o.ScheduleId ?? o.scheduleId
+  const slug = o.CourseSlug ?? o.courseSlug ?? o.CourseName
+  const sid = Number(o.ScheduleId ?? o.scheduleId ?? 0)
 
-    // 2) 如果 history 沒給 scheduleId，才用 bookingId 查
-    if (!scheduleId) {
-      const res = await api.get(`/coursebookings/${o.CourseBookingId}`)
-      const d = res.data || {}
-      scheduleId = d.ScheduleId ?? d.scheduleId
-    }
-
-    if (!scheduleId) {
-      alert('找不到 scheduleId，無法前往付款')
-      return
-    }
-
-    // 3) slug（你目前沒有 slug 欄位就用課名頂著，至少路由能跑）
-    const slug = o.CourseSlug ?? o.courseSlug ?? o.CourseName
-
-    // 直接去第 3 步：payment
-    router.push({
-      name: 'courses-booking-payment',
-      params: { slug, scheduleId },
-    })
-  } catch (err) {
-    console.error(err)
-    alert('取得付款資訊失敗，請稍後再試')
+  if (!sid) {
+    alert('history 沒有 scheduleId，請讓後端 history 回傳 ScheduleId')
+    return
   }
+
+  router.push({
+    name: 'courses-booking-payment',
+    params: { slug, scheduleId: sid },
+    query: { bookingId: o.CourseBookingId }, // ✅ 續付同一筆
+  })
 }
- 
+
 function goReview(o) {
   router.push({
     name: 'courses-review',

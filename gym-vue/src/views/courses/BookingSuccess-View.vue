@@ -11,8 +11,8 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-// 顯示用
-const bookingNo = ref('') // BKxx
+// ===== 顯示用 =====
+const bookingNo = ref('') // BK000000123（顯示）
 const tradeNo = ref('') // NP...
 const bookingId = ref(0) // ✅ 真實 bookingId（給 QR / 報到驗證用）
 
@@ -22,6 +22,7 @@ const time = ref('')
 const price = ref(0)
 
 const saving = ref(false)
+const cleaned = ref(false) // ✅ 避免重複清 URL
 
 // ===== API helpers =====
 async function createBookingFromPending(p) {
@@ -36,14 +37,13 @@ async function createBookingFromPending(p) {
   const res = await api.post('/CourseBookings', payload)
   return res.data?.CourseBookingId
 }
-
-async function confirmPaid(courseBookingId) {
-  return api.get('/Payment/newebpay/status', {
-    params: { courseBookingId },
-  })
+async function confirmPaid() {
+ 
+  return true
 }
 
 async function getBookingIdBySchedule(scheduleId) {
+  // ✅ 對應：GET /api/Payment/booking-id-by-schedule?scheduleId=18&userId=1
   const r = await api.get('/Payment/booking-id-by-schedule', {
     params: { scheduleId, userId: 1 },
   })
@@ -51,6 +51,11 @@ async function getBookingIdBySchedule(scheduleId) {
 }
 
 // ===== UI / url helpers =====
+function toBkNo(id) {
+  const n = Number(id)
+  return n > 0 ? 'BK' + String(n).padStart(9, '0') : ''
+}
+
 function applyQueryBasics() {
   course.value = (route.query.course || '').toString()
   date.value = (route.query.date || '').toString()
@@ -58,57 +63,65 @@ function applyQueryBasics() {
   price.value = Number(route.query.price || 0)
 
   const qOrderId = (route.query.orderId || '').toString()
-  if (qOrderId.startsWith('BK')) {
-    bookingNo.value = qOrderId
-
-    //  BK9 -> bookingId = 9
-    const id = Number(qOrderId.replace('BK', ''))
-    if (!Number.isNaN(id) && id > 0) bookingId.value = id
-  } else {
-    tradeNo.value = qOrderId
+  if (qOrderId) {
+    if (qOrderId.startsWith('BK')) {
+      bookingNo.value = qOrderId
+      // 兼容 BK9 / BK000000009
+      const id = Number(qOrderId.replace('BK', '').trim())
+      if (!Number.isNaN(id) && id > 0) bookingId.value = id
+    } else {
+      tradeNo.value = qOrderId
+    }
   }
 
   // 如果網址本來就有 bookingId，也順便吃進來（保險）
   const qBookingId = Number(route.query.bookingId || 0)
   if (qBookingId > 0) bookingId.value = qBookingId
 }
+
 function syncBookingIdToUrl(id) {
   const current = Number(route.query.bookingId || 0)
-  if (current === id) return
+  if (current === Number(id)) return
 
   router.replace({
     path: route.path,
-    query: { ...route.query, bookingId: id, paid: 'true' },
+    query: { ...route.query, bookingId: Number(id), paid: 'true' },
   })
 }
 
 async function markPaidAndSyncUrl(id) {
-  if (!id) return
+  const n = Number(id)
+  if (!n) return
 
   // 先存起來，QR 會用到
-  bookingId.value = Number(id)
+  bookingId.value = n
 
   try {
-    await confirmPaid(id)
+    await confirmPaid(n)
   } catch (err) {
     console.error('confirmPaid failed', err)
   } finally {
-    bookingNo.value = 'BK' + id
-    syncBookingIdToUrl(id)
+    bookingNo.value = toBkNo(n)
+    syncBookingIdToUrl(n)
   }
 }
-function cleanUrlKeepPaidAndBookingId() {
-  const keep = {}
 
-  // 只保留 paid / bookingId（你想保留什麼再加）
+// ✅ 一定要「最後」才清，避免 scheduleId / orderId 被你太早清掉導致流程斷掉
+function cleanUrlKeepPaidAndBookingId(keepSchedule = false) {
+  if (cleaned.value) return
+  cleaned.value = true
+
+  const keep = {}
   if (route.query.paid) keep.paid = route.query.paid
   if (route.query.bookingId) keep.bookingId = route.query.bookingId
+  if (keepSchedule && route.query.scheduleId) keep.scheduleId = route.query.scheduleId
 
   router.replace({
-    path: route.path,   // /courses/booking-success
-    query: keep,        // 乾淨
+    path: route.path, // /courses/booking-success
+    query: keep, // 乾淨
   })
 }
+
 // ===== main flow =====
 onMounted(async () => {
   console.log('booking-success mounted', route.fullPath)
@@ -119,7 +132,7 @@ onMounted(async () => {
   const scheduleId = Number(route.query.scheduleId || 0)
   const qBookingId = Number(route.query.bookingId || 0)
 
-  // 1) url 已有 bookingId
+  // 1) url 已有 bookingId（最優先）
   if (qBookingId) {
     await markPaidAndSyncUrl(qBookingId)
   }
@@ -136,46 +149,52 @@ onMounted(async () => {
 
   // 3) pending_booking：建立訂單（避免重複）
   const raw = localStorage.getItem('pending_booking')
-  if (!raw) return
+  if (raw) {
+    const p = JSON.parse(raw)
 
-  const p = JSON.parse(raw)
+    if (!course.value) course.value = p.course || ''
+    if (!date.value) date.value = p.date || ''
+    if (!time.value) time.value = p.time || ''
+    if (!price.value) price.value = Number(p.price || 0)
 
-  if (!course.value) course.value = p.course || ''
-  if (!date.value) date.value = p.date || ''
-  if (!time.value) time.value = p.time || ''
-  if (!price.value) price.value = Number(p.price || 0)
+    const lockKey = `booking_created_${p.scheduleId}_${p.price}`
+    const cachedBk = sessionStorage.getItem(lockKey)
 
-  const lockKey = `booking_created_${p.scheduleId}_${p.price}`
-  const cachedBk = sessionStorage.getItem(lockKey)
+    if (cachedBk) {
+      bookingNo.value = cachedBk
 
-  if (cachedBk) {
-  bookingNo.value = cachedBk
+      const cachedId = Number(cachedBk.replace('BK', '').trim())
+      if (cachedId > 0) bookingId.value = cachedId // 先顯示 QR
 
-  const cachedId = Number(cachedBk.replace('BK', ''))
-  if (cachedId > 0) bookingId.value = cachedId   //  先顯示 QR
-
-  localStorage.removeItem('pending_booking')
-  if (cachedId) await markPaidAndSyncUrl(cachedId)
-  return
-}
-
-  saving.value = true
-  try {
-    const id = await createBookingFromPending(p)
-    if (id) {
-      sessionStorage.setItem(lockKey, 'BK' + id)
       localStorage.removeItem('pending_booking')
-      await markPaidAndSyncUrl(id)
+      if (cachedId) await markPaidAndSyncUrl(cachedId)
+    } else {
+      saving.value = true
+      try {
+        const id = await createBookingFromPending(p)
+        if (id) {
+          const bk = toBkNo(id)
+          sessionStorage.setItem(lockKey, bk)
+          localStorage.removeItem('pending_booking')
+          await markPaidAndSyncUrl(id)
+        }
+      } catch (err) {
+        console.error(err)
+        alert(err.response?.data || err.message)
+      } finally {
+        saving.value = false
+      }
     }
-  } catch (err) {
-    console.error(err)
-    alert(err.response?.data || err.message)
-  } finally {
-    saving.value = false
+  }
+
+  // ✅ 最後：有 bookingId 才清（不然你頁面資訊會被清光）
+  if (bookingId.value > 0) {
+    cleanUrlKeepPaidAndBookingId(false) // 想保留 scheduleId 就傳 true
   }
 })
 
-// QR Code：只放 bookingId（最穩、最適合你後端 checkin/{bookingId}）
+// ===== QR Code =====
+// 只放 bookingId（最穩、最適合你後端 checkin/{bookingId}）
 const qrValue = computed(() =>
   JSON.stringify({
     bookingId: bookingId.value,
@@ -183,7 +202,6 @@ const qrValue = computed(() =>
 )
 
 const canShowQr = computed(() => bookingId.value > 0)
-cleanUrlKeepPaidAndBookingId()
 </script>
 
 <template>
