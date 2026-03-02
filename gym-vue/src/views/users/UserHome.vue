@@ -1,204 +1,279 @@
 <template>
-  <div class="d-flex min-vh-100 bg-light">
-    <main class="flex-fill ms-5 px-4 py-4">
-      <Banner title="會員首頁" class="mb-4" />
-      <div class="container-fluid">
-        <!-- 會員 Header -->
-        <div class="row mb-4">
-          <UserHeader class="mb-4" />
+  <Banner title="會員首頁" subtitle="歡迎回來，查看您的今日狀態" />
+  <div class="container py-4 home-page">
+
+    <!-- 會員 Header -->
+    <MemberHeader class="mb-4" />
+
+    <!-- ① 今日健康摘要 -->
+    <div class="card home-card mb-4">
+      <div class="card-body">
+
+        <div class="section-header d-flex justify-content-between align-items-center">
+          <h6 class="section-title">體重概況</h6>
+          <router-link to="/users/weight-records" class="link-orange">
+            查看詳細 →
+          </router-link>
         </div>
-      </div>
-      <!-- Dashboard -->
-      <div class="container-fluid">
-        <div class="row g-4">
-          <!-- 飲食卡 -->
-          <!-- <div class="col-lg-8 col-12">
-            <DietRecordCard />
-          </div> -->
 
-          <!-- 體重卡 -->
-          <div class="col-lg-4 col-12">
-            <span class="card"></span>
-          </div>
-<div class="col-lg-8 col-12">
-            <BodyProgressCard />
-          </div>
-          <!-- 每日激勵語 + 資源 -->
-<div class="col-12">
-  <div class="row g-4">
+        <div class="row mt-4">
 
-    <!-- 每日激勵語 -->
-    <div class="col-lg-6 col-12">
-      <div class="motivation-card">
-        <div class="quote-mark"><i class="fa fa-quote-right" aria-hidden="true"></i></div>
-        <p class="motivation-text">
-          每一次撐下去的瞬間，都是你變強的證據！
-        </p>
-        <div class="motivation-footer">每日激勵語</div>
+          <!-- 今日體重 -->
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">今日體重</div>
+              <div class="kpi-value">
+                {{ todayWeight ?? '--' }}
+                <span class="unit">kg</span>
+              </div>
+
+              <div v-if="weightDiff !== null" class="kpi-sub" :class="Number(weightDiff) > 0 ? 'up' : 'down'">
+                <span v-if="Number(weightDiff) > 0">▲</span>
+                <span v-else>▼</span>
+                {{ Math.abs(weightDiff) }} kg
+              </div>
+            </div>
+          </div>
+
+          <!-- 距離目標 -->
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">距離目標</div>
+              <div class="kpi-value">
+                {{ goalDiff ?? '--' }}
+                <span class="unit">kg</span>
+              </div>
+              <div class="kpi-sub muted">
+                目標 {{ goalWeight }} kg
+              </div>
+            </div>
+          </div>
+
+          <!-- 本月進度（可改成其他數據） -->
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">體重紀錄筆數</div>
+              <div class="kpi-value">
+                {{ history.length }}
+                <span class="unit">筆</span>
+              </div>
+              <div class="kpi-sub muted">
+                持續追蹤中
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
 
-    <!-- 資源捷徑 -->
-    <div class="col-lg-6 col-12">
-      <div class="dashboard-card h-100">
-        <h5 class="title mb-3">連結</h5>
 
-        <div class="resource-item">
-          <div class="resource-left">
-            <span>課程安排</span>
-            <i class="fa fa-chevron-right" aria-hidden="true"></i>
-          </div>
+    <!-- ③ 快捷功能 -->
+    <!-- 功能區塊 -->
+<!-- ③ 快捷功能 -->
+<div class="card home-card mb-4">
+  <div class="card-body">
+
+    <div class="section-header">
+      <h6 class="section-title">快捷功能</h6>
+    </div>
+
+    <div class="quick-links mt-4">
+
+      <router-link to="/courses" class="quick-card">
+        <div class="quick-icon">
+          <i class="fa fa-calendar"></i>
         </div>
+        <p>課程專區</p>
+      </router-link>
 
-        <div class="resource-item">
-          <div class="resource-left">
-            <span>健康餐點</span>
-            <i class="fa fa-chevron-right "  aria-hidden="true"></i>
-          </div>
-
+      <router-link to="/users/weight-records" class="quick-card">
+        <div class="quick-icon">
+          <i class="fa fa-balance-scale"></i>
         </div>
-      </div>
+        <p>體重紀錄</p>
+      </router-link>
+
+      <router-link to="/shop/products" class="quick-card">
+        <div class="quick-icon">
+          <i class="fa fa-shopping-bag"></i>
+        </div>
+        <p>線上商城</p>
+      </router-link>
+
+      <router-link to="/meals" class="quick-card">
+        <div class="quick-icon">
+          <i class="fa fa-bar-chart"></i>
+        </div>
+        <p>健康餐點</p>
+      </router-link>
+
     </div>
 
   </div>
 </div>
 
-        </div>
-      </div>
-    </main>
   </div>
 </template>
 
 <script setup>
-// // Layout / 共用元件
+import { ref, onMounted, computed } from 'vue'
+import MemberHeader from '@/components/Users/UserHeader.vue'
+import api from '@/services/api'
 
-import UserHeader from '@/components/Users/UserHeader.vue'
-import Banner from '@/components/banner.vue'
+const history = ref([])
 
-// // Dashboard 區塊
+const fetchWeight = async () => {
+  const res = await api.get('/weightrecords')
+  history.value = res.data.map(x => ({
+    date: x.RecordDate,
+    weight: x.Weight
+  }))
+}
 
-// // 卡片元件
-import DietRecordCard from '@/components/Users/DietRecordCard.vue'
-import BodyProgressCard from '@/components/Users/BodyProgressCard.vue'
+onMounted(() => {
+  fetchWeight()
+})
 
-// import CourseSection from '@/components/member/CourseSection.vue'
+const todayWeight = computed(() => {
+  if (!history.value.length) return null
 
+  const sorted = [...history.value].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  )
 
+  return sorted[sorted.length - 1].weight
+})
 
-import { computed } from 'vue'
+const weightDiff = computed(() => {
+  if (history.value.length < 2) return null
+  const last = history.value[history.value.length - 1].weight
+  const prev = history.value[history.value.length - 2].weight
+  return (last - prev).toFixed(1)
+})
 
-const quotes = [
-  { text: '今天流的汗，都是明天的底氣', author: 'GYM+' },
-  { text: '慢慢來，也是一種前進', author: 'GYM+' },
-  { text: '不是每天都有狀態，但每天都能來一下', author: 'GYM+' },
-  { text: '你已經比昨天更靠近目標了', author: 'GYM+' },
-]
+const goalWeight = 60
 
-const random = quotes[Math.floor(Math.random() * quotes.length)]
-
-const quote = computed(() => random.text)
-const author = computed(() => random.author)
+const goalDiff = computed(() => {
+  if (!todayWeight.value) return null
+  return (todayWeight.value - goalWeight).toFixed(1)
+})
 </script>
 
 
 <style scoped>
-.dashboard-card {
-  background: #fff;
+.home-page {
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.home-card {
   border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
-}
-.card {
-  background: #fff;
-  border-radius: 20px;
-  height: 100%;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-}
-.title {
-  font-weight: 600;
-  margin-bottom: 12px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
 }
 
-.motivation {
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  color: #7c2d12;
+.section-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
 }
 
-.quote {
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-
-.author {
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-/* 每日激勵語卡 */
-.motivation-card {
-  height: 100%;
-  border-radius: 20px;
-  padding: 28px;
-  background: linear-gradient(135deg, #111827, #1f2933);
-  color: #fff;
-  position: relative;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-}
-
-.quote-mark {
-  font-size: 48px;
-  font-weight: 800;
-  color: #f97316;
-  line-height: 1;
-  margin-bottom: 12px;
-}
-
-.motivation-text {
-  font-size: 16px;
-  line-height: 1.7;
-  margin-bottom: 24px;
-}
-
-.motivation-footer {
-  font-size: 13px;
+.section-title {
   font-weight: 700;
-  letter-spacing: 1px;
-  color: #f97316;
+  color: #1e293b;
 }
 
-/* 資源捷徑 */
-.resource-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #fff7ed;
-  color: #9a3412;
+
+.link-orange {
+  color: #f59e0b;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  text-decoration: none;
 }
 
-.resource-item + .resource-item {
-  margin-top: 12px;
+.link-orange:hover {
+  text-decoration: underline;
 }
 
-.resource-item:hover {
-  background: #ffedd5;
-  transform: translateX(4px);
+.quick-card {
+  display: block;
+  text-align: center;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-weight: 600;
+  text-decoration: none;
+  color: #1e293b;
+  transition: 0.2s;
 }
 
-.resource-left {
-  display: flex;
-  align-items: center;
-
+.quick-card:hover {
+  background: #fffbeb;
+  color: #f59e0b;
 }
 
-.resource-left i {
-  color: #f97316;
+.quick-card.disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
+.kpi-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  height: 100%;
+}
+
+.kpi-label {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.unit {
+  font-size: 16px;
+  margin-left: 4px;
+  color: #94a3b8;
+}
+
+.kpi-sub {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.kpi-sub.up {
+  color: #ef4444;
+}
+
+.kpi-sub.down {
+  color: #22c55e;
+}
+
+.kpi-sub.muted {
+  color: #94a3b8;
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.quick-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: #f59e0b;
+}
+
+.quick-card p {
+  margin: 0;
+  font-size: 14px;
+}
 </style>

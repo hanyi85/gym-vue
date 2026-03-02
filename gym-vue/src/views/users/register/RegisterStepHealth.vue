@@ -33,7 +33,7 @@
               <button @click="changeHeight(1)">＋</button>
 
             </div>
-            <input type="range" min="140" max="200" v-model="height" />
+            <input type="range" min="140" max="200" v-model.number="height" />
           </div>
 
           <div class="data-card">
@@ -44,7 +44,7 @@
               <button @click="changeWeight(0.5)">＋</button>
 
             </div>
-            <input type="range" min="40" max="150" step="0.5" v-model="weight" />
+            <input type="range" min="40" max="150" step="0.5" v-model.number="weight" />
           </div>
         </div>
 
@@ -75,7 +75,7 @@
             <button @click="changeTargetWeight(0.5)">＋</button>
           </div>
 
-          <input type="range" min="40" max="120" step="0.5" v-model="targetWeight" />
+          <input type="range" min="40" max="120" step="0.5" v-model.number="targetWeight" />
 
           <div class="target-hint">
             <span>快速減脂</span>
@@ -88,9 +88,9 @@
 
         <!-- CTA -->
         <div class="footer-action">
-          <router-link to="/users/profile-finished" class="btn-primary">
-            儲存並繼續 →
-          </router-link>
+          <button @click="saveProfile" :disabled="loading" class="btn-primary">
+           {{ loading ? '儲存中...' : '儲存並繼續 →' }}
+          </button>
         </div>
       </div>
     </main>
@@ -99,63 +99,101 @@
 
 
 
-
 <script setup>
 import { ref, computed } from 'vue'
-const currentStep = ref(2) // 0-based：1 = 驗證電子信箱
-
+import { useRouter } from 'vue-router'
+import api from '@/services/api'
+const currentStep = ref(2)
 const steps = [
   { title: '基本資料', desc: '填寫個人資訊' },
   { title: '驗證電子信箱', desc: '' },
   { title: '健康數據', desc: '身體狀態' },
+  // { title: '方案選擇', desc: '會員方案' },
   { title: '完成', desc: '確認送出' }
 ]
+const router = useRouter()
 
+// 數值（要用數字）
 const height = ref(170)
-const weight = ref(70)
-const targetWeight = ref(65)
-const targetWeightDisplay = computed(() => {
-  return Number(targetWeight.value).toFixed(1)
-})
+const weight = ref(65)
+const targetWeight = ref(60)
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
-
-const changeHeight = (delta) => {
-  height.value = clamp(height.value + delta, 140, 200)
+// 加減控制
+const changeHeight = (val) => {
+  height.value = Math.min(200, Math.max(140, height.value + val))
 }
 
-const changeWeight = (delta) => {
-  weight.value = clamp(weight.value + delta, 40, 150)
+const changeWeight = (val) => {
+  weight.value = Number(
+    Math.min(150, Math.max(40, weight.value + val)).toFixed(1)
+  )
 }
 
-const changeTargetWeight = (delta) => {
-  targetWeight.value = clamp(targetWeight.value + delta, 40, 120)
+const changeTargetWeight = (val) => {
+  targetWeight.value = Math.min(120, Math.max(40, targetWeight.value + val))
 }
 
+// BMI 計算
 const bmi = computed(() => {
-  return (weight.value / ((height.value / 100) ** 2)).toFixed(1)
+  const h = height.value / 100
+  if (!h) return 0
+  return (weight.value / (h * h)).toFixed(1)
 })
-const bmiDisplay = computed(() => bmi.value.toFixed(1))
 
+// BMI 狀態
 const bmiStatus = computed(() => {
-  const value = bmi.value
+  const value = Number(bmi.value)
+
   if (value < 18.5) {
     return {
-      label: '過輕',
-      desc: '你的體重低於健康範圍，可以考慮增加營養攝取。'
+      label: '體重過輕',
+      desc: '建議增加營養攝取與重量訓練'
     }
   }
   if (value < 24) {
     return {
       label: '健康範圍',
-      desc: '你的 BMI 在健康區間，保持目前的生活習慣吧！'
+      desc: '維持良好生活習慣'
+    }
+  }
+  if (value < 27) {
+    return {
+      label: '過重',
+      desc: '可搭配有氧與飲食控制'
     }
   }
   return {
-    label: '偏高',
-    desc: '你的 BMI 略高，設定一個合理的目標體重會很有幫助。'
+    label: '肥胖',
+    desc: '建議建立運動與飲食計畫'
   }
 })
+
+// 顯示用
+const targetWeightDisplay = computed(() =>
+  targetWeight.value.toFixed(1)
+)
+const loading = ref(false)
+// 儲存 API
+const saveProfile = async () => {
+   if (loading.value) return
+  loading.value = true
+
+  try {
+    await api.post('/HealthProfile/profile', {
+      height: Number(height.value),
+      weight: Number(weight.value),
+      targetWeight: Number(targetWeight.value)
+    })
+
+    router.push('/users/profile-finished')
+  } catch (err) {
+    alert('儲存失敗')
+  }finally {
+    loading.value = false
+  }
+}
+
+
 </script>
 
 

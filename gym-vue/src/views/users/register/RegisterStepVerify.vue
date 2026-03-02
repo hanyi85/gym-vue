@@ -21,24 +21,46 @@
     </aside>
 
     <!-- 右側內容 -->
-    <main class="content">
+    <main class="setup-content">
       <div class="verify-card">
         <h2 class="title">認證你的電子郵件</h2>
 
-        <div class="state success">
-          <div class="icon success">✓</div>
-          <p class="message">你的電子郵件已完成驗證</p>
+<div class="state">
 
-          <div class="actions">
-             <router-link
-               to="/users/profile-health"
-               class="next btn-next"
-             >
-               下一步
-             </router-link>
+  <!-- 查收信件狀態 -->
+  <div v-if="status === 'notice'">
+    <div class="icon">📧</div>
+    <p class="message">{{ message }}</p>
+  </div>
 
-                </div>
-        </div>
+  <!-- Loading -->
+  <div v-else-if="status === 'loading'">
+    <div class="icon">⏳</div>
+    <p class="message">{{ message }}</p>
+  </div>
+
+  <!-- Success -->
+  <div v-else-if="status === 'success'">
+    <div class="icon success">✓</div>
+    <p class="message">{{ message }}</p>
+
+    <div class="actions">
+      <router-link
+        to="/users/profile-health"
+        class="next"
+      >
+        下一步
+      </router-link>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div v-else>
+    <div class="icon error">✕</div>
+    <p class="message">{{ message }}</p>
+  </div>
+
+</div>
       </div>
     </main>
 
@@ -47,9 +69,14 @@
 
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useEmailVerify } from '@/composables/useEmailVerify'
+import { verifyEmail } from '@/services/auth'
 
-const currentStep = ref(1) // 第二步：驗證電子信箱
+const route = useRoute()
+
+const currentStep = ref(1)
 
 const steps = [
   { title: '基本資料', desc: '填寫個人資訊' },
@@ -57,35 +84,35 @@ const steps = [
   { title: '健康數據', desc: '身體狀態' },
   { title: '完成', desc: '確認送出' }
 ]
-// import { ref, onMounted } from 'vue'
-// import { useRoute } from 'vue-router'
 
-// const route = useRoute()
-// const status = ref('loading')
+const { status, message, execute } =
+  useEmailVerify(verifyEmail)
 
-// onMounted(() => {
-//   const token = route.query.token
+onMounted(() => {
+  const token = route.query.token
+   const verified = route.query.verified
+console.log('token =', token)
 
-//   // 模擬 API 驗證
-//   setTimeout(() => {
-//     if (token) {
-//       status.value = 'success'
-//     } else {
-//       status.value = 'error'
-//     }
-//   }, 1500)
-// })
-
-// const resend = () => {
-//   alert('已重新寄送驗證信（前端模擬）')
-// }
+if (token) {
+  console.log('loading') //準備執行驗證
+    execute(token)
+  }else if (verified === 'true') {
+    status.value = 'success'
+    message.value = '您的電子郵件已由第三方平台完成驗證。'
+  } 
+  else {
+    status.value = 'notice'
+    message.value =
+      '我們已寄送驗證信至您的信箱，請前往收信並點擊驗證連結完成註冊。'
+  }
+})
 </script>
 
 <style scoped>
 /* ===== 整頁版型 ===== */
 .setup-page {
-  display: flex;
-  min-height: 100vh;
+    display: flex;
+  min-height: calc(100vh - 80px);
   background: #f6f4f1;
 }
 
@@ -152,12 +179,12 @@ const steps = [
 }
 
 /* ===== 右側內容 ===== */
-.content {
+.setup-content {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 60px;
+  padding: 60px 0;
 }
 
 /* ===== 驗證卡片 ===== */
@@ -181,10 +208,11 @@ const steps = [
 }
 
 .icon {
-  width: 48px;
-  height: 48px;
+   line-height: 1;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  font-size: 24px;
+  font-size: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -221,8 +249,9 @@ const steps = [
 }
 
 .title {
-  font-size: 20px;
-  margin-bottom: 32px;
+    font-size: 22px;
+  margin-bottom: 28px;
+  font-weight: 600;
   color: #333;
 }
 
@@ -251,6 +280,7 @@ const steps = [
 .icon.success {
   background-color: #e8f5e9;
   color: #4caf50;
+  background: red !important;
 }
 
 .btn {
@@ -268,7 +298,9 @@ const steps = [
   border: none;
 }
 .actions {
-    text-align: right;
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
 }
 
 .next {
@@ -280,5 +312,10 @@ const steps = [
     font-size: 16px;
     cursor: pointer;
      text-decoration: none;
+}
+.icon.error {
+  background-color: #fdecea;
+  color: #e53935;
+  background: red !important;
 }
 </style>

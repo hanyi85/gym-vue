@@ -15,14 +15,14 @@ const routes = [
   {
     path: '/users/login',
     name: 'User-login',
-    component: () => import('@/views/users/UserLogin.vue'),
+    component: () => import('@/views/users/auth/UserLogin.vue'),
   },
 
   // 會員註冊
   {
     path: '/users/register',
     name: 'user-register',
-    component: () => import('@/views/users/UserRegister.vue'),
+    component: () => import('@/views/users/register/UserRegister.vue'),
   },
 // 會員首頁
    {
@@ -31,38 +31,54 @@ const routes = [
     component: () => import('@/views/users/UserHome.vue'),
   },
 
-  // 會員基本資料
+  // 會員註冊基本資料
   {
     path: '/users/profile',
     name: 'user-profile',
-    component: () => import('@/views/users/UserProfile.vue'),
+    component: () => import('@/views/users/register/RegisterStepBasic.vue'),
   },
 
    {
-    path: '/users/verifyEmail',
+    path: '/users/verify-email',
     name: 'user-verify-Email',
-    component: () => import('@/views/users/UserVerifyEmail.vue'),
+    component: () => import('@/views/users/register/RegisterStepVerify.vue'),
+  }, 
+  //舊用戶信箱驗證
+  {
+    path: '/users/EmailNotice',
+    name: 'user-Email-Notice',
+    component: () => import('@/views/users/VerifyEmailNotice.vue'),
   },
 
   // 會員健康資訊
   {
     path: '/users/profile-health',
     name: 'user-profile-health',
-    component: () => import('@/views/users/UserProfileHealth.vue'),
+    component: () => import('@/views/users/register/RegisterStepHealth.vue'),
   },
   // 會員註冊完成
      {
     path: '/users/profile-finished',
     name: 'user-profile-finished',
-    component: () => import('@/views/users/UserProfileFinish.vue'),
+    component: () => import('@/views/users/register/RegisterComplete.vue'),
   },
+  {
+  path: "/line-callback",
+  component: () => import("@/views/users/auth/UserLogin-LineCallback.vue")
+},
 
   // 忘記密碼
   {
     path: '/users/forgot-password',
     name: 'user-forgot-password',
-    component: () => import('@/views/users/UserForgotPassword.vue'),
+    component: () => import('@/views/users/auth/UserForgotPassword.vue'),
   },
+//重設密碼
+  {
+  path: '/reset-password',
+  name: 'ResetPassword',
+  component: () => import('@/views/users/auth/UserResetPassword.vue')
+},
 
     {
     path: '/users/profile-edit',
@@ -70,16 +86,10 @@ const routes = [
     component: () => import('@/views/users/UserProfileEdit.vue'),
   },
   // 體重紀錄
-  {
-    path: '/users/weight',
-    name: 'user-weight',
-    component: () => import('@/views/users/UserWeightHome.vue'),
-  },
-
     {
     path: '/users/weight-records',
     name: 'user-weight-record',
-    component: () => import('@/views/users/UserWeightRecords.vue'),
+    component: () => import('@/views/users/weight/UserWeightRecords.vue'),
   },
 
   // 飲食紀錄
