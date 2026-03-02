@@ -261,6 +261,13 @@ const routes = [
     component: () => import('@/views/shop/Shop-BookingSuccess.vue'),
   },
 
+  //PayPal callback
+  {
+  path: '/shop/payment-callback',
+  name: 'payment-callback',
+  component: () => import('../views/shop/PaymentCallback.vue')
+},
+
   /* =========================
    * 健康餐 Meals
    * ========================= */

@@ -69,11 +69,23 @@ const goToBookingSuccess = async () => {
 
   try {
     const res = await axios.post(API_URL + 'SOrder', payload);
-    const orderNumber = res.data.orderNo; // ✅ 拿到訂單號碼
-    cartStore.clearCart();
+    
+    // ✅ 假設後端回傳格式為 { success: true, orderNo: "...", approvalUrl: "..." }
+    const { orderNo, approvalUrl } = res.data;
 
-    // 帶 orderNumber 到完成頁
-    router.push({ path: '/shop/booking-success', query: { orderNumber } });
+    // ⚡ 判斷支付方式：如果是 PayPal (payId 為 3)
+    if (payId === 3 && approvalUrl) {
+      // 這裡暫時不要清空購物車，等支付成功跳回來再清空（比較保險）
+      // 直接全頁跳轉到 PayPal 支付頁面
+      console.log('網址是:', approvalUrl)
+      window.location.href = approvalUrl;
+      return; 
+    }
+
+    // ⚡ 如果是其他支付方式 (如貨到付款)
+    cartStore.clearCart();
+    router.push({ path: '/shop/booking-success', query: { orderNumber: orderNo } });
+
   } catch (err) {
     console.error('❌ 訂單送出失敗:', err.response?.data || err);
     alert('訂單提交失敗，請檢查資料或重新整理');
