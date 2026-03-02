@@ -7,27 +7,28 @@ import MealSidebar from '@/components/Meals/MealSidebar.vue'
 import { useAuthStore } from '@/stores/mealAuthStore'
 
 const authStore = useAuthStore()
-const memberId = authStore.member.UserId
+//const memberId = authStore.member.UserId
 
 
 const apiUrl="https://localhost:7218/api"
 
 //====== 自動載入我喜愛的餐點 ======
 
-const favoriteIds = ref([])
 
-const fetchFavoriteIds = async () => {
+// const favoriteIds = ref([])
 
-  if (!authStore.isLogin) return
+// const fetchFavoriteIds = async () => {
 
-  const userId = memberId
+//   if (!authStore.isLogin) return
 
-  const res = await axios.get(
-    `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
-  )
+//   const userId = memberId
 
-  favoriteIds.value = res.data
-}
+//   const res = await axios.get(
+//     `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
+//   )
+
+//   favoriteIds.value = res.data
+// }
 
 
 // ====== 狀態 ======
