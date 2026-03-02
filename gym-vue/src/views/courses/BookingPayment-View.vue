@@ -356,7 +356,7 @@ async function goPay() {
 
 .total {
   font-weight: bold;
-  color: #2563eb;
+  color: #d97706;
 }
 
 .pay-option {

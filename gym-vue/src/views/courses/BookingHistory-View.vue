@@ -22,16 +22,35 @@ const getFinalPrice = (o) => Number(o.FinalPrice ?? o.finalPrice ?? 0)
 const getPayment = (o) => (o.PaymentStatus ?? o.paymentStatus ?? '').toString()
 const isPaid = (o) => getPayment(o).includes('已付款')
 
-// ===== 時間工具 =====
+
 function minutesToStart(o) {
   const start = new Date(getStartTime(o))
   const now = new Date()
   return Math.floor((start - now) / 60000)
 }
 
+function isPast(o) {
+  const start = new Date(getStartTime(o))
+  return start.getTime() <= Date.now() // 已開始(含) 就算過去
+}
+
+function canPay(o) {
+  // 1) 已付款不顯示付款
+  if ((o.PaymentStatus ?? o.paymentStatus ?? '').toString().includes('已付款')) return false
+  // 2) 已開始/已結束不給付
+  if (isPast(o)) return false
+  // 3) 已取消也不給付
+  if (uiStatus(o) === '已取消') return false
+  // 4) 已報到當然也不會去付
+  if (uiStatus(o) === '已報到') return false
+  return true
+}
+
 function canCancel(o) {
-  if (uiStatus(o) === '已報到' || uiStatus(o) === '已取消') return false
-  //  開課前 5 小時不可取消
+  // 已報到/已取消/已完成 不可取消
+  const s = uiStatus(o)
+  if (s === '已報到' || s === '已取消' || s === '已完成') return false
+  // 開課前 5 小時不可取消
   return minutesToStart(o) > 300
 }
 
@@ -78,12 +97,16 @@ function displayBkNo(o) {
  */
 function uiStatus(o) {
   const st = (o.Status ?? o.status ?? '').toString()
+
   if (st.includes('取消')) return '已取消'
   if (st.includes('已報到')) return '已報到'
 
   const start = new Date(getStartTime(o))
   const now = new Date()
-  if (start < now) return '已完成'
+
+  // 過了時間但沒有報到
+  if (start < now) return '已報到'   //  統一視覺為已報到
+
   return '即將到來'
 }
 
@@ -105,7 +128,19 @@ function closeCancel() {
   showCancelModal.value = false
   cancelTarget.value = null
 }
+function canReview(o) {
+  // 1) 必須已付款
+  if (!isPaid(o)) return false
 
+  // 2) 必須已完成或已報到（依你 UI 規則）
+  const s = uiStatus(o)
+  if (s !== '已完成' && s !== '已報到') return false
+
+  // 3) 已評論就不能再評論
+  if ((o.IsReviewed ?? o.isReviewed) === true) return false
+
+  return true
+}
 async function confirmCancel() {
   if (!cancelTarget.value || canceling.value) return
   canceling.value = true
@@ -191,16 +226,15 @@ function goReview(o) {
                 </span>
 
                 <span
-                  class="status"
-                  :class="{
-                    done: uiStatus(o) === '已完成',
-                    upcoming: uiStatus(o) === '即將到來',
-                    cancel: uiStatus(o) === '已取消',
-                    checkin: uiStatus(o) === '已報到',
-                  }"
-                >
-                  {{ uiStatus(o) }}
-                </span>
+  class="status"
+  :class="{
+    upcoming: uiStatus(o) === '即將到來',
+    cancel: uiStatus(o) === '已取消',
+    checkin: uiStatus(o) === '已報到' || uiStatus(o) === '已完成',
+  }"
+>
+  {{ uiStatus(o) }}
+</span>
               </div>
 
               <div class="price">NT$ {{ getFinalPrice(o) }}</div>
@@ -208,9 +242,9 @@ function goReview(o) {
               <div class="btn-group">
                 <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
 
-                <button v-if="!isPaid(o)" class="pay-btn" @click="goPay(o)">
-                  去付款
-                </button>
+              <button v-if="canPay(o)" class="pay-btn" @click="goPay(o)">
+  去付款
+</button>
 
                 <!-- 已取消 -->
                 <button
@@ -222,38 +256,34 @@ function goReview(o) {
                 </button>
 
                 <!-- 已報到 或 已完成 + 已評論 -->
-                <button
-                  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && (o.IsReviewed ?? o.isReviewed)"
-                  class="review-btn disabled"
-                  disabled
-                >
-                  已評論
-                </button>
-
+           <button
+  v-else-if="canReview(o) && (o.IsReviewed ?? o.isReviewed)"
+  class="review-btn disabled"
+  disabled
+>
+  已評論
+</button>
                 <!-- 已報到 或 已完成 + 未評論 -->
-                <button
-                  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && !(o.IsReviewed ?? o.isReviewed)"
-                  class="review-btn"
-                  @click="goReview(o)"
-                >
-                  去評論
-                </button>
+               <button
+  v-else-if="canReview(o) && !(o.IsReviewed ?? o.isReviewed)"
+  class="review-btn"
+  @click="goReview(o)"
+>
+  去評論
+</button>
 
                 <button
                   class="cancel-btn"
                   :disabled="!canCancel(o)"
-                  @click="canCancel(o) ? openCancel(o) : alert('距離上課不足 5 小時，無法取消')"
+                  @click="canCancel(o) ? openCancel(o) : alert(uiStatus(o)==='已完成' ? '課程已結束，無法取消' : '開課前 5 小時內不可取消')"
                 >
                   取消預約
                 </button>
               </div>
 
-              <small
-                v-if="!canCancel(o) && uiStatus(o) !== '已報到' && uiStatus(o) !== '已取消'"
-                class="hint"
-              >
-                距離上課不足 5 小時，無法取消
-              </small>
+             <small v-if="uiStatus(o) === '即將到來' && !canCancel(o)" class="hint">
+  距離上課不足 5 小時，無法取消
+</small>
             </div>
           </div>
         </div>
@@ -329,7 +359,7 @@ function goReview(o) {
 ========================= */
 .order-card {
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
@@ -339,13 +369,14 @@ function goReview(o) {
 
 .order-left h5 {
   margin-bottom: 6px;
-  font-weight: 700;
+  font-weight: 800;
+  color: #111827;
 }
 
 .order-left p {
   font-size: 14px;
   margin: 2px 0;
-  color: #555;
+  color: #6b7280;
 }
 
 .order-right {
@@ -371,65 +402,72 @@ function goReview(o) {
 .badge,
 .status {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 4px 10px;
   border-radius: 999px;
   line-height: 1.2;
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-/* 付款狀態 */
-.paid {
-  background: #ecfdf5;
-  color: #047857;
+/*  付款狀態：改成中性灰，不搶主色 */
+.badge.paid {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #e5e7eb;
 }
 
-.unpaid {
-  background: #fef2f2;
-  color: #b91c1c;
+.badge.unpaid {
+  background: #fff;
+  color: #6b7280;
+  border-color: #e5e7eb;
 }
 
-/* 課程狀態 */
-.status.done {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
+/*  狀態：橘色只留給「上課相關主狀態」 */
 .status.upcoming {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #fdba74;
 }
 
+/*  你要的：已完成 -> 和已報到同系列（橘系），但可用深淺區分 */
 .status.checkin {
   background: #fff7ed;
   color: #ea580c;
-  border: 1px solid #fdba74;
+  border-color: #fdba74;
+}
+
+.status.done {
+  background: #ffedd5;      /* 比已報到再深一點點 */
+  color: #9a3412;           /* 橘棕 */
+  border-color: #fb923c;
 }
 
 .status.cancel {
   background: #f3f4f6;
   color: #6b7280;
+  border-color: #e5e7eb;
 }
 
 /* =========================
    Price
 ========================= */
 .price {
-  font-weight: 800;
+  font-weight: 900;
   color: #111827;
 }
 
 /* =========================
-   Buttons (統一高度/字級)
+   Buttons (統一風格：橘色只留一顆主按鈕)
 ========================= */
 .btn-group {
   display: flex;
   gap: 8px;
   margin-top: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-/* ✅ 統一所有按鈕外觀 */
 .detail-btn,
 .review-btn,
 .pay-btn,
@@ -438,65 +476,95 @@ function goReview(o) {
   padding: 0 14px;
   border-radius: 10px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  min-width: 84px;
+  min-width: 88px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
   transition: 0.15s;
 }
 
-/* 次要按鈕 */
+/* ✅ 次要：查看詳情（中性灰） */
 .detail-btn {
   background: #f3f4f6;
   color: #374151;
-  border-color: #eef2f7;
+  border: 1px solid #e5e7eb;
 }
 
-/* 主行動按鈕 */
+/* ✅ 主按鈕：統一用你的主橘（去付款 / 去評論 都用同一顆） */
+.pay-btn
+ {
+  background:  #ff9f1c;;
+  color: #fff;
+  border: 1px solid #ff9f1c;
+}
+.pay-btn:hover {
+  background-color: #f38d00;
+}
 .review-btn {
-  background: #f3722a;
+  background: #f3722c;
   color: #fff;
+  border: 1px solid #f3722c;
 }
 
-.pay-btn {
-  background: #ff9f1c;
-  color: #fff;
+.review-btn:hover  {
+ background-color: #d65a1a;
+  
 }
 
-/* ✅ 取消預約：非幽靈（淡紅底，字小一點不搶主 CTA） */
+/* ✅ 取消：改成「淡紅外框」不搶戲 */
 .cancel-btn {
-  background: #fef2f2;
+  background: #fff;
   color: #b91c1c;
-  border-color: #fecaca;
-  font-size: 12.5px;
+  border: 1px solid #fecaca;
 }
 
 .detail-btn:hover,
-.review-btn:hover,
 .pay-btn:hover,
-.cancel-btn:hover {
-  opacity: 0.92;
+.review-btn:hover {
+  filter: brightness(0.98);
 }
 
-.cancel-btn:active,
+.cancel-btn:hover {
+  background: #fef2f2;
+}
+
 .detail-btn:active,
+.pay-btn:active,
 .review-btn:active,
-.pay-btn:active {
+.cancel-btn:active {
   transform: translateY(1px);
 }
 
 .review-btn.disabled {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 1px solid #e5e7eb;
   cursor: not-allowed;
-  border-color: #e5e7eb;
 }
 
 /* =========================
-   Modal（如果你有加漂亮取消確認視窗）
+   Hint
+========================= */
+.hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.cancel-btn:disabled,
+.detail-btn:disabled,
+.pay-btn:disabled,
+.review-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================
+   Modal
 ========================= */
 .modal-mask {
   position: fixed;
@@ -528,7 +596,7 @@ function goReview(o) {
 .modal-header h3 {
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .modal-x {
@@ -574,7 +642,7 @@ function goReview(o) {
 
 .modal-info .v {
   color: #111827;
-  font-weight: 700;
+  font-weight: 800;
   text-align: right;
 }
 
@@ -589,7 +657,7 @@ function goReview(o) {
   height: 40px;
   padding: 0 16px;
   border-radius: 10px;
-  font-weight: 800;
+  font-weight: 900;
   font-size: 14px;
   border: 1px solid transparent;
   cursor: pointer;
@@ -600,7 +668,7 @@ function goReview(o) {
 
 .btn-gray {
   background: #f3f4f6;
-  border-color: #eef2f7;
+  border-color: #e5e7eb;
   color: #111827;
 }
 
@@ -608,22 +676,5 @@ function goReview(o) {
   background: #dc2626;
   border-color: #dc2626;
   color: #fff;
-}
-
-.btn-base:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.hint{
-  font-size: 12px;
-  color: #9ca3af;
-  margin-top: 4px;
-  text-align: right;
-}
-
-.cancel-btn:disabled{
-  opacity: .55;
-  cursor: not-allowed;
-  transform: none;
 }
 </style>
