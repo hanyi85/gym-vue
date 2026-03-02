@@ -58,7 +58,6 @@ function toBkNo(id) {
 }
 
 function applyQueryBasics() {
-  // 這些是「顯示用」資訊，留著 OK（不涉及 bookingId）
   course.value = (route.query.course || '').toString()
   date.value = (route.query.date || '').toString()
   time.value = (route.query.time || '').toString()
@@ -66,15 +65,17 @@ function applyQueryBasics() {
 
   const qOrderId = (route.query.orderId || '').toString()
   if (qOrderId) {
-    // orderId 如果是 BKxxxxxxxxx（顯示用），我們只拿來顯示，不用它推 bookingId
-    if (qOrderId.startsWith('BK')) {
-      bookingNo.value = qOrderId
-    } else {
-      tradeNo.value = qOrderId
-    }
+    if (qOrderId.startsWith('BK')) bookingNo.value = qOrderId
+    else tradeNo.value = qOrderId
+  }
+
+  //  把 bookingId 吃進來（不再靠 BK 反推）
+  const qBookingId = Number(route.query.bookingId || 0)
+  if (qBookingId > 0) {
+    bookingId.value = qBookingId
+    bookingNo.value = toBkNo(qBookingId) // 保險：確保顯示一致
   }
 }
-
 // ===== main flow =====
 onMounted(async () => {
   console.log('booking-success mounted', route.fullPath)

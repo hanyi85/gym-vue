@@ -165,12 +165,13 @@ async function confirmCancel() {
 
 // ===== 導頁 =====
 function goDetail(o) {
-  //保留原本 query 顯示資訊
-  // （如果你之後 success 頁也要「完全不出現 BK」，再一起改成 store/localStorage）
+  const id = getBookingId(o)
+
   router.push({
     name: 'courses-booking-success',
     query: {
-      orderId: displayBkNo(o), // 顯示用
+      bookingId: id,                 //  這個是關鍵（給 QR 用）
+      orderId: displayBkNo(o),       // 顯示用（可留）
       course: (o.CourseName ?? o.courseName ?? '').toString(),
       date: formatDate(getStartTime(o)),
       time: formatTime(getStartTime(o)),
