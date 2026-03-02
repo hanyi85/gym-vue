@@ -1,9 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { usePaymentStore } from '@/stores/Course/paymentStore'
 
 const router = useRouter()
+const paymentStore = usePaymentStore()
 
 const orders = ref([])
 const loading = ref(true)
@@ -12,17 +14,27 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
+// ===== helpers：欄位大小寫兼容 =====
+const getBookingId = (o) => Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
+const getStartTime = (o) => o.StartTime ?? o.startTime
+const getFinalPrice = (o) => Number(o.FinalPrice ?? o.finalPrice ?? 0)
+const getPayment = (o) => (o.PaymentStatus ?? o.paymentStatus ?? '').toString()
+const isPaid = (o) => getPayment(o).includes('已付款')
+
+// ===== 時間工具 =====
 function minutesToStart(o) {
-  const start = new Date(o.StartTime)
+  const start = new Date(getStartTime(o))
   const now = new Date()
-  return Math.floor((start - now) / 60000) 
+  return Math.floor((start - now) / 60000)
 }
 
 function canCancel(o) {
   if (uiStatus(o) === '已報到' || uiStatus(o) === '已取消') return false
-  // 開課前 5小時不可取消
-  return minutesToStart(o) > 3000
+  //  開課前 5 小時不可取消
+  return minutesToStart(o) > 300
 }
+
+// ===== 取訂單 =====
 async function fetchOrders() {
   loading.value = true
   try {
@@ -39,7 +51,7 @@ async function fetchOrders() {
 
 onMounted(fetchOrders)
 
-// 把 StartTime 轉成你畫面要的 YYYY-MM-DD / HH:mm
+// ===== 格式化顯示 =====
 function formatDate(dt) {
   const d = new Date(dt)
   const yyyy = d.getFullYear()
@@ -47,6 +59,7 @@ function formatDate(dt) {
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
 }
+
 function formatTime(dt) {
   const d = new Date(dt)
   const hh = String(d.getHours()).padStart(2, '0')
@@ -54,27 +67,31 @@ function formatTime(dt) {
   return `${hh}:${mi}`
 }
 
+function displayBkNo(o) {
+  const id = getBookingId(o)
+  return id > 0 ? `BK${String(id).padStart(9, '0')}` : ''
+}
+
 /**
  * UI 狀態：即將到來 / 已完成 / 已取消 / 已報到
  */
 function uiStatus(o) {
-  const st = o.Status ?? ''
+  const st = (o.Status ?? o.status ?? '').toString()
   if (st.includes('取消')) return '已取消'
   if (st.includes('已報到')) return '已報到'
 
-  const start = new Date(o.StartTime)
+  const start = new Date(getStartTime(o))
   const now = new Date()
   if (start < now) return '已完成'
   return '即將到來'
 }
 
-// ===== ✅ 新增：取消 Modal 狀態與行為 =====
+// ===== 取消 Modal =====
 const showCancelModal = ref(false)
 const cancelTarget = ref(null)
 const canceling = ref(false)
 
 function openCancel(o) {
-  // 只擋已報到
   if (uiStatus(o) === '已報到') {
     alert('已報到不可取消')
     return
@@ -82,6 +99,7 @@ function openCancel(o) {
   cancelTarget.value = o
   showCancelModal.value = true
 }
+
 function closeCancel() {
   showCancelModal.value = false
   cancelTarget.value = null
@@ -92,7 +110,7 @@ async function confirmCancel() {
   canceling.value = true
 
   try {
-    const id = cancelTarget.value.CourseBookingId ?? cancelTarget.value.courseBookingId
+    const id = getBookingId(cancelTarget.value)
     if (!id) {
       alert('找不到 CourseBookingId')
       return
@@ -111,43 +129,38 @@ async function confirmCancel() {
 
 // ===== 導頁 =====
 function goDetail(o) {
+  //保留原本 query 顯示資訊
+  // （如果你之後 success 頁也要「完全不出現 BK」，再一起改成 store/localStorage）
   router.push({
     name: 'courses-booking-success',
     query: {
-      orderId: `BK${o.CourseBookingId}`,
-      course: o.CourseName,
-      date: formatDate(o.StartTime),
-      time: formatTime(o.StartTime),
-      price: o.FinalPrice,
+      orderId: displayBkNo(o), // 顯示用
+      course: (o.CourseName ?? o.courseName ?? '').toString(),
+      date: formatDate(getStartTime(o)),
+      time: formatTime(getStartTime(o)),
+      price: getFinalPrice(o),
     },
   })
 }
 
-async function goPay(o) {
-  const slug = o.CourseSlug ?? o.courseSlug ?? o.CourseName
-  const sid = Number(o.ScheduleId ?? o.scheduleId ?? 0)
+function goPay(o) {
+  const id = Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
+  if (!id) return alert('找不到 bookingId')
 
-  if (!sid) {
-    alert('history 沒有 scheduleId，請讓後端 history 回傳 ScheduleId')
-    return
-  }
+  localStorage.removeItem('pending_booking')
+  paymentStore.setBooking(id)
 
-  router.push({
-    name: 'courses-booking-payment',
-    params: { slug, scheduleId: sid },
-    query: { bookingId: o.CourseBookingId },
-  })
+  router.push({ name: 'courses-booking-payment' })
 }
-
 function goReview(o) {
   router.push({
     name: 'courses-review',
     query: {
-      courseBookingId: o.CourseBookingId,
-      orderId: `BK${o.CourseBookingId}`,
-      course: o.CourseName,
-      coach: o.CoachName,
-      startTime: o.StartTime,
+      courseBookingId: getBookingId(o), // 這個是你 review 頁要用的
+      orderId: displayBkNo(o),
+      course: (o.CourseName ?? o.courseName ?? '').toString(),
+      coach: (o.CoachName ?? o.coachName ?? '').toString(),
+      startTime: getStartTime(o),
     },
   })
 }
@@ -165,44 +178,44 @@ function goReview(o) {
         <div v-if="orders.length === 0" class="empty">尚無任何預約紀錄</div>
 
         <div v-else class="order-list">
-          <div class="order-card" v-for="o in orders" :key="o.CourseBookingId">
+          <div class="order-card" v-for="o in orders" :key="getBookingId(o)">
             <div class="order-left">
-              <h5 class="course-title">{{ o.CourseName }}</h5>
-              <p>教練：{{ o.CoachName }}</p>
-              <p>時間：{{ formatDate(o.StartTime) }} {{ formatTime(o.StartTime) }}</p>
-              <p>訂單編號：BK{{ o.CourseBookingId }}</p>
+              <h5 class="course-title">{{ o.CourseName ?? o.courseName }}</h5>
+              <p>教練：{{ o.CoachName ?? o.coachName }}</p>
+              <p>
+                時間：{{ formatDate(getStartTime(o)) }} {{ formatTime(getStartTime(o)) }}
+              </p>
+              <p>訂單編號：{{ displayBkNo(o) }}</p>
             </div>
 
             <div class="order-right">
-             <div class="meta-row">
-  <span class="badge" :class="o.PaymentStatus === '已付款' ? 'paid' : 'unpaid'">
-    {{ o.PaymentStatus }}
-  </span>
+              <div class="meta-row">
+                <span class="badge" :class="isPaid(o) ? 'paid' : 'unpaid'">
+                  {{ getPayment(o) || '（未提供付款狀態）' }}
+                </span>
 
-  <span
-    class="status"
-    :class="{
-      done: uiStatus(o) === '已完成',
-      upcoming: uiStatus(o) === '即將到來',
-      cancel: uiStatus(o) === '已取消',
-    checkin: uiStatus(o) === '已報到'
-    }"
-  >
-    {{ uiStatus(o) }}
-  </span>
-</div>
+                <span
+                  class="status"
+                  :class="{
+                    done: uiStatus(o) === '已完成',
+                    upcoming: uiStatus(o) === '即將到來',
+                    cancel: uiStatus(o) === '已取消',
+                    checkin: uiStatus(o) === '已報到',
+                  }"
+                >
+                  {{ uiStatus(o) }}
+                </span>
+              </div>
 
-              <div class="price">NT$ {{ o.FinalPrice }}</div>
+              <div class="price">NT$ {{ getFinalPrice(o) }}</div>
 
               <div class="btn-group">
                 <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
-            <button
-  v-if="o.PaymentStatus !== '已付款'"
-  class="pay-btn"
-  @click="goPay(o)"
->
-  去付款
-</button>
+
+                <button v-if="!isPaid(o)" class="pay-btn" @click="goPay(o)">
+                  去付款
+                </button>
+
                 <!-- 已取消 -->
                 <button
                   v-if="uiStatus(o) === '已取消'"
@@ -213,77 +226,85 @@ function goReview(o) {
                 </button>
 
                 <!-- 已報到 或 已完成 + 已評論 -->
-<button
-  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && o.IsReviewed"
-  class="review-btn disabled"
-  disabled
->
-  已評論
-</button>
+                <button
+                  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && (o.IsReviewed ?? o.isReviewed)"
+                  class="review-btn disabled"
+                  disabled
+                >
+                  已評論
+                </button>
 
-<!-- 已報到 或 已完成 + 未評論 -->
-<button
-  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && !o.IsReviewed"
-  class="review-btn"
-  @click="goReview(o)"
->
-  去評論
-</button>
-<button
-  class="cancel-btn"
-  :disabled="!canCancel(o)"
-  @click="canCancel(o) ? openCancel(o) : alert('開課前 1 小時內不可取消')"
->
-  取消預約
-</button>
+                <!-- 已報到 或 已完成 + 未評論 -->
+                <button
+                  v-else-if="(uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && !(o.IsReviewed ?? o.isReviewed)"
+                  class="review-btn"
+                  @click="goReview(o)"
+                >
+                  去評論
+                </button>
+
+                <button
+                  class="cancel-btn"
+                  :disabled="!canCancel(o)"
+                  @click="canCancel(o) ? openCancel(o) : alert('距離上課不足 5 小時，無法取消')"
+                >
+                  取消預約
+                </button>
               </div>
+
               <small
-  v-if="!canCancel(o) && uiStatus(o) !== '已報到' && uiStatus(o) !== '已取消'"
-  class="hint"
->
-  距離上課不足 5 小時，無法取消
-</small>
+                v-if="!canCancel(o) && uiStatus(o) !== '已報到' && uiStatus(o) !== '已取消'"
+                class="hint"
+              >
+                距離上課不足 5 小時，無法取消
+              </small>
             </div>
           </div>
         </div>
       </template>
     </div>
   </div>
+
   <!-- ✅ Cancel Modal -->
-<div v-if="showCancelModal" class="modal-mask" @click.self="closeCancel">
-  <div class="modal-card" role="dialog" aria-modal="true">
-    <div class="modal-header">
-      <h3>取消預約</h3>
-      <button class="modal-x" @click="closeCancel">×</button>
-    </div>
+  <div v-if="showCancelModal" class="modal-mask" @click.self="closeCancel">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3>取消預約</h3>
+        <button class="modal-x" @click="closeCancel">×</button>
+      </div>
 
-    <div class="modal-body" v-if="cancelTarget">
-      <p class="modal-tip">確定要取消這筆預約嗎？取消後將無法復原。</p>
+      <div class="modal-body" v-if="cancelTarget">
+        <p class="modal-tip">確定要取消這筆預約嗎？取消後將無法復原。</p>
 
-      <div class="modal-info">
-        <div class="row">
-          <span class="k">課程</span>
-          <span class="v">{{ cancelTarget.CourseName }}</span>
-        </div>
-        <div class="row">
-          <span class="k">時間</span>
-          <span class="v">{{ formatDate(cancelTarget.StartTime) }} {{ formatTime(cancelTarget.StartTime) }}</span>
-        </div>
-        <div class="row">
-          <span class="k">訂單</span>
-          <span class="v">BK{{ cancelTarget.CourseBookingId }}</span>
+        <div class="modal-info">
+          <div class="row">
+            <span class="k">課程</span>
+            <span class="v">{{ cancelTarget.CourseName ?? cancelTarget.courseName }}</span>
+          </div>
+          <div class="row">
+            <span class="k">時間</span>
+            <span class="v">
+              {{ formatDate(getStartTime(cancelTarget)) }}
+              {{ formatTime(getStartTime(cancelTarget)) }}
+            </span>
+          </div>
+          <div class="row">
+            <span class="k">訂單</span>
+            <span class="v">{{ displayBkNo(cancelTarget) }}</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="modal-actions">
-      <button class="btn-base btn-gray" @click="closeCancel" :disabled="canceling">先不要</button>
-      <button class="btn-base btn-danger" @click="confirmCancel" :disabled="canceling">
-        {{ canceling ? '取消中…' : '確定取消' }}
-      </button>
+      <div class="modal-actions">
+        <button class="btn-base btn-gray" @click="closeCancel" :disabled="canceling">
+          先不要
+        </button>
+        <button class="btn-base btn-danger" @click="confirmCancel" :disabled="canceling">
+          {{ canceling ? '取消中…' : '確定取消' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 </template>
 
 <style scoped>

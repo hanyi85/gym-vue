@@ -4,25 +4,38 @@ import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
 import { useBookingFlowStore } from '@/stores/Course/bookingFlowStore'
+import { usePaymentStore } from '@/stores/Course/paymentStore'
 
 const route = useRoute()
 const router = useRouter()
+
 const flow = useBookingFlowStore()
+const paymentStore = usePaymentStore()
 
 const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-// 兼容兩種入口：
-// 1) /payment/:scheduleId
-// 2) /payment/by-booking/:bookingId
-const courseSlug = computed(() => route.params.slug || '')
-const scheduleId = computed(() => Number(route.params.scheduleId || 0))
-
-const existingBookingId = computed(() => Number(route.query.bookingId || 0))
-
+// ===== UI state =====
 const paymentMethod = ref('credit')
+const loading = ref(true)
+const paying = ref(false)
 
+const toast = ref({ show: false, text: '', type: 'error' })
+let toastTimer = null
+function showToast(text, type = 'error') {
+  toast.value = { show: true, text, type }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => (toast.value.show = false), 2400)
+}
+
+const payBtnText = computed(() => {
+  if (paymentMethod.value === 'credit') return '前往藍新付款'
+  if (paymentMethod.value === 'cash') return '現金付款'
+  return '產生 ATM 轉帳資訊'
+})
+
+// ===== data =====
 const summary = ref({
   scheduleId: 0,
   courseId: 0,
@@ -36,48 +49,29 @@ const summary = ref({
   finalPrice: 0,
 })
 
-const loading = ref(false)
-const paying = ref(false)
-
-const toast = ref({ show: false, text: '', type: 'error' })
-let toastTimer = null
-function showToast(text, type = 'error') {
-  toast.value = { show: true, text, type }
-  if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => {
-    toast.value.show = false
-  }, 2400)
-}
-
-const payBtnText = computed(() => {
-  if (paymentMethod.value === 'credit') return '前往藍新付款'
-  if (paymentMethod.value === 'cash') return '現金付款'
-  return '產生 ATM 轉帳資訊'
-})
-
-
-async function loadSummary(sid) {
-  loading.value = true
-  try {
-    const code = (flow.discountCode || '').toString().trim()
-    const qs = code ? `?code=${encodeURIComponent(code)}` : ''
-    const res = await api.get(`/CCourses/payment-summary/${sid}${qs}`)
-    summary.value = res.data
-  } catch (err) {
-    showToast(err.response?.data || err.message)
-  } finally {
-    loading.value = false
+// 後端回來如果是 PascalCase / camelCase 都吃
+function normalizeSummary(data) {
+  return {
+    scheduleId: data.scheduleId ?? data.ScheduleId ?? 0,
+    courseId: data.courseId ?? data.CourseId ?? 0,
+    courseName: data.courseName ?? data.CourseName ?? '',
+    date: data.date ?? data.Date ?? '',
+    time: data.time ?? data.Time ?? '',
+    coachName: data.coachName ?? data.CoachName ?? '',
+    originPrice: Number(data.originPrice ?? data.OriginPrice ?? 0),
+    discountCode: data.discountCode ?? data.DiscountCode ?? '',
+    discountAmount: Number(data.discountAmount ?? data.DiscountAmount ?? 0),
+    finalPrice: Number(data.finalPrice ?? data.FinalPrice ?? 0),
   }
 }
-onMounted(async () => {
-  const sid = Number(route.params.scheduleId || 0)
-  if (!sid) {
-    router.push({ name: 'courses-booking', params: { slug: courseSlug.value } })
-    return
-  }
-  await loadSummary(sid)
-})
 
+// ===== load summary by bookingId (from store) =====
+async function loadPaymentSummaryByBookingId(bookingId) {
+  const res = await api.get(`/coursebookings/${bookingId}/payment-summary`, {
+    params: { userId: 1 }, //  先寫死
+  })
+  summary.value = normalizeSummary(res.data || {})
+}
 
 // 建立表單並自動送到藍新
 function postToNewebPay(payload) {
@@ -114,6 +108,30 @@ function postToNewebPay(payload) {
   form.submit()
 }
 
+// ===== mount =====
+onMounted(async () => {
+  loading.value = true
+  try {
+    //  從 session 還原（避免重整遺失）
+    paymentStore.loadFromSession()
+
+    const bookingId = Number(paymentStore.bookingId || 0)
+    if (!bookingId) {
+      alert('付款資訊遺失')
+      router.back()
+      return
+    }
+
+    await loadPaymentSummaryByBookingId(bookingId)
+  } catch (err) {
+    console.error(err)
+    showToast(err?.response?.data || err?.message || '載入付款資訊失敗')
+  } finally {
+    loading.value = false
+  }
+})
+
+// ===== pay action =====
 async function goPay() {
   if (paying.value) return
 
@@ -123,90 +141,80 @@ async function goPay() {
     return
   }
 
-  // 信用卡
-  if (paymentMethod.value === 'credit') {
-    paying.value = true
-    try {
-      // ✅ by-booking 入口沒有 route.params.scheduleId，所以 sid 以 summary 為主
-      const sid = Number(summary.value.scheduleId || scheduleId.value || 0)
-      if (!sid) {
-        showToast('找不到 scheduleId，請回上一頁重新選擇')
-        return
-      }
-
-      // ✅ 1) 優先用「從訂單頁帶來的 bookingId」
-      let bookingId = Number(existingBookingId.value || 0)
-      console.log('[PAY] existingBookingId =', bookingId, 'params=', route.params, 'query=', route.query)
-
-      // ✅ 2) 沒有 bookingId 才建立 pending（正常預約流程）
-      if (!bookingId) {
-        const pendingRes = await api.post('/CourseBookings/pending', {
-          ScheduleId: sid,
-          UserId: 1,
-          FinalPrice: finalPrice,
-          DiscountAmount: Number(summary.value.discountAmount || 0),
-          DiscountId: null,
-        })
-
-        bookingId =
-          pendingRes.data?.CourseBookingId ??
-          pendingRes.data?.courseBookingId ??
-          0
-
-        console.log('[PAY] created pending bookingId =', bookingId)
-      }
-
-      if (!bookingId) {
-        showToast('建立/取得訂單失敗，bookingId 為空')
-        return
-      }
-
-      // ✅ 3) 用「同一筆 bookingId」去建立藍新交易
-      const merchantOrderNo = `BK${String(bookingId).padStart(9, '0')}`
-
-      const res = await api.post('/Payment/newebpay/create', {
-        OrderId: merchantOrderNo,
-        Amount: finalPrice,
-        ItemDesc: summary.value.courseName || '課程訂單',
-      })
-
-      // ✅ 4) 存 pending（success 頁補資料 / 防重整）
-      localStorage.setItem(
-        'pending_booking',
-        JSON.stringify({
-          bookingId,
-          scheduleId: sid,
-          courseId: summary.value.courseId,
-          course: summary.value.courseName,
-          date: summary.value.date,
-          time: summary.value.time,
-          price: finalPrice,
-          coach: summary.value.coachName,
-          name: flow.name,
-          phone: flow.phone,
-          note: flow.note,
-        })
-      )
-
-      postToNewebPay(res.data)
-      return
-    } catch (err) {
-      console.error(err)
-      showToast(err.response?.data || err.message)
-    } finally {
-      paying.value = false
-    }
+  // 非信用卡：直接到 success（你可自行調整）
+  if (paymentMethod.value !== 'credit') {
+    router.push({ name: 'courses-booking-success' })
     return
   }
 
-  // 非信用卡：直接到 success
-  router.push({
-    name: 'courses-booking-success',
-    params: {
-      slug: courseSlug.value,
-      bookingId: '0',
-    },
-  })
+  paying.value = true
+  try {
+    const sid = Number(summary.value.scheduleId || 0)
+    if (!sid) {
+      showToast('找不到 scheduleId，請回上一頁重新選擇')
+      return
+    }
+
+    // 只用 store bookingId（不讀網址）
+    let bookingId = Number(paymentStore.bookingId || 0)
+
+    // 若你有「從選課/預約流程」進來但還沒建單的情境，就建立 pending
+    //    （如果你確定永遠從訂單頁進來 already has bookingId，也可以把這段刪掉）
+    if (!bookingId) {
+      const pendingRes = await api.post('/CourseBookings/pending', {
+        ScheduleId: sid,
+        UserId: 1,
+        FinalPrice: finalPrice,
+        DiscountAmount: Number(summary.value.discountAmount || 0),
+        DiscountId: null,
+      })
+
+      bookingId =
+        pendingRes.data?.CourseBookingId ??
+        pendingRes.data?.courseBookingId ??
+        0
+
+      if (bookingId) paymentStore.setBooking(bookingId)
+    }
+
+    if (!bookingId) {
+      showToast('建立/取得訂單失敗，bookingId 為空')
+      return
+    }
+
+    const merchantOrderNo = `BK${String(bookingId).padStart(9, '0')}`
+
+    const res = await api.post('/Payment/newebpay/create', {
+      OrderId: merchantOrderNo,
+      Amount: finalPrice,
+      ItemDesc: summary.value.courseName || '課程訂單',
+    })
+
+    //  success 頁顯示用 & 產 QR 用（不要放 URL）
+    localStorage.setItem(
+      'pending_booking',
+      JSON.stringify({
+        bookingId,
+        scheduleId: sid,
+        courseId: summary.value.courseId,
+        course: summary.value.courseName,
+        date: summary.value.date,
+        time: summary.value.time,
+        price: finalPrice,
+        coach: summary.value.coachName,
+        name: flow.name,
+        phone: flow.phone,
+        note: flow.note,
+      })
+    )
+
+    postToNewebPay(res.data)
+  } catch (err) {
+    console.error(err)
+    showToast(err?.response?.data || err?.message || '付款失敗')
+  } finally {
+    paying.value = false
+  }
 }
 </script>
 

@@ -27,7 +27,7 @@ async function handleCheckin(text) {
 
     await api.post(`/CourseBookings/checkin/${bookingId}`)
 
-    msg.value = `✅ 報到成功（BK${bookingId}）`
+    msg.value = ` 報到成功（BK${bookingId}）`
   } catch (err) {
     msg.value =
       err.response?.data ||

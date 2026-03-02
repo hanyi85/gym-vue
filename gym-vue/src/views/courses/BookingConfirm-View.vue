@@ -4,10 +4,12 @@ import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import BookingStepper from '@/components/Course/BookingStepper.vue'
 import { useBookingFlowStore } from '@/stores/Course/bookingFlowStore'
+import { usePaymentStore } from '@/stores/Course/paymentStore'
 
 const route = useRoute()
 const router = useRouter()
 const flow = useBookingFlowStore()
+const paymentStore = usePaymentStore()
 
 const courseSlug = computed(() => route.params.slug || '')
 const scheduleId = computed(() => Number(route.params.scheduleId || 0))
@@ -148,7 +150,7 @@ onMounted(async () => {
   }
 })
 
-function goNext() {
+async function goNext() {
   const nameOk = validateName()
   const phoneOk = validatePhone()
 
@@ -158,7 +160,7 @@ function goNext() {
 
   if (!nameOk || !phoneOk || !agree.value) return
 
-  // 把資料存進 Pinia
+  // ✅ 先存 Step2 表單資料（你原本就有）
   flow.setStep2Payload({
     slug: courseSlug.value,
     scheduleId: booking.value.scheduleId,
@@ -171,17 +173,39 @@ function goNext() {
     finalPrice: finalPrice.value,
   })
 
-  showToast('資料已確認，前往付款', 'success')
-
-  setTimeout(() => {
-    router.push({
-      name: 'courses-booking-payment',
-      params: {
-        slug: courseSlug.value,
-        scheduleId: booking.value.scheduleId,
-      },
+  try {
+    // ✅ 1) 先建立 pending booking（拿到 bookingId）
+    const pendingRes = await api.post('/CourseBookings/pending', {
+      ScheduleId: booking.value.scheduleId,
+      UserId: 1,
+      FinalPrice: finalPrice.value,
+      DiscountAmount: Number(discountAmount.value || 0),
+      DiscountId: null,
     })
-  }, 350)
+
+    const bookingId =
+      pendingRes.data?.CourseBookingId ??
+      pendingRes.data?.courseBookingId ??
+      0
+
+    if (!bookingId) {
+      showToast('建立訂單失敗，bookingId 為空')
+      return
+    }
+
+    // ✅ 2) 存到 paymentStore（避免付款頁說遺失）
+    paymentStore.setBooking(bookingId)
+
+    showToast('資料已確認，前往付款', 'success')
+
+    // ✅ 3) 去乾淨 payment route（不要帶 slug/scheduleId params）
+    setTimeout(() => {
+      router.push({ name: 'courses-booking-payment' })
+    }, 350)
+  } catch (err) {
+    console.error(err)
+    showToast(err?.response?.data || err?.message || '建立待付款訂單失敗')
+  }
 }
 </script>
 

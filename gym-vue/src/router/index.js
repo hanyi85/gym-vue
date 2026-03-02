@@ -149,7 +149,7 @@ const routes = [
   component: () => import('@/views/courses/BookingConfirm-View.vue'),
 },
 {
-  path: '/courses/:slug/booking/payment/:scheduleId',
+  path: '/courses/booking/payment',
   name: 'courses-booking-payment',
   component: () => import('@/views/courses/BookingPayment-View.vue'),
 },

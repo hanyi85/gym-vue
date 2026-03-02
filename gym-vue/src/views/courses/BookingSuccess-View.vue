@@ -3,9 +3,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import QrcodeVue from 'qrcode.vue'
+import { usePaymentStore } from '@/stores/Course/paymentStore'
 
 const route = useRoute()
 const router = useRouter()
+const paymentStore = usePaymentStore()
 
 const api = axios.create({
   baseURL: 'https://localhost:7218/api',
@@ -22,7 +24,6 @@ const time = ref('')
 const price = ref(0)
 
 const saving = ref(false)
-const cleaned = ref(false) // ✅ 避免重複清 URL
 
 // ===== API helpers =====
 async function createBookingFromPending(p) {
@@ -35,28 +36,29 @@ async function createBookingFromPending(p) {
     DiscountId: null,
   }
   const res = await api.post('/CourseBookings', payload)
-  return res.data?.CourseBookingId
+  return res.data?.CourseBookingId ?? res.data?.courseBookingId ?? 0
 }
+
+// 你現在 confirmPaid() 先不做也 OK（真正應該由 notify 更新 DB）
 async function confirmPaid() {
- 
   return true
 }
 
 async function getBookingIdBySchedule(scheduleId) {
-  // ✅ 對應：GET /api/Payment/booking-id-by-schedule?scheduleId=18&userId=1
   const r = await api.get('/Payment/booking-id-by-schedule', {
     params: { scheduleId, userId: 1 },
   })
-  return r.data?.courseBookingId
+  return r.data?.courseBookingId ?? r.data?.CourseBookingId ?? 0
 }
 
-// ===== UI / url helpers =====
+// ===== utils =====
 function toBkNo(id) {
   const n = Number(id)
   return n > 0 ? 'BK' + String(n).padStart(9, '0') : ''
 }
 
 function applyQueryBasics() {
+  // 這些是「顯示用」資訊，留著 OK（不涉及 bookingId）
   course.value = (route.query.course || '').toString()
   date.value = (route.query.date || '').toString()
   time.value = (route.query.time || '').toString()
@@ -64,62 +66,13 @@ function applyQueryBasics() {
 
   const qOrderId = (route.query.orderId || '').toString()
   if (qOrderId) {
+    // orderId 如果是 BKxxxxxxxxx（顯示用），我們只拿來顯示，不用它推 bookingId
     if (qOrderId.startsWith('BK')) {
       bookingNo.value = qOrderId
-      // 兼容 BK9 / BK000000009
-      const id = Number(qOrderId.replace('BK', '').trim())
-      if (!Number.isNaN(id) && id > 0) bookingId.value = id
     } else {
       tradeNo.value = qOrderId
     }
   }
-
-  // 如果網址本來就有 bookingId，也順便吃進來（保險）
-  const qBookingId = Number(route.query.bookingId || 0)
-  if (qBookingId > 0) bookingId.value = qBookingId
-}
-
-function syncBookingIdToUrl(id) {
-  const current = Number(route.query.bookingId || 0)
-  if (current === Number(id)) return
-
-  router.replace({
-    path: route.path,
-    query: { ...route.query, bookingId: Number(id), paid: 'true' },
-  })
-}
-
-async function markPaidAndSyncUrl(id) {
-  const n = Number(id)
-  if (!n) return
-
-  // 先存起來，QR 會用到
-  bookingId.value = n
-
-  try {
-    await confirmPaid(n)
-  } catch (err) {
-    console.error('confirmPaid failed', err)
-  } finally {
-    bookingNo.value = toBkNo(n)
-    syncBookingIdToUrl(n)
-  }
-}
-
-// ✅ 一定要「最後」才清，避免 scheduleId / orderId 被你太早清掉導致流程斷掉
-function cleanUrlKeepPaidAndBookingId(keepSchedule = false) {
-  if (cleaned.value) return
-  cleaned.value = true
-
-  const keep = {}
-  if (route.query.paid) keep.paid = route.query.paid
-  if (route.query.bookingId) keep.bookingId = route.query.bookingId
-  if (keepSchedule && route.query.scheduleId) keep.scheduleId = route.query.scheduleId
-
-  router.replace({
-    path: route.path, // /courses/booking-success
-    query: keep, // 乾淨
-  })
 }
 
 // ===== main flow =====
@@ -128,79 +81,90 @@ onMounted(async () => {
 
   applyQueryBasics()
 
-  const paid = (route.query.paid || '').toString() === 'true'
-  const scheduleId = Number(route.query.scheduleId || 0)
-  const qBookingId = Number(route.query.bookingId || 0)
+  try {
+    // ✅ 1) 最優先：從 pending_booking 拿 bookingId（不靠 URL）
+    const raw = localStorage.getItem('pending_booking')
+    if (raw) {
+      const p = JSON.parse(raw)
 
-  // 1) url 已有 bookingId（最優先）
-  if (qBookingId) {
-    await markPaidAndSyncUrl(qBookingId)
-  }
+      // 顯示資訊不夠就用 pending 補
+      if (!course.value) course.value = p.course || ''
+      if (!date.value) date.value = p.date || ''
+      if (!time.value) time.value = p.time || ''
+      if (!price.value) price.value = Number(p.price || 0)
 
-  // 2) paid=true + scheduleId：查 bookingId
-  if (!qBookingId && paid && scheduleId) {
-    try {
-      const id = await getBookingIdBySchedule(scheduleId)
-      if (id) await markPaidAndSyncUrl(id)
-    } catch (err) {
-      console.error('getBookingIdBySchedule failed', err)
-    }
-  }
-
-  // 3) pending_booking：建立訂單（避免重複）
-  const raw = localStorage.getItem('pending_booking')
-  if (raw) {
-    const p = JSON.parse(raw)
-
-    if (!course.value) course.value = p.course || ''
-    if (!date.value) date.value = p.date || ''
-    if (!time.value) time.value = p.time || ''
-    if (!price.value) price.value = Number(p.price || 0)
-
-    const lockKey = `booking_created_${p.scheduleId}_${p.price}`
-    const cachedBk = sessionStorage.getItem(lockKey)
-
-    if (cachedBk) {
-      bookingNo.value = cachedBk
-
-      const cachedId = Number(cachedBk.replace('BK', '').trim())
-      if (cachedId > 0) bookingId.value = cachedId // 先顯示 QR
-
-      localStorage.removeItem('pending_booking')
-      if (cachedId) await markPaidAndSyncUrl(cachedId)
-    } else {
-      saving.value = true
-      try {
-        const id = await createBookingFromPending(p)
+      // ✅ 如果 Payment 頁已經有 bookingId（從 history 來一定會有），就直接用
+      if (p.bookingId) {
+        const id = Number(p.bookingId || 0)
         if (id) {
-          const bk = toBkNo(id)
-          sessionStorage.setItem(lockKey, bk)
-          localStorage.removeItem('pending_booking')
-          await markPaidAndSyncUrl(id)
+          bookingId.value = id
+          bookingNo.value = toBkNo(id)
+          await confirmPaid(id)
         }
-      } catch (err) {
-        console.error(err)
-        alert(err.response?.data || err.message)
-      } finally {
-        saving.value = false
+        localStorage.removeItem('pending_booking')
+      } else {
+        // ⚠️ 只有「尚未建單」的流程才需要 create（你現在從 history 付款通常不會走到）
+        // 用 lock 避免重複建立
+        const lockKey = `booking_created_${p.scheduleId}_${p.price}`
+        const cached = sessionStorage.getItem(lockKey)
+
+        if (cached) {
+          const cachedId = Number(cached.replace('BK', '').trim())
+          if (cachedId > 0) {
+            bookingId.value = cachedId
+            bookingNo.value = toBkNo(cachedId)
+            await confirmPaid(cachedId)
+          }
+          localStorage.removeItem('pending_booking')
+        } else {
+          saving.value = true
+          try {
+            const id = await createBookingFromPending(p)
+            if (id) {
+              sessionStorage.setItem(lockKey, toBkNo(id))
+              bookingId.value = id
+              bookingNo.value = toBkNo(id)
+              await confirmPaid(id)
+              localStorage.removeItem('pending_booking')
+            }
+          } finally {
+            saving.value = false
+          }
+        }
+      }
+
+      // ✅ 重要：pending_booking 已處理完就 return（避免下面相容流程又亂改）
+      return
+    }
+
+    // ✅ 2) 相容：paid=true + scheduleId（舊 return 可能會帶）
+    // 但：我們只拿來查 bookingId，不會寫回 URL
+    const paid = (route.query.paid || '').toString() === 'true'
+    const scheduleId = Number(route.query.scheduleId || 0)
+
+    if (paid && scheduleId) {
+      const id = await getBookingIdBySchedule(scheduleId)
+      if (id) {
+        bookingId.value = id
+        bookingNo.value = toBkNo(id)
+        await confirmPaid(id)
       }
     }
-  }
-
-  // ✅ 最後：有 bookingId 才清（不然你頁面資訊會被清光）
-  if (bookingId.value > 0) {
-    cleanUrlKeepPaidAndBookingId(false) // 想保留 scheduleId 就傳 true
+  } catch (err) {
+    console.error(err)
+    // 不要整頁掛掉，頂多 QR 顯示「產生中...」
+  } finally {
+    // ✅ 最後才清 store（確保上面已吃完 pending / bookingId）
+    paymentStore.clear()
   }
 })
 
 // ===== QR Code =====
-// 只放 bookingId（最穩、最適合你後端 checkin/{bookingId}）
 const qrValue = computed(() =>
   JSON.stringify({
     bookingId: bookingId.value,
   })
 )
-
 const canShowQr = computed(() => bookingId.value > 0)
 </script>
 
@@ -260,7 +224,9 @@ const canShowQr = computed(() => bookingId.value > 0)
 
       <div class="btn-row">
         <button class="outline-btn" @click="router.push('/')">回首頁</button>
-        <button class="primary-btn" @click="router.push('/courses/booking-history')">查看我的預約</button>
+        <button class="primary-btn" @click="router.push('/courses/booking-history')">
+          查看我的預約
+        </button>
       </div>
     </div>
   </div>
