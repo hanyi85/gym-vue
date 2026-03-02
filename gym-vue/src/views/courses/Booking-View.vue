@@ -138,6 +138,7 @@ onMounted(async () => {
   await fetchSchedules()
 })
 </script>
+
 <template>
   <div class="booking-wrapper">
     <div class="container">
@@ -388,22 +389,28 @@ onMounted(async () => {
 
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, 110px);  
   gap: 14px;
+  justify-content: center;  /* 讓整排置中 */
   max-width: 500px;
   margin: auto;
 }
 
 .slot-card {
-  padding: 14px 0;
+  width: 110px;          /* 固定寬 */
+  height: 60px;          /* 固定高 */
   border-radius: 14px;
   border: 1px solid #e5e7eb;
   background: #fff;
   font-weight: 700;
   cursor: pointer;
   transition: .2s;
-}
 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 .slot-card.active {
   background: #ffedd5;
   border-color: #ff8a00;
