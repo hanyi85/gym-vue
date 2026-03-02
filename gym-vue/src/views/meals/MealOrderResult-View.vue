@@ -4,7 +4,6 @@ import Btn from '@/components/btn.vue'
 
 import { onMounted, ref } from 'vue'
 import { useRoute,useRouter } from 'vue-router'
-// import { useOrderStore } from '@/stores/useOrderStore'
 
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
 import OrderItemList from '@/components/Meals/OrderItemList.vue'
@@ -13,7 +12,6 @@ import axios from 'axios'
 const apiUrl="https://localhost:7218/api"
 
 const route = useRoute()
-// const orderStore = useOrderStore()
 const router = useRouter()
 
 const orderId = route.params.orderId || orderStore.orderId

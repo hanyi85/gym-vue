@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Btn from '@/components/Meals/nextbtn.vue'
 import router from '@/router'
-import { useAuthStore } from '@/stores/mealAuthStore'
+
 
 
 import OrderInfoCard from '@/components/Meals/OrderInfoCard.vue'
@@ -11,13 +11,28 @@ import HistoryltemList from '@/components/Meals/HistoryltemList.vue'
 
 const apiUrl="https://localhost:7218/api"
 
-const authStore = useAuthStore()
+
+/*會員資料*/
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+
+  const logout = () => {
+    member.value = null
+  }
+
 const orders = ref([])
 
 async function fetchOrders() {
   try {
     
-    const res = await axios.get(`${apiUrl}/TMealOrders/user/${authStore.member.UserId}`)
+    const res = await axios.get(`${apiUrl}/TMealOrders/user/${member.value.UserId}`)
     orders.value = res.data
 
     
@@ -27,7 +42,7 @@ async function fetchOrders() {
 }
 
 onMounted(() => {
-  if (authStore.isLogin) {
+  if (isLogin.value) {
     fetchOrders()
   }
 })
