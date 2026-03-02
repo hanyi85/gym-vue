@@ -1,15 +1,15 @@
-import axios from "axios"
-import router from "@/router"
-import { useAuthStore } from "@/stores/auth"
+import axios from 'axios'
+import router from '@/router'
+import { useAuthStore } from '@/stores/auth'
 
 const api = axios.create({
-  baseURL: "https://localhost:7218/api"
+  baseURL: 'https://localhost:7218/api',
 })
 
 /* =====================
    Request 攔截器
 ===================== */
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
   const auth = useAuthStore()
 
   if (auth.token) {
@@ -23,18 +23,23 @@ api.interceptors.request.use(config => {
    Response 攔截器
 ===================== */
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
     const auth = useAuthStore()
 
     if (error.response && error.response.status === 401) {
-  auth.logout()
+      let isLoginApi = false
 
-  if (router.currentRoute.value.path !== "/users/login") {
-    router.push("/users/login")
-  }
-}
+      if (error.config && error.config.url && error.config.url.includes('/Auth/')) {
+        isLoginApi = true
+      }
 
+      if (auth.isLoggedIn && !isLoginApi) {
+        console.log('Token 可能過期，自動登出')
+        auth.logout()
+        router.push('/users/login')
+      }
+    }
     return Promise.reject(error)
   }
 )

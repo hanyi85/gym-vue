@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted } from "vue"
+import { onMounted,nextTick  } from "vue"
 import { useRouter, useRoute } from "vue-router"
 import api from "@/services/api"
-
+import { useAuthStore } from "@/stores/auth"
 const router = useRouter()
 const route = useRoute()
-
+const auth = useAuthStore()
 onMounted(async () => {
   const code = route.query.code
   const state = route.query.state
@@ -36,10 +36,8 @@ onMounted(async () => {
     }
 
     //  正常登入
-    localStorage.setItem("token", data.token)
-    localStorage.setItem("userId", data.userId)
-    localStorage.setItem("name", data.name)
-
+ auth.login(data.token, data.name)
+await nextTick()
     router.push("/users/home")
 
   } catch (err) {
