@@ -1,23 +1,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useReviewStore } from '@/stores/Course/reviewStore'
 
-const route = useRoute()
 const router = useRouter()
+const reviewStore = useReviewStore()
 
 const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
-//  一律從訂單頁帶進來（沒有就退回）
-const courseBookingId = ref(Number(route.query.courseBookingId || 0))
+// 只保留 bookingId（不放網址）
+const courseBookingId = ref(0)
 
-// 顯示資訊（不再有假資料）
-const orderId = ref((route.query.orderId || '').toString())
-const course = ref((route.query.course || '').toString())
-const coach = ref((route.query.coach || '').toString())
-const startTime = ref((route.query.startTime || '').toString())
+// 顯示資訊：改成由後端 summary 回來
+const orderId = ref('')
+const course = ref('')
+const coach = ref('')
+const startTime = ref('')
 
 function pad2(n) {
   return String(n).padStart(2, '0')
@@ -30,7 +31,7 @@ const displayDateTime = computed(() => {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 })
 
-//  評分
+// ===== 評分 =====
 const overallRating = ref(5)
 const coachRating = ref(5)
 const environmentRating = ref(5)
@@ -61,27 +62,33 @@ function toggleTag(tag) {
 
 const submitting = ref(false)
 const loading = ref(false)
-
-// 是否已評論（如果已評論 → 進來顯示內容並鎖住不能改）
 const isReviewed = ref(false)
 
-onMounted(async () => {
-  if (!courseBookingId.value) {
-    router.push('/courses/booking-history')
-    return
-  }
+//  取 review summary（顯示用）
+async function loadReviewSummary() {
+  const id = Number(courseBookingId.value || 0)
+  if (!id) return
 
-  // 不要 alert，改成：如果已評論就「自動載入並鎖住」
-  loading.value = true
+  const res = await api.get(`/coursebookings/${id}/review-summary`, {
+    params: { userId: 1 },
+  })
+
+  const d = res.data || {}
+  orderId.value = (d.orderId ?? '').toString()
+  course.value = (d.course ?? '').toString()
+  coach.value = (d.coach ?? '').toString()
+  startTime.value = (d.startTime ?? '').toString()
+}
+
+// 檢查是否已評論（你原本就有）
+async function loadExistedReview() {
+  const id = Number(courseBookingId.value || 0)
+  if (!id) return
+
   try {
-    const existed = await api.get(`/Reviews/booking/${courseBookingId.value}`)
-
+    const existed = await api.get(`/Reviews/booking/${id}`)
     if (existed.data) {
       isReviewed.value = true
-
-      // 嘗試把既有評論帶回來顯示（欄位名依你後端回傳可能不同）
-      // 如果你後端回的是 CReview entity，通常會是：
-      // rating/teachingQuality/environmentScore/difficultyScore/valueScore/comment
       const r = existed.data
 
       overallRating.value = r.Rating ?? r.rating ?? overallRating.value
@@ -90,13 +97,30 @@ onMounted(async () => {
       atmosphereRating.value = r.DifficultyScore ?? r.difficultyScore ?? atmosphereRating.value
       contentRating.value = r.ValueScore ?? r.valueScore ?? contentRating.value
       comment.value = r.Comment ?? r.comment ?? ''
-
-      // tags：你目前還沒做 TagMap 的回傳就先不處理
       selectedTags.value = []
     }
   } catch (err) {
-    // 沒這支 API 或其他錯誤：不擋使用者送出
     console.warn('check existed review failed:', err)
+  }
+}
+
+onMounted(async () => {
+  //  從 session 還原 bookingId（避免重整就死）
+  reviewStore.loadFromSession()
+
+  if (!reviewStore.bookingId) {
+    router.push('/courses/booking-history')
+    return
+  }
+
+  courseBookingId.value = Number(reviewStore.bookingId)
+
+  loading.value = true
+  try {
+    await loadReviewSummary()
+    await loadExistedReview()
+  } catch (err) {
+    console.error(err)
   } finally {
     loading.value = false
   }
@@ -112,35 +136,26 @@ async function submitReview() {
 
   const payload = {
     CourseBookingId: courseBookingId.value,
-    UserId: 1, // 先假登入
+    UserId: 1,
 
     Rating: overallRating.value,
     TeachingQuality: coachRating.value,
     EnvironmentScore: environmentRating.value,
-
-    // 先用 ValueScore / DifficultyScore 填（展示用）
     ValueScore: contentRating.value,
     DifficultyScore: atmosphereRating.value,
 
     Comment: comment.value || '',
-    TagIds: [], // 
+    TagIds: [],
   }
 
   submitting.value = true
   try {
     await api.post('/Reviews/course', payload)
 
-    // 不要 alert，直接回訂單頁（訂單頁會顯示「已評論」）
-  router.push({
-  name: 'courses-review-success',
-  query: {
-    courseBookingId: courseBookingId.value,
-    orderId: orderId.value,
-    course: course.value,
-    coach: coach.value,
-    startTime: startTime.value,
-  },
-})
+    //  送出後就把 reviewStore 清掉，避免回來重整還卡住
+    reviewStore.clear()
+
+    router.push({ name: 'courses-review-success' })
   } catch (err) {
     console.error(err)
     alert(err.response?.data || err.message)
@@ -149,7 +164,6 @@ async function submitReview() {
   }
 }
 </script>
-
 <template>
   <div class="page-wrapper">
     <div class="review-title">

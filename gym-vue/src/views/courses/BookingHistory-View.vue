@@ -3,10 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { usePaymentStore } from '@/stores/Course/paymentStore'
+import { useReviewStore } from '@/stores/Course/reviewStore'
 
 const router = useRouter()
 const paymentStore = usePaymentStore()
-
+const reviewStore = useReviewStore()
 const orders = ref([])
 const loading = ref(true)
 
@@ -153,16 +154,11 @@ function goPay(o) {
   router.push({ name: 'courses-booking-payment' })
 }
 function goReview(o) {
-  router.push({
-    name: 'courses-review',
-    query: {
-      courseBookingId: getBookingId(o), // 這個是你 review 頁要用的
-      orderId: displayBkNo(o),
-      course: (o.CourseName ?? o.courseName ?? '').toString(),
-      coach: (o.CoachName ?? o.coachName ?? '').toString(),
-      startTime: getStartTime(o),
-    },
-  })
+  const id = Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
+  if (!id) return alert('找不到 bookingId')
+
+  reviewStore.setBooking(id)
+  router.push({ name: 'courses-review' })
 }
 </script>
 
