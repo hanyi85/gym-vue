@@ -8,7 +8,7 @@ const isOpen = ref(false); // 控制手風琴開關
 // 計算是否全部領取
 const allPickedUp = computed(() => {
   if (props.items.length === 0) return false;
-  return props.items.every(item => item.fPickupStatus);
+  return props.items.every(item => item.FPickupStatus);
 });
 // defineProps({
 //   items: Array
@@ -32,7 +32,7 @@ const props = defineProps({
       訂單明細
     </div>
     
-    <span class="badge" :class="allPickedUp ? 'bg-light text-success' : 'bg-danger text-dark'">
+    <span class="badge" :class="allPickedUp ? 'bg-light text-success' : 'bg-danger text-light'">
       {{ allPickedUp ? '已全部領取' : ' 尚未全部領取' }}
     </span>
   </div>
@@ -43,7 +43,7 @@ const props = defineProps({
         <div 
           class="col-12 col-md-6" 
           v-for="item in items" 
-          :key="item.fOrderItemId"
+          :key="item.FOrderItemId"
         >
           <OrderItemCard :item="item" />
         </div>

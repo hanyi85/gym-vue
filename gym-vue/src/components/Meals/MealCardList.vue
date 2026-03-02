@@ -1,19 +1,34 @@
 <script setup>
-import { ref } from 'vue'
+import { defineProps,  computed, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+const apiUrl="https://localhost:7218/api"
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const router = useRouter()
+const emit = defineEmits(['refreshFavorites'])
+const authStore = useAuthStore()
+
 
 // 父層傳進來的餐點資料
 const props = defineProps({
   meal: {
     type: Object,
     required: true
+  },
+  favoriteIds: {
+    type: Array,
+    default: () => []
   }
 })
 
-const router = useRouter()
-
 // 之後可以從 API 判斷是否已收藏
-const isFavorite = ref(props.meal.isFavorite ?? false)
+const isFavorite = computed(() => {
+  return props.favoriteIds.includes(props.meal.id)
+})
+
+
+
 
 // 點整張卡片
 const goDetail = () => {
@@ -26,12 +41,32 @@ const goDetail = () => {
 }
 
 // 點愛心
-const toggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
+const toggleFavorite = async () => {
 
-  // 👉 之後你在這裡接 API
-  // axios.post('/api/favorite', { mealId: props.meal.id })
+   if (!authStore.isLogin) {
+    alert('請先登入')
+    return
+  }
+
+  try {
+    const userId = authStore.member.UserId
+
+    await axios.post(
+      `${apiUrl}/TMealFavoriteMeals/toggle`,
+      {
+        FUserId: userId,
+        FMealId: props.meal.id
+      }
+    )
+
+    // 🔥 通知父層重新抓收藏ID
+    emit('refreshFavorites')
+
+  } catch (err) {
+    console.error('收藏失敗', err)
+  }
 }
+
 </script>
 
 
@@ -52,7 +87,7 @@ const toggleFavorite = () => {
 
     <div class="img-container">
       <img
-        :src="meal.imageUrl"
+        :src="'https://localhost:7218' + meal.imageUrl"
         class="card-img-top"
         alt="meal image"
       />
@@ -97,7 +132,7 @@ const toggleFavorite = () => {
 /* 圖片縮放效果 */
 .img-container {
   overflow: hidden;
-  aspect-ratio: 4 / 4; /* 固定比例，避免圖片高矮不一導致卡片不齊 */
+  aspect-ratio: 10 / 9.5; /* 固定比例，避免圖片高矮不一導致卡片不齊 */
 }
 
 /* 愛心位置 */

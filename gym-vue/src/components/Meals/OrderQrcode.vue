@@ -5,9 +5,10 @@ import QrcodeVue from 'qrcode.vue'
 
 // 必須定義 props 接收父層傳來的資料
 const props = defineProps({
-  item: Object,
-  venueName: String,
-  orderStatus: String
+  item: {
+    type: Object,
+    required: true
+  }
 });
 
 
@@ -16,35 +17,32 @@ const props = defineProps({
   <div class="order-card p-3 h-100">
     <div class="d-flex align-items-start gap-3">
       <div class="qr-section text-center">
-        <QrcodeVue
-          :value="item.fQrContent"
-          :size="100"
-          level="H"
-        />
+        <QrcodeVue v-if="item.FQrContent" :value="item.FQrContent" :size="100" level="H" />
+<span v-else>尚未產生 QR Code</span>
         <div class="qr-label mt-1"></div>
       </div>
 
       <div class="flex-grow-1">
         <div class="d-flex justify-content-between align-items-start">
-          <h6 class="fw-bold meal-title mb-1">{{ item.fMealName }}</h6>
+          <h6 class="fw-bold meal-title mb-1">{{ item.FMealName }}</h6>
           <span
     class="badge"
-    :class="item.fPickupStatus ? 'bg-success' : 'bg-secondary'"
+    :class="item.FPickupStatus ? 'bg-success' : 'bg-secondary'"
   >
-    {{ item.fPickupStatus ? '已領取' : '未領取' }}
+    {{ item.FPickupStatus ? '已領取' : '未領取' }}
   </span>
           
         </div>
 
         <div class="info-grid mt-2">
           <div class="info-item">
-            <span class="label">取餐地點：</span>{{ venueName }}
+            <span class="label">取餐地點：</span>{{ item.VenueName }}
           </div>
           <div class="info-item">
-            <span class="label">取餐日期：</span>{{ item.fPickDate }}
+            <span class="label">取餐日期：</span>{{ item.FPickDate }}
           </div>
           <div class="info-item">
-            <span class="label">取餐時間：</span>{{ item.fPickTimeID }}
+            <span class="label">取餐時間：</span>{{ item.PickStart }} - {{ item.PickEnd}}
           </div>
         </div>
 
@@ -52,10 +50,10 @@ const props = defineProps({
 
         <div class="d-flex justify-content-between align-items-center">
           <div class="qty-price">
-            {{ item.fQty }} 份 × NT$ {{ item.fUnitPrice }}
+            {{ item.FQty }} 份 × NT$ {{ item.FUnitPrice }}
           </div>
           <div class="subtotal fw-bold">
-            小計 NT$ {{ item.fSubtotal }}
+            小計 NT$ {{ item.FSubtotal }}
           </div>
         </div>
       </div>

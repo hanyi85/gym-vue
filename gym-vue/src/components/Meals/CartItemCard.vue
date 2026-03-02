@@ -1,5 +1,3 @@
-
-
 <script setup>
 const props = defineProps({
   item: Object,
@@ -8,12 +6,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'delete']);
 
-const changeQty = (val) => {
-  if (props.item.qty + val >= 1) {
-    props.item.qty += val;
-    updateItem();
-  }
-};
+//計數的另一種
+// const changeQty = (val) => {
+//   if (props.item.qty + val >= 1) {
+//     props.item.qty += val;
+//     updateItem();
+//   }
+// };
 
 const updateItem = () => {
   // 計算新的小計
@@ -26,7 +25,7 @@ const updateItem = () => {
   <div class="col">
     <div class="card h-100 shadow-sm border-0 cart-card">
       <div class="position-relative">
-        <img :src="item.imageUrl" class="card-img-top meal-img" alt="meal image" />
+        <img :src="'https://localhost:7218' + item.imageUrl" class="card-img-top meal-img" alt="meal image" />
         <button 
           class="btn btn-delete position-absolute top-0 end-0 m-2" 
           @click="$emit('delete', item.orderItemId)"
@@ -51,7 +50,7 @@ const updateItem = () => {
             <label class="form-label small fw-bold text-muted mb-1">
               <i class="bi bi-clock me-1"></i>時段
             </label>
-            <select class="form-select custom-focus" v-model="item.selectedTimeSlotId" @change="updateItem">
+            <select class="form-select custom-focus" v-model="item.pickTimeId" @change="updateItem">
               <option v-for="slot in timeSlots" :key="slot.id" :value="slot.id">{{ slot.label }}</option>
             </select>
           </div>

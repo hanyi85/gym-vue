@@ -1,37 +1,33 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
+import axios from 'axios'
+import { useAuthStore } from '@/stores/mealAuthStore'
+import Swal from 'sweetalert2'
 
+const authStore = useAuthStore()
+
+const apiUrl="https://localhost:7218/api"
 
 /* 路由 */
 const route = useRoute()
 const router = useRouter()
 const mealId = route.params.mealId
 
-/* 餐點資料（之後 API 取代） */
-const meal = ref({
-  id: mealId,
-  name: '雞胸肉健康餐',
-  imageUrl: '/assets/img/meals/1.jpg',
-  calories: 520,
-  protein: 42,
-  carbs: 45,
-  fat: 10,
-  price: 160
-})
+/* 餐點資料 */
+const meal = ref(null)
 
-/* 取餐時段（之後 API 取代） */
-const timeSlots = ref([
-  { id: 1, label: '11:00 - 12:00' },
-  { id: 2, label: '12:00 - 13:00' },
-  { id: 3, label: '18:00 - 19:00' }
-])
+/* 取餐時段 */
+const timeSlots = ref([])
 
 /* 使用者選擇 */
 const selectedDate = ref('')
 const selectedTimeSlotId = ref(null)
 const quantity = ref(1)
+
+/* 錯誤訊息 */
+const errors = ref({})
 
 /* 日期限制 */
 const today = new Date()
@@ -48,21 +44,163 @@ function formatDate(date) {
 const minDate = formatDate(tomorrow)
 const maxDate = formatDate(threeMonthsLater)
 
-/* 動作（之後接 API） */
-function addToCart() {
-  const payload = {
-    mealId: meal.value.id,
-    pickupDate: selectedDate.value,
-    timeSlotId: selectedTimeSlotId.value,
-    quantity: quantity.value
+// 圖片部分放大功能
+const lensVisible = ref(false)
+const lensStyle = ref({})
+
+function move(e) {
+
+  const rect = e.currentTarget.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  // 設定參數
+  const zoomScale = 2    // 想要放大幾倍
+  const containerSize = 400 // 你的容器是 400px
+  const lensSize = 100      // 你的鏡片是 100px
+  
+  // 計算背景圖應該縮放到多少像素
+  // 公式：容器寬度 * 放大倍率
+  const bgWidth = containerSize * zoomScale
+  const bgHeight = containerSize * zoomScale
+const url = meal.value?.imageUrl ? 'https://localhost:7218' + meal.value.imageUrl : '';
+  lensVisible.value = true
+  lensStyle.value = {
+    left: `${x - lensSize / 2}px`,
+    top: `${y - lensSize / 2}px`,
+    backgroundImage: `url("${url}")`, // 建議加上雙引號包裹網址
+    backgroundRepeat: "no-repeat",
+    // 這裡改用具體的像素值，最不容易出錯
+    backgroundSize: `${bgWidth}px ${bgHeight}px`,
+    // 修正位移邏輯：(滑鼠位置 * 倍率) - 鏡片中心補償
+    backgroundPosition: `-${x * zoomScale - lensSize / 2}px -${y * zoomScale - lensSize / 2}px`,
+    // 確保鏡片在最上層
+    zIndex: 10
   }
-  console.log('加入購物車資料', payload)
 }
 
-function buyNow() {
-  addToCart()
-  router.push('/meals/cart')
+function leave() {
+  lensVisible.value = false
 }
+
+/* 後台抓取餐時間 */
+async function fetchTimeSlots() {
+  const res = await axios.get(`${apiUrl}/TMealPickUpTimes/active`)
+  timeSlots.value = res.data.map(t => ({
+    id: t.FPickUpTimeId,
+    label: `${t.FStartTime.substring(0,5)} - ${t.FEndTime.substring(0,5)}`
+  }))
+}
+
+/* 後台抓取餐點 */
+async function fetchMeal() {
+  try {
+    const res = await axios.get(`${apiUrl}/TMeals/${mealId}`)
+    // 後端回傳的欄位是 FMealId, Name, Price, ...
+    meal.value = {
+      id: res.data.FMealId,
+      name: res.data.FMealName,
+      imageUrl: res.data.FImageUrl,   // 假設後端有這個欄位
+      calories: res.data.FCalories,
+      protein: res.data.FProtein,
+      carbs: res.data.FCarbs,
+      fat: res.data.FFat,
+      price: res.data.FPrice
+    }
+  } catch (err) {
+    console.error("載入餐點失敗", err)
+  }
+}
+
+/* 建立驗證 */
+const validateForm = () => {
+  errors.value = {}
+
+  if (!selectedDate.value) {
+    errors.value.date = '請選擇取餐日期'
+  }
+
+  if (!selectedTimeSlotId.value) {
+    errors.value.timeSlot = '請選擇取餐時段'
+  }
+
+  if (!quantity.value || quantity.value < 1) {
+    errors.value.quantity = '份數至少為 1'
+  }
+
+  return Object.keys(errors.value).length === 0
+}
+
+
+
+/* 加入購物車 */
+async function addToCart() {
+
+  if (!authStore.member?.UserId) {
+    await Swal.fire({
+    icon: 'warning',
+    title: '尚未登入',
+    text: '請先登入會員後再加入購物車',
+    confirmButtonText: '前往登入',
+    confirmButtonColor: '#f3722c'
+  })
+
+router.push({ name: 'User-login' })
+    return false
+  }
+
+  if (!validateForm()) return
+
+  // 通過驗證才執行
+  console.log('加入購物車')
+
+  const payload = {
+    FUserId: authStore.member.UserId,
+    FMealId: meal.value.id,
+    FPickDate: selectedDate.value,
+    FPickTimeId: selectedTimeSlotId.value,
+    FQty: quantity.value
+  }
+
+  try {
+    await axios.post(`${apiUrl}/TMealCarts/MealAddToCart`, payload)
+    Swal.fire({
+    icon: 'success',
+    title: '加入成功！',
+    text: '餐點已加入購物車',
+    timer: 2000,
+    showConfirmButton: false
+  })
+    return true
+  } catch (err) {
+    console.error(err)
+    Swal.fire({
+    icon: 'fail',
+    title: '加入失敗！',
+    text: '餐點未成功加入購物車',
+    timer: 2000,
+    showConfirmButton: false
+  })
+    return false
+  }
+}
+
+/* 立即購買 */
+
+async function buyNow() {
+  const success = await addToCart()
+
+  if (success) {
+    await router.push('/meals/cart')
+  }
+}
+
+onMounted(() => {
+  fetchTimeSlots()
+  fetchMeal()
+  
+})
+
 </script>
 
 
@@ -72,68 +210,96 @@ function buyNow() {
   <div class=" min-vh-100 py-2 container">
     <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-              <li class="breadcrumb-item"><router-link to="/meals" class="text-orange">餐點列表</router-link></li>
-              <li class="breadcrumb-item active">{{ meal.name }}</li>
+              <li v-if="meal" class="breadcrumb-item"><router-link to="/meals" class="text-orange">餐點列表</router-link></li>
+              <li v-if="meal" class="breadcrumb-item active">{{ meal.name }}</li>
             </ol>
           </nav>
     <div class="container meal-detail rounded-4 shadow-sm p-4 p-md-5">
-      <div class="row justify-content-center g-5">
-        
-        <div class="col-12 col-md-6 col-lg-5">
-          <div class="image-wrapper shadow-sm rounded-4 overflow-hidden">
-            <img :src="meal.imageUrl" class="img-fluid w-100 h-100 object-fit-cover" :alt="meal.name" />
+      <div class="row justify-content-center g-5">   
+        <div class="col-12 col-md-6 col-lg-5">         
+          <div
+            class="zoom-container"
+            @mousemove="move"
+            @mouseleave="leave"
+          >
+            <img
+              :src="'https://localhost:7218' + meal.imageUrl"
+              class="img-fluid w-100 h-100 object-fit-cover"
+              :alt="meal.name"
+              v-if="meal"
+            />
+            <!-- 放大鏡框 -->
+            <div v-if="lensVisible" class="zoom-lens" :style="lensStyle"></div>
           </div>
+          <h6 class=" text-muted small mt-2">滑鼠移至圖片，可局部放大。</h6>
         </div>
+        
 
         <div class="col-12 col-md-6 col-lg-5">
-          <h1 class="fw-bold text-dark mb-3">{{ meal.name }}</h1>
+          <h1 class="fw-bold text-dark mb-3" v-if="meal">{{ meal.name }}</h1>
           <div class="price-wrapper mb-2">
       <span class="currency">NT$</span>
-      <span class="price-amount">{{ meal.price }}</span>
+      <span class="price-amount" v-if="meal">{{ meal.price }}</span>
     </div>
 
           <div class="nutrition-grid mb-4">
             <div class="nutrition-card">
               <span class="label">熱量</span>
-              <span class="value">{{ meal.calories }} <small>kcal</small></span>
+              <span class="value" v-if="meal">{{ meal.calories }} <small>kcal</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">蛋白質</span>
-              <span class="value">{{ meal.protein }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.protein }} <small>g</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">碳水</span>
-              <span class="value">{{ meal.carbs }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.carbs }} <small>g</small></span>
             </div>
             <div class="nutrition-card">
               <span class="label">脂質</span>
-              <span class="value">{{ meal.fat }} <small>g</small></span>
+              <span class="value" v-if="meal">{{ meal.fat }} <small>g</small></span>
             </div>
           </div>
 
-          <hr class="opacity-10 my-4" />
-
+          <hr class="opacity-10 " /><div class="text-end text-muted small">
+  <span class="text-danger">*</span> 所有欄位皆為必填
+</div>
           <div class="order-options">
             <div class="mb-4">
               <label class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>取餐日期</label>
-              <input type="date" v-model="selectedDate" class="form-control custom-input" :min="minDate" :max="maxDate" />
+              <input type="date" v-model="selectedDate" class="form-control custom-input" 
+              :class="{ 'is-invalid': errors.date }"
+              :min="minDate" :max="maxDate" />
+              <div class="invalid-feedback">
+              {{ errors.date }}
             </div>
-
+            </div>
             <div class="row mb-4">
               <div class="col-7">
                 <label class="form-label fw-bold"><i class="bi bi-clock me-2"></i>取餐時段</label>
-                <select class="form-select custom-input" v-model="selectedTimeSlotId">
-                  <option disabled value="null">請選擇</option>
+                <select class="form-select custom-input" v-model="selectedTimeSlotId"
+                :class="{ 'is-invalid': errors.timeSlot }">
+                  <option disabled :value="null">請選擇</option>
                   <option v-for="slot in timeSlots" :key="slot.id" :value="slot.id">{{ slot.label }}</option>
                 </select>
+                <div class="invalid-feedback">
+                  {{ errors.timeSlot }}
+                </div>
               </div>
               <div class="col-5">
                 <label class="form-label fw-bold"><i class="bi bi-basket me-2"></i>份數</label>
                 <div class="input-group">
-                  <button class="btn btn-outline-secondary" @click="quantity > 1 ? quantity-- : null">-</button>
-                  <input type="number" class="form-control text-center custom-input border-x-0" v-model="quantity" min="1" />
-                  <button class="btn btn-outline-secondary" @click="quantity++">+</button>
+                  <!-- <button class="btn btn-outline-secondary" @click="quantity > 1 ? quantity-- : null">-</button> -->
+                  <input type="number"
+                    class="form-control text-center custom-input border-x-0"
+                    v-model="quantity"
+                    min="1"
+                    :class="{ 'is-invalid': errors.quantity }" />
+                  <!-- <button class="btn btn-outline-secondary" @click="quantity++">+</button> -->
                 </div>
+                <div class="invalid-feedback d-block">
+                      {{ errors.quantity }}
+                    </div>
               </div>
             </div>
 
@@ -243,4 +409,33 @@ function buyNow() {
 .price-amount {
   font-size: 2rem;
 }
+
+/* 圖片部分放大功能 */
+
+.zoom-container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.zoom-container img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.zoom-lens {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border: 2px solid #fff; /* 改用白色或亮色邊框較明顯 */
+  box-shadow: 0 0 8px rgba(0,0,0,0.5); /* 增加陰影，讓方框更清晰 */
+  background-color: #eee; /* 沒讀到圖時的底色 */
+  pointer-events: none;
+}
+
+
+
 </style>

@@ -1,39 +1,139 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
 import MealSidebar from '@/components/Meals/MealSidebar.vue'
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+const memberId = authStore.member.UserId
 
 
-// 分類
-const categories = [
-  { id: 1, name: '高蛋白增肌餐', description: '適合健身與增肌族群，高蛋白、低精製澱粉' },
-  { id: 2, name: '低脂減脂餐', description: '低熱量、低脂肪，幫助體脂控制' },
-  { id: 3, name: '均衡健康餐', description: '營養均衡，適合日常健康飲食' }
-]
+const apiUrl="https://localhost:7218/api"
 
-// 預設分類
-const currentCategory = ref(categories[0])
+//====== 自動載入我喜愛的餐點 ======
 
-// 餐點（之後改成 API 回傳）
-const meals = ref([
-  { id: 1, name: '雞胸餐', categoryId: 1, calories: 520, protein: 45, imageUrl: '/assets/img/meals/1.jpg', price:160},
-  { id: 2, name: '牛肉增肌餐', categoryId: 1, calories: 650, protein: 50, imageUrl: '/assets/img/meals/1.jpg' , price:160},
-  { id: 3, name: '舒肥鯛魚餐', categoryId: 2, calories: 420, protein: 38, imageUrl: '/assets/img/meals/1.jpg', price:160 },
-  { id: 4, name: '均衡雞腿餐', categoryId: 3, calories: 580, protein: 40, imageUrl: '/assets/img/meals/1.jpg', price:160}
-])
+const favoriteIds = ref([])
 
-// 切分類
-const selectCategory = (cat) => {
-  currentCategory.value = cat
+const fetchFavoriteIds = async () => {
+
+  if (!authStore.isLogin) return
+
+  const userId = memberId
+
+  const res = await axios.get(
+    `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
+  )
+
+  favoriteIds.value = res.data
 }
 
-// 🔥 關鍵：依分類過濾餐點
-const filteredMeals = computed(() => {
-  return meals.value.filter(
-    m => m.categoryId === currentCategory.value.id
+
+// ====== 狀態 ======
+const categories = ref([])
+const meals = ref([])
+const currentCategory = ref({ id: 0, type: 'all', name: '全部餐點' })
+
+// ====== 取得分類 ======
+const fetchCategories = async () => {
+    const res = await axios.get(`${apiUrl}/TMealCategories`)
+
+const apiCategories = res.data
+      .filter(c => c.FIsActive)
+      .map(c => ({
+        id: c.FCategoryId,
+        name: c.FCategoryName,
+        description: c.FDescription,
+        type:'normal'
+      }))
+
+      // 🔥 加入自訂分類
+  categories.value = [
+    {
+      id: 0,
+      name: '全部餐點',
+      description: '所有健康美味餐點',
+      type: 'all'
+    },
+    ...apiCategories,
+    {
+      id: -1,
+      name: '我喜愛的餐點',
+      description: '你收藏的專屬餐點',
+      type: 'favorite'
+    }
+  ]
+
+   currentCategory.value = categories.value[0]
+ 
+
+  }
+
+
+// ====== 取得餐點 ======
+const fetchMeals = async (category) => {
+  // 1️⃣ 全部餐點
+  if (category.type === 'all') {
+    const res = await axios.get(`${apiUrl}/TMeals`)
+    meals.value = mapMeals(res.data)
+    return
+  }
+
+  // 2️⃣ 喜愛餐點（等下會做）
+  if (category.type === 'favorite') {
+    
+    await fetchFavoriteIds()
+
+  const res = await axios.get(
+    `${apiUrl}/TMealFavoriteMeals/user/${memberId}`
   )
+
+  meals.value = mapMeals(res.data)
+  return
+  }
+
+  // 3️⃣ 一般分類
+  const res = await axios.get(
+    `${apiUrl}/TMeals?categoryId=${category.id}`
+  )
+
+  meals.value = mapMeals(res.data)
+}
+
+// ====== 格式轉換 ======
+const mapMeals = (data) => {
+  return data.map(m => ({
+    id: m.FMealId,
+    categoryId: m.FCategoryId,
+    name: m.FMealName,
+    imageUrl: m.FImageUrl,
+    calories: m.FCalories,
+    fat: m.FFat,
+    carbs: m.FCarbs,
+    protein: m.FProtein,
+    price: m.FPrice
+  }))
+}
+
+// ====== 切分類 ======
+const selectCategory = async (cat) => {
+  currentCategory.value = cat
+  await fetchMeals(cat)
+}
+
+
+
+
+// ====== 進頁面載入 ======
+onMounted(async () => {
+  await fetchCategories()
+  await fetchMeals(currentCategory.value)
+  await fetchFavoriteIds()
 })
+
+
+
 </script>
 
 <template>
@@ -48,25 +148,35 @@ const filteredMeals = computed(() => {
       <div class="col-md-3 col-lg-2 mb-4">
         <MealSidebar 
           :categories="categories" 
-          :currentCategoryId="currentCategory.id"
+          :currentCategoryId="currentCategory?.id"
           @select-category="selectCategory"
         />
       </div>
 
       <main class="col-md-9 col-lg-10">
         <div class="mb-2 ps-md-3">
-          <h3 class="fw-bold" style="color: #f3722c;">{{ currentCategory.name }}</h3>
-          <h6 class="text-muted">{{ currentCategory.description }}</h6>
+          <h3 class="fw-bold" style="color: #f3722c;">{{ currentCategory?.name }}</h3>
+          <h6 class="text-muted">{{ currentCategory?.description }}</h6>
         </div>
         <!-- 餐點卡片 -->
         <div class="row p-3">
           <div
-            v-for="meal in filteredMeals"
-            :key="meal.id"
+            v-for="meal in meals"
+            :key="meal?.id"
             class="col-12 col-sm-6 col-md-3 py-2"
           >
-            <MealCard :meal="meal" />
+            <MealCard 
+            :meal="meal"
+            :favoriteIds="favoriteIds"
+            @refreshFavorites="fetchFavoriteIds"
+            />
           </div>
+        </div>
+        <!-- 尚未收藏餐點 -->
+        <div v-if="currentCategory.type === 'favorite' && meals.length === 0" 
+            class="text-center py-5 text-muted">
+          <h5>尚未收藏餐點</h5>
+          <p>點擊愛心即可加入收藏 <i class="fa fa-heart"></i></p>
         </div>
       </main>
 

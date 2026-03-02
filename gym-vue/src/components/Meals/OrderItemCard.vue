@@ -13,30 +13,31 @@ const showQr = ref(false)
   <div class="order-item mb-3 p-3 rounded">
     <div class="d-flex gap-3">
       <img
-        :src="item.fMealImage"
+        :src="'https://localhost:7218' + item.FMeal?.FImageUrl"
         class="meal-img"
       />
 
       <div class="flex-grow-1">
         <div class="d-flex justify-content-between align-items-center w-100">
-  <h6 class="fw-bold mb-0">{{ item.fMealName }}</h6>
+  <h6 class="fw-bold mb-0">{{ item.FMeal.FMealName }}</h6>
 
   <span
     class="badge"
     :class="item.fPickupStatus ? 'bg-success' : 'bg-secondary'"
   >
-    {{ item.fPickupStatus ? '已領取' : '未領取' }}
+    {{ item.FPickupStatus ? '已領取' : '未領取' }}
   </span>
 </div>
         <div class="text-muted small mt-2">
-          取餐日期：{{ item.fPickDate }} 
+          取餐日期：{{ item.FPickDate }} 
         </div>
         <div class="text-muted small">
-          取餐時間：{{ item.fPickTimeID }}
+          取餐時間：{{ item.FPickTime ? item.FPickTime.FStartTime.substring(0,5) + '-' + item.FPickTime.FEndTime.substring(0,5) : '' }}
+
         </div>
         <div class="fw-bold mt-1">
-          {{ item.fQty }} 份 × {{ item.fUnitPrice }}　
-          <span class="price">NT$ {{ item.fSubtotal }}</span>
+          {{ item.FQty }} 份 × {{ item.FUnitPrice }}　
+          <span class="price">NT$ {{ item.FSubtotal }}</span>
         </div>
       </div>
     </div>
@@ -50,7 +51,7 @@ const showQr = ref(false)
 
     <div v-show="showQr" class="qr-box mt-3 text-center">
       <QrcodeVue
-        :value="item.fQrContent"
+        :value="item.FQrContent"
         :size="160"
       />
       <div class="small text-muted mt-2">

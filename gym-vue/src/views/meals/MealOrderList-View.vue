@@ -4,6 +4,14 @@ import { useRouter } from 'vue-router'
 import Btn from '@/components/Meals/nextbtn.vue'
 import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
+import axios from 'axios'
+import Swal from 'sweetalert2'
+import { useAuthStore } from '@/stores/mealAuthStore'
+
+const authStore = useAuthStore()
+const UserId = authStore.member.UserId
+
+const apiUrl="https://localhost:7218/api"
 
 const router = useRouter()
 
@@ -11,42 +19,47 @@ const orderId = ref(null)
 const cartItems = ref([])
 
 // 假資料
-const mockCartData = {
-  orderId: 999,
-  items: [
-    {
-      orderItemId: 1,
-      mealId: 101,
-      mealName: '高蛋白雞胸餐',
-      pickDate: '2026-02-10',
-      selectedTimeSlotId: 2,
-      pickTime: '12:00 - 13:00',
-      qty: 2,
-      unitPrice: 120,
-      subtotal: 240,
-      imageUrl: '/assets/img/meals/1.jpg'
-    },
-    {
-      orderItemId: 2,
-      mealId: 102,
-      mealName: '低脂鮭魚餐',
-      pickDate: '2026-02-11',
-      selectedTimeSlotId: 1,
-      pickTime: '18:00 - 19:00',
-      qty: 1,
-      unitPrice: 320,
-      subtotal: 320,
-      imageUrl: '/assets/img/meals/1.jpg',
-    }
-  ]
-}
+// const mockCartData = {
+//   orderId: 999,
+//   items: [
+//     {
+//       orderItemId: 1,
+//       mealId: 101,
+//       mealName: '高蛋白雞胸餐',
+//       pickDate: '2026-02-10',
+//       selectedTimeSlotId: 2,
+//       pickTime: '12:00 - 13:00',
+//       qty: 2,
+//       unitPrice: 120,
+//       subtotal: 240,
+//       imageUrl: '/assets/img/meals/1.jpg'
+//     },
+//     {
+//       orderItemId: 2,
+//       mealId: 102,
+//       mealName: '低脂鮭魚餐',
+//       pickDate: '2026-02-11',
+//       selectedTimeSlotId: 1,
+//       pickTime: '18:00 - 19:00',
+//       qty: 1,
+//       unitPrice: 320,
+//       subtotal: 320,
+//       imageUrl: '/assets/img/meals/1.jpg',
+//     }
+//   ]
+// }
 
-/* 取餐時段（之後 API 取代） */
-const timeSlots = ref([
-  { id: 1, label: '11:00 - 12:00' },
-  { id: 2, label: '12:00 - 13:00' },
-  { id: 3, label: '18:00 - 19:00' }
-])
+/* 取餐時段 */
+const timeSlots = ref([])
+
+/* 後台抓取餐時間 */
+async function fetchTimeSlots() {
+  const res = await axios.get(`${apiUrl}/TMealPickUpTimes/active`)
+  timeSlots.value = res.data.map(t => ({
+    id: t.FPickUpTimeId,
+    label: `${t.FStartTime.substring(0,5)} - ${t.FEndTime.substring(0,5)}`
+  }))
+}
 
 // 總金額
 const totalAmount = computed(() =>
@@ -54,20 +67,83 @@ const totalAmount = computed(() =>
 )
 
 // 模擬取得購物車
-const getCart = () => {
-  orderId.value = mockCartData.orderId
-  cartItems.value = mockCartData.items
+// const getCart = () => {
+//   orderId.value = mockCartData.orderId
+//   cartItems.value = mockCartData.items
+// }
+async function getCart() {
+  const res = await axios.get(`${apiUrl}/TMealCarts/Cart/${UserId}`)
+  orderId.value = res.data.orderId
+  cartItems.value = res.data.items
 }
 
-// 模擬刪除
-const deleteItem = (orderItemId) => {
-  if (!confirm('確定要刪除這份餐點嗎？')) return
-  cartItems.value = cartItems.value.filter(i => i.orderItemId !== orderItemId)
+// 刪除
+
+async function deleteItem(orderItemId) {
+  const result = await Swal.fire({
+    title: '確定要刪除嗎？',
+    text: '刪除後將無法恢復',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f3722c',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '確定刪除',
+    cancelButtonText: '取消'
+  })
+
+  // 如果按取消
+  if (!result.isConfirmed) return
+
+  try {
+    await axios.delete(`${apiUrl}/TMealCarts/Item/${orderItemId}`)
+
+    await Swal.fire({
+      icon: 'success',
+      title: '刪除成功',
+      timer: 1500,
+      showConfirmButton: false
+    })
+
+    getCart()
+
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: '刪除失敗',
+      text: '請稍後再試'
+    })
+  }
 }
 
 // 下一步
-const goConfirm = () => {
-  router.push('/meals/confirm')
+async function goConfirm() {
+
+  try {
+
+    const payload = {
+      orderId: orderId.value,
+      items: cartItems.value.map(i => ({
+        orderItemId: i.orderItemId,
+        pickDate: i.pickDate,
+        pickTimeId: i.pickTimeId,
+        qty: i.qty
+      }))
+    }
+
+    await axios.put(`${apiUrl}/TMealCarts/UpdateCart`, payload)
+
+    await router.push('/meals/confirm')
+
+  } catch (err) {
+    console.error(err)
+    Swal.fire({
+    icon: 'fail',
+    title: '更新失敗！',
+    text: '請稍後再試',
+    timer: 2000,
+    showConfirmButton: false
+  })
+  }
 }
 
 const goshopping = () => {
@@ -75,7 +151,8 @@ const goshopping = () => {
 }
 
 onMounted(() => {
-  getCart()
+  getCart(),
+  fetchTimeSlots()
 })
 
 
@@ -99,7 +176,7 @@ onMounted(() => {
 
   <div
     class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4"
-    v-if="cartItems.length > 0"
+    v-if="cartItems && cartItems.length > 0"
   >
     <CartItemCard
       v-for="item in cartItems"
@@ -128,12 +205,11 @@ onMounted(() => {
     class="mt-5 p-4 amountblock rounded-4 shadow-sm d-flex justify-content-between align-items-center border-start border-orange border-5"
   >
     <div>
-      <span class="text-muted ">共 {{ cartItems.length }} 項餐點明細</span>
+      <span class="text-muted ">共  {{ cartItems?.length || 0 }} 項餐點明細</span>
       <h4 class="mb-0 fw-bold  ">總金額</h4>
     </div>
     <div class="text-end">
-      <h2 class="price-text fw-bold mb-2">${{ totalAmount }}</h2>
-      
+      <h2 class="price-text fw-bold mb-2">${{ totalAmount }}</h2>  
     </div>
   </div>
 </div>
@@ -149,7 +225,7 @@ onMounted(() => {
 </div>
       
     
- 
+
 </template>
 
 

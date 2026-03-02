@@ -297,11 +297,11 @@ const routes = [
     component: () => import('@/views/meals/MealOrderHistory-View.vue'),
   },
 
-  // 健康餐訂單詳細
+  // 健康餐員工取餐QRCODE
   {
-    path: '/users/order/:orderId',
-    name: 'meals-order-detail',
-    component: () => import('@/views/meals/MealOrderDetail-View.vue'),
+    path: '/staff/meal-pickup',
+    name: 'meal-staff-pickup',
+    component: () => import('@/views/meals/MealPickup-View.vue'),
   },
 
   // 取餐QRcode

@@ -1,88 +1,36 @@
 <script setup>
-import { ref } from 'vue'
+import { ref,onMounted } from 'vue'
 import OrderQrcode from '@/components/Meals/OrderQrcode.vue'
+import { useAuthStore } from '@/stores/mealAuthStore'
+import axios from 'axios'
 
-const orders = ref([
-  {
-    info: {
-      fOrderId: 1,
-      fOrderName: '王小明',
-      fOrderPhone: '0912-345-678',
-      fOrderEmail: 'test@mail.com',
-      fCartCreateAt: '2026-02-06 10:30',
-      fOrderAt: '2026-02-06 10:45',
-      fVenueId: 1,
-      fTotalAmount: 980,
-      fOrderStatus: '已付款',
-      fPayMethod: '信用卡',
-      fVenueName: '大安館'
-    },
-    items: [
-      {
-        fOrderItemId: 1,
-        fOrderId: 1,
-        fMealId: 101,
-        fMealName: '高蛋白舒肥雞胸',
-        fQty: 2,
-        fUnitPrice: 180,
-        fSubtotal: 360,
-        fPickDate: '2026-02-07',
-        fPickTimeID: '12:00-13:00',
-        fQrContent: 'ORDERITEM-001',
-        fPickupStatus: false,
-        showQr: false,
-        fMealImage: '/assets/img/meals/1.jpg'
-      },
-      {
-        fOrderItemId: 2,
-        fOrderId: 1,
-        fMealId: 205,
-        fMealName: '低脂香煎鱸魚',
-        fQty: 2,
-        fUnitPrice: 310,
-        fSubtotal: 620,
-        fPickDate: '2026-02-07',
-        fPickTimeID: '18:00-19:00',
-        fQrContent: 'ORDERITEM-002',
-        fPickupStatus: false,
-        showQr: false,
-        fMealImage: '/assets/img/meals/1.jpg'
-      }
-    ]
-  },
-  {
-    info: {
-      fOrderId: 2,
-      fOrderName: '王小明',
-      fOrderPhone: '0912-345-678',
-      fOrderEmail: 'test@mail.com',
-      fCartCreateAt: '2026-01-31 09:20',
-      fOrderAt: '2026-01-31 09:45',
-      fVenueId: 2,
-      fTotalAmount: 310,
-      fOrderStatus: '已付款',
-      fPayMethod: '信用卡',
-      fVenueName: '信義館'
-    },
-    items: [
-      {
-        fOrderItemId: 3,
-        fOrderId: 2,
-        fMealId: 301,
-        fMealName: '低醣牛肉沙拉',
-        fQty: 1,
-        fUnitPrice: 310,
-        fSubtotal: 310,
-        fPickDate: '2026-02-01',
-        fPickTimeID: '12:00-13:00',
-        fQrContent: 'ORDERITEM-003',
-        fPickupStatus: true,
-        showQr: false,
-        fMealImage: '/assets/img/meals/1.jpg'
-      }
-    ]
+const apiUrl="https://localhost:7218/api"
+
+const authStore = useAuthStore()
+const orders = ref([])
+const qrItems = ref([])
+
+async function fetchQrCodes() {
+  try {
+  const res = await axios.get(
+    `${apiUrl}/TMealOrderItems/Qrcode/${authStore.member.UserId}`
+  )
+
+  qrItems.value = res.data
+  } catch (err) {
+    console.error("載入QR Code失敗", err)
   }
-]);
+}
+
+
+onMounted(() => {
+  if (authStore.isLogin) {
+    fetchQrCodes()
+  }
+})
+
+console.log("QR API 回傳：", qrItems)
+
 </script>
 
 
@@ -96,19 +44,15 @@ const orders = ref([
     </div>
     <div class="card-body">
       <div class="row g-3">
-        <template v-for="order in orders" :key="order.info.fOrderId">
+        
           <div 
             class="col-12  col-lg-4" 
-            v-for="item in order.items" 
-            :key="item.fOrderItemId"
-          >
-            <OrderQrcode 
-              :item="item" 
-              :venue-name="order.info.fVenueName"
-              :order-status="order.info.fOrderStatus"
-            />
+            v-for="item in qrItems"
+    :key="item.FOrderItemId"
+  >
+    <OrderQrcode :item="item" />
           </div>
-        </template>
+        
       </div>
     </div>
   </div>
