@@ -1,13 +1,27 @@
 <script setup>
-import { defineProps,  computed, defineEmits } from 'vue'
+import { defineProps,  computed, defineEmits, ref} from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 const apiUrl="https://localhost:7218/api"
-import { useAuthStore } from '@/stores/mealAuthStore'
 
+
+/*會員資料*/
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+
+  const logout = () => {
+    member.value = null
+  }
 const router = useRouter()
 const emit = defineEmits(['refreshFavorites'])
-const authStore = useAuthStore()
+
 
 
 // 父層傳進來的餐點資料
@@ -43,13 +57,13 @@ const goDetail = () => {
 // 點愛心
 const toggleFavorite = async () => {
 
-   if (!authStore.isLogin) {
+   if (!isLogin.value) {
     alert('請先登入')
     return
   }
 
   try {
-    const userId = authStore.member.UserId
+    const userId = member.value.UserId
 
     await axios.post(
       `${apiUrl}/TMealFavoriteMeals/toggle`,

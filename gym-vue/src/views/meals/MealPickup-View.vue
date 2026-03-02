@@ -29,6 +29,8 @@ async function fetchItem(qrContent) {
 function onDecode(result) {
   qrInput.value = result
   fetchItem(result)
+  console.log(result)
+  console.log(qrInput.value)
 }
 
 // ✅ 確認取餐
