@@ -1,37 +1,29 @@
 <script setup>
 
-import { ref } from 'vue';
+import { ref , onMounted, computed} from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
 import Banner from '@/components/banner.vue'
 
+const products = ref([]);
+const categories = ref([]);
+const router = useRouter();
+
+const API_URL=import.meta.env.VITE_API_URL
+
+function getProducts() {
+  axios
+    .get(API_URL + 'SProducts')
+    .then(resp => {
+      products.value = resp.data;
+    })
+    .catch(error => {
+      console.error('發生錯誤', error);
+    });
+}
 
 
-// 1. 代入乳清蛋白相關資料
-
-const products = ref([
-
-  { id: 1, name: '【果果能量】多件優惠-濃縮乳清蛋白 (任選口味)', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 2, name: '【果果能量】分離乳清蛋白 - 經典原味', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 3, name: '【果果能量】水解乳清蛋白 - 巧克力口味', price: 720, originalPrice: 900 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 4, name: '【果果能量】緩釋酪蛋白 - 香草口味', price: 550, originalPrice: 680 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 5, name: '【果果能量】多件優惠-分離乳清蛋白 (限定包裝)', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 6, name: '【果果能量】濃縮乳清蛋白 - 芝麻拿鐵', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 7, name: '【果果能量】水解乳清蛋白 - 抹茶', price: 720, originalPrice: 900,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href },
-
-  { id: 8, name: '【果果能量】分離乳清蛋白 - 草莓牛奶', price: 650, originalPrice: 800 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href},
-
-  { id: 9, name: '【果果能量】濃縮乳清蛋白 - 泰式奶茶', price: 450, originalPrice: 580 ,image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href}
-
-]);
-
-
-
-const activeCategory = ref('乳清蛋白'); // 預設改為乳清蛋白
+const activeCategory = ref('全部商品'); 
 
 const searchQuery = ref('');
 
@@ -41,11 +33,15 @@ const showLimit = ref(false);
 
 const currentLimit = ref(24);
 
-const sortOptions = ['上架時間: 由新到舊', '上架時間: 由舊到新', '價格: 由高至低', '價格: 由低至高', '銷量: 由高至低'];
+const sortOptions = [ '價格: 由高至低', '價格: 由低至高'];
 
+const currentSort = ref('上架時間: 由新到舊');
 
+const selectSort = (option) => {
+  currentSort.value = option; 
+  showSort.value = false;     
+};
 
-const selectSort = (option) => { showSort.value = false; };
 
 const selectLimit = (num) => { currentLimit.value = num; showLimit.value = false; };
 
@@ -71,30 +67,85 @@ const vClickOutside = {
 
 
 
-const categories = ref([
+const getCategories = () => {
+  axios
+    .get(API_URL + 'SCategories')
+    .then(resp => {
+      categories.value = resp.data.map(cat => ({
+        name: cat.Name,           
+        subCategories: cat.SubCategories, 
+        isOpen: false             
+      }));
+      console.log('類別與商品名稱載入成功！');
+    })
+    .catch(error => {
+      console.error('類別選單載入失敗:', error);
+    });
+};
 
-  { name: '精選商品', isOpen: false, subCategories: ['本月熱銷', '新品上市'] },
+const selectedSubCategory = ref('');
 
-  { name: '推薦清單', isOpen: false, subCategories: ['增肌推薦', '減脂推薦'] },
+const filteredProducts = computed(() => {
+  if (!products.value || products.value.length === 0) return [];
+  
+  let result = products.value;
 
-  { name: '乳清蛋白', isOpen: true, subCategories: ['濃縮乳清蛋白', '分離乳清蛋白', '水解乳清蛋白', '緩釋酪蛋白'] },
+  if (selectedSubCategory.value) {
+    result = result.filter(p => {
+      const nameToCheck = p.pName || p.PName || '';
+      return nameToCheck.includes(selectedSubCategory.value);
+    });
+  }
 
-  { name: '健康零食', isOpen: false, subCategories: ['蛋白棒', '威化餅'] }
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(p => {
+      const fullName = (p.fullName || p.FullName || '').toLowerCase();
+      return fullName.includes(query);
+    });
+  }
 
-]);
+  if (currentSort.value === '價格: 由低至高') {
+    result.sort((a, b) => (a.price || a.Price) - (b.price || b.Price));
+  } 
+  else if (currentSort.value === '價格: 由高至低') {
+    result.sort((a, b) => (b.price || b.Price) - (a.price || a.Price));
+  }
 
+  return result;
+});
 
+const updateFilteredCategory = (name) => {
+  selectedSubCategory.value = name;
+  
+  activeCategory.value = name; 
+};
 
 const handleCategoryClick = (cat) => {
-
   cat.isOpen = !cat.isOpen;
-
   activeCategory.value = cat.name;
-
+  selectedSubCategory.value = ''; 
 };
+
 
 const updateTitle = (name) => { activeCategory.value = name; };
 
+// const goToDetail = (id) => {
+//   router.push({ name: 'ProductDetail', params: { id: id } });
+// };
+
+onMounted(() => {
+  getProducts();
+  getCategories();
+});
+
+const goToDetail = (id) => {
+  if (!id) {
+    console.warn("產品 ID 不存在，無法跳轉");
+    return;
+  }
+  router.push({ name: 'ProductDetail', params: { id: id } });
+};
 </script>
 
 
@@ -115,10 +166,8 @@ const updateTitle = (name) => { activeCategory.value = name; };
             <li class="menu-item mb-3">
 
               <a href="javascript:void(0)" class="fw-bold text-decoration-none d-block py-1 transition-color"
-
-                 :class="activeCategory === '全部商品' ? 'text-danger' : 'text-dark'"
-
-                 @click="updateTitle('全部商品')">全部商品</a>
+   :class="activeCategory === '全部商品' ? 'active-orange' : 'text-dark'"
+   @click="updateTitle('全部商品')">全部商品</a>
 
             </li>
 
@@ -126,7 +175,10 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
               <div class="category-header d-flex justify-content-between align-items-center cursor-pointer py-1" @click="handleCategoryClick(cat)">
 
-                <span class="fw-bold transition-color" :class="{ 'text-danger': activeCategory === cat.name || cat.isOpen }">{{ cat.name }}</span>
+                <span class="fw-bold transition-color" 
+      :class="{ 'active-orange': activeCategory === cat.name || cat.isOpen }">
+      {{ cat.name }}
+</span>
 
                 <span class="v-icon" :class="{ 'rotated': cat.isOpen }"></span>
 
@@ -138,9 +190,11 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
                   <li v-for="sub in cat.subCategories" :key="sub" class="py-1">
 
-                    <a href="javascript:void(0)" class="small text-decoration-none d-block transition-color hover-red"
-
-                       :class="activeCategory === sub ? 'text-danger fw-bold' : 'text-muted'" @click.stop="updateTitle(sub)">{{ sub }}</a>
+                    <a href="javascript:void(0)" @click="updateFilteredCategory(sub)" class="small text-decoration-none d-block transition-color hover-orange"
+   :class="activeCategory === sub ? 'active-orange fw-bold' : 'text-muted'" 
+   @click.stop="updateTitle(sub)">
+   {{ sub }}
+</a>
 
                   </li>
 
@@ -217,31 +271,35 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 
         <div class="row g-4 mb-5">
-  <div v-for="product in products" :key="product.id" class="col-md-4 col-sm-6 text-start">
-    <div class="product-card">
-      
-      <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
-        <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
-          <img
-            v-if="product.image"
-            :src="product.image"
-            :alt="product.name"
-            class="product-img"
-          >
-          <span v-else class="text-muted small">無圖片</span>
-        </div>
-      </router-link>
-
-      <router-link :to="`/shop/products/${product.id}`" class="text-decoration-none">
-        <p class="mb-1 small text-dark product-name hover-red-text">{{ product.name }}</p>
-      </router-link>
-
-      <div class="price-info">
-        <span class="text-danger fw-bold me-2">NT${{ product.price }}</span>
-        <span class="text-muted text-decoration-line-through x-small">NT${{ product.originalPrice }}</span>
+  <div v-for="product in filteredProducts" :key="product.PId" class="col-md-4 col-sm-6 text-start" @click="goToDetail(product.PId)">
+  <div class="product-card">
+    <router-link :to="`/shop/products/${product.PId}`" class="text-decoration-none">
+      <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
+        <img
+          v-if="product.ImagePath"
+          :src="`https://localhost:7218${product.ImagePath.startsWith('/') ? '' : '/'}${product.ImagePath}`"
+          :alt="product.FullName"
+          class="product-img"
+        >
+        <span v-else class="text-muted small">無圖片</span>
       </div>
+    </router-link>
+
+    <router-link :to="`/shop/products/${product.PId}`" class="text-decoration-none">
+      <p class="mb-1 small text-dark product-name hover-red-text">{{ product.FullName }}</p>
+    </router-link>
+
+    <div class="price-info">
+      <span class="active-orange fw-bold me-2">
+    NT${{ (product.DiscountPrice && product.DiscountPrice > 0) ? product.DiscountPrice : product.Price }}
+  </span>
+
+  <span v-if="product.DiscountPrice && product.DiscountPrice > 0" class="text-muted text-decoration-line-through x-small">
+    NT${{ product.Price }}
+  </span>
     </div>
   </div>
+</div>
 </div>
 
 
@@ -281,6 +339,43 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 
 <style scoped>
+.active-orange {
+  color: #f3722c !important;
+}
+
+/* 側邊欄與連結 Hover 效果 */
+.hover-orange:hover {
+  color: #f3722c !important;
+}
+
+/* 商品名稱 Hover 效果 */
+.hover-red-text:hover {
+  color: #f3722c !important;
+}
+
+/* 下拉選單滑入顏色 */
+.custom-dropdown li:hover {
+  color: #f3722c;
+  background: #f8f9fa;
+}
+
+/* 側邊欄箭頭旋轉時的顏色 */
+.v-icon.rotated {
+  transform: rotate(-135deg);
+  border-color: #f3722c; /* 這裡原本就是 #f3722c */
+}
+
+/* 分頁 active 顏色 */
+.page-item.active {
+  color: #f3722c;
+  font-weight: bold;
+  border-bottom: 1px solid #f3722c;
+}
+
+.page-item:hover {
+  color: #f3722c;
+}
+
 /* 圖片縮放效果 */
 .img-wrapper {
   transition: all 0.3s ease;
@@ -337,7 +432,7 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 .custom-dropdown li { padding: 8px 15px; cursor: pointer; }
 
-.custom-dropdown li:hover { color: #fe4c50; background: #f8f9fa; }
+.custom-dropdown li:hover { color: #f3722c; background: #f8f9fa; }
 
 
 
@@ -345,11 +440,11 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 .v-icon { width: 7px; height: 7px; border-right: 1px solid #888; border-bottom: 1px solid #888; transform: rotate(45deg); transition: 0.3s; margin-right: 5px; }
 
-.v-icon.rotated { transform: rotate(-135deg); border-color: #fe4c50; }
+.v-icon.rotated { transform: rotate(-135deg); border-color: #f3722c; }
 
 
 
-.hover-red:hover { color: #fe4c50 !important; }
+.hover-red:hover { color: #f3722c !important; }
 
 .cursor-pointer { cursor: pointer; }
 
@@ -361,7 +456,7 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
   display: -webkit-box;
 
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
 
   -webkit-box-orient: vertical;
 
@@ -383,9 +478,9 @@ const updateTitle = (name) => { activeCategory.value = name; };
 
 .page-item { cursor: pointer; padding: 2px 5px; transition: color 0.2s; }
 
-.page-item:hover { color: #fe4c50; }
+.page-item:hover { color: #f3722c; }
 
-.page-item.active { color: #fe4c50; font-weight: bold; border-bottom: 1px solid #fe4c50; }
+.page-item.active { color: #f3722c; font-weight: bold; border-bottom: 1px solid #f3722c; }
 
 .next-btn { font-size: 0.8rem; color: #888; }
 

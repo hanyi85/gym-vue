@@ -1,107 +1,159 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'; // 確保匯入 watch
+import { ref, onMounted, computed, watch } from 'vue'; 
 import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+
+// 1. 先定義 API_URL，避免 console.log 報錯
+const API_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = API_URL.replace('/api/', '').replace(/\/$/, ''); // 取得 https://localhost:7218 這種格式
+
+console.log('API_URL:', API_URL);
 
 const route = useRoute();
 const router = useRouter();
 
-// 模擬商品資料庫，建議與 Shop-product.vue 的 ID 對應
-const allProducts = ref([
-  { 
-    id: 1, 
-    name: '水解乳清蛋白【可可歐蕾】500克-GOpower果果能量', 
-    category: '乳清蛋白',
-    price: 729, 
-    originalPrice: 1100,
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    rating: 5.0,
-    reviewCount: 313,
-    description: '濃郁可可香氣搭配歐蕾的絲滑口感，每一口都彷彿沉浸在濃郁香醇的巧克力海洋中。',
-    features: ['水解技術，將蛋白質轉換為更小形式', '獨家水解技術，適合腸胃吸收較不佳者', '採用國際知名大廠乳清蛋白'],
-    additions: [
-      { id: 101, name: '脆米蛋白棒【雙癒可可】', price: 64, checked: false },
-      { id: 102, name: '濃縮乳清蛋白【臻醇可可】隨身包', price: 50, checked: false }
-    ]
-  },
-  { 
-    id: 2, 
-    name: '【果果能量】分離乳清蛋白 - 經典原味', 
-    category: '乳清蛋白',
-    price: 650, 
-    originalPrice: 800,
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    rating: 4.8,
-    reviewCount: 156,
-    description: '極低脂肪與碳水化合物，適合追求純淨蛋白質補充的健身者。',
-    features: ['極低乳糖', '迅速吸收', '無添加人工香料'],
-    additions: [
-      { id: 101, name: '搖搖杯 - 霧黑款', price: 199, checked: false }
-    ]
-  }
-]);
-
 const product = ref(null);
 const quantity = ref(1);
-const activeImageIndex = ref(0);
+const allProducts = ref([]);
 
-// 載入商品邏輯
-const loadProduct = () => {
-  const productId = parseInt(route.params.id);
-  const found = allProducts.value.find(p => p.id === productId);
-  if (found) {
-    product.value = found;
-  } else {
-    // 若找不到則預設顯示第一筆，或導回列表
-    product.value = allProducts.value[0];
-  }
+const maskName = (name) => {
+  if (!name) return "匿名用戶";
+  const str = String(name);
+  if (str.length <= 2) return str.substring(0, 1) + "*";
+  return str.substring(0, 1) + "*".repeat(str.length - 2) + str.substring(str.length - 1);
 };
 
-onMounted(loadProduct);
+const loadProduct = () => {
+  const specId = route.params.id;
+  
+  axios.get(`${API_URL}SProducts/${specId}`)
+    .then(resp => {
+      const data = resp.data;
+      console.log("單一商品 API 回傳內容：", data);
 
-// 監聽 ID 變化，避免切換商品時頁面不更新
-watch(() => route.params.id, loadProduct);
+      product.value = {
+        // 根據截圖，後端回傳的是大寫開頭
+        SpecId: data.PId || specId, 
+        id: data.PId,
+        name: data.PName,
+        specName: data.SpecName,     
+        price: data.Price,                 
+        discountPrice: data.DiscountPrice || 0,
+        category: data.CategoryName || '未分類',
+        // 如果 ImagePath 是單一字串，包成陣列給輪播圖使用
+        images: data.ImageList || [data.ImagePath], 
+        description: data.Description || '暫無商品描述',
+        rating: data.AverageStar || 0,
+        reviewCount: data.TotalComments || 0,
+        comments: (data.Comments || []).map(c => ({
+            userName: maskName(c.UserName),
+            star: c.CommentStar || 0, 
+            content: c.ProductComment || "（讀取內容失敗）", 
+            date: c.CommentTime || ''
+        }))
+      };
+    })
+    .catch(error => {
+      console.error('抓取商品詳情失敗:', error);
+    });
+};
 
-// 數量控制
+const loadRelatedProducts = () => {
+  axios.get(`${API_URL}SProducts`) 
+    .then(resp => {
+      allProducts.value = resp.data.map(p => ({
+        id: p.PId,           // 改為大寫 P
+        name: p.PName,       // 改為大寫 P
+        specName: p.SpecName, // 改為大寫 S
+        price: (p.DiscountPrice && p.DiscountPrice > 0) ? p.DiscountPrice : p.Price,
+        originalPrice: p.Price,
+        image: BASE_URL + p.ImagePath,
+      }));
+    })
+    .catch(error => {
+      console.error('抓取所有商品失敗:', error);
+    });
+};
+
+
+
+const relatedProducts = computed(() => {
+  if (allProducts.value.length === 0) return [];
+  
+  return allProducts.value
+    .filter(p => p.id !== product.value?.id) 
+    .slice(0, 4); 
+});
+
+onMounted(() => {
+  loadProduct();
+  loadRelatedProducts();
+});
+
+
 const decreaseQty = () => { if (quantity.value > 1) quantity.value--; };
 const increaseQty = () => { quantity.value++; };
 
-// 加入購物車模擬
-const addToCart = () => {
-  // 1. 從本地儲存取得現有購物車資料，若無則為空陣列
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+const addToCart = async () => {
+  const tempUserId = 1;
+  const productData = product.value;
 
-  // 2. 檢查購物車是否已有相同商品
-  const existingItem = cart.find(item => item.id === product.value.id);
-
-  if (existingItem) {
-    // 若有，增加數量
-    existingItem.quantity += quantity.value;
-  } else {
-    // 若無，新增商品資訊
-    cart.push({
-      id: product.value.id,
-      name: product.value.name,
-      price: product.value.price,
-      image: product.value.image,
-      category: product.value.category,
-      quantity: quantity.value
-    });
+  if (!productData || !productData.SpecId) {
+    alert("商品規格載入失敗，請重新整理頁面");
+    return;
   }
 
-  // 3. 存回 localStorage
-  localStorage.setItem('cart', JSON.stringify(cart));
-  
-  // 4. 提示使用者並詢問是否前往購物車
-  if (confirm(`已將 ${quantity.value} 件商品加入購物車！是否立即前往結帳？`)) {
-    router.push('/shop/cart');
+  const cartData = {
+    UserId: tempUserId,
+    SpecId: productData.SpecId,
+    Quantity: quantity.value,
+    Price: productData.discountPrice || productData.price,
+  };
+
+  try {
+    await axios.post(`${API_URL}SCarts/AddToCart`, cartData);
+
+    const goCart = confirm("商品已加入購物車！是否要前往購物車結帳？");
+    if (goCart) {
+      router.push('/shop/cart');
+    }
+  } catch (err) {
+    console.error("加入購物車失敗", err);
+    alert("加入購物車失敗，請稍後再試");
   }
 };
 
-const relatedProducts = computed(() => {
-  return allProducts.value
-    .filter(p => p.id !== product.value?.id)
-    .slice(0, 4);
-});
+
+const buyNow = async () => {
+  const productData = product.value;
+
+  const cartData = {
+    UserId: 1,
+    SpecId: productData.SpecId,
+    Quantity: quantity.value,
+    Price: productData.discountPrice || productData.price,
+  };
+
+  try {
+    const res = await axios.post(
+      `${API_URL}SCarts/AddToCart`,
+      cartData
+    );
+
+    console.log('AddToCart 回傳：', res.data);
+
+    // ✅ 明確確認後端成功
+    if (res.status === 200 || res.status === 201) {
+      router.push('/shop/cart');
+    } else {
+      alert('加入購物車失敗');
+    }
+  } catch (err) {
+    console.error('加入購物車 API 失敗', err.response || err);
+    alert('加入購物車失敗，請查看 console');
+  }
+};
+
 
 // 跳轉至指定產品明細頁
 const goToProduct = (id) => {
@@ -127,92 +179,95 @@ watch(
     </nav>
 
     <div class="row g-5">
-      <div class="col-lg-6">
-        <div class="image-gallery">
-          <div class="main-image-box border rounded bg-white position-relative mb-3">
-            <img :src="product.image" class="img-fluid main-img" :alt="product.name">
-            
-          </div>
-
-          <div class="thumbnail-row d-flex gap-2">
-            <div 
-              class="thumb-item border rounded overflow-hidden" 
-              :class="{ 'active-thumb': activeImageIndex === 0 }"
-              @click="activeImageIndex = 0"
-            >
-              <img :src="product.image" class="img-fluid">
-            </div>
-            <div 
-              v-for="i in 2" :key="i"
-              class="thumb-item border rounded overflow-hidden opacity-50"
-              @click="activeImageIndex = i"
-            >
-              <img :src="product.image" class="img-fluid" style="filter: grayscale(1);">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-6">
-        <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}</h1>
-        <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
-        
-        <ul class="list-unstyled mb-4">
-          <li v-for="feat in product.features" :key="feat" class="small text-secondary mb-1">
-            ◦ {{ feat }}
-          </li>
-        </ul>
-
-        <div class="promo-banner border-start border-warning border-4 ps-3 py-2 mb-4 bg-light small">
-          <div class="text-dark mb-1">至 02/11 00:00 截止 全店，馬上紅包袋</div>
-          <div class="text-dark">至 02/11 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
-        </div>
-
-        <div class="price-rating-area mb-4">
-          <div class="d-flex align-items-baseline mb-1">
-            <span class="text-danger fs-2 fw-bold me-2">NT${{ product.price }}</span>
-            <span class="text-muted text-decoration-line-through small">NT${{ product.originalPrice }}</span>
-          </div>
-          <div class="rating text-warning small">
-            ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
-          </div>
-        </div>
-
-        <div class="quantity-control mb-4">
-          <label class="small text-muted d-block mb-2">數量</label>
-          <div class="input-group" style="width: 130px;">
-            <button class="btn btn-outline-secondary py-1" @click="decreaseQty">-</button>
-            <input type="text" class="form-control text-center border-secondary py-1" v-model="quantity" readonly>
-            <button class="btn btn-outline-secondary py-1" @click="increaseQty">+</button>
-          </div>
-        </div>
-
-        <!-- <div class="addon-box border rounded p-3 mb-4 bg-light">
-          <div class="addon-title small fw-bold mb-3 text-muted">+ 以優惠價加購商品 (最多 1 件)</div>
-          <div v-for="addon in product.additions" :key="addon.id" class="addon-item d-flex align-items-center mb-2">
-            <input type="checkbox" class="form-check-input me-3" v-model="addon.checked">
-            <div class="addon-img-placeholder border rounded bg-white me-2"></div>
-            <div class="addon-info small">
-              <div class="text-dark">{{ addon.name }}</div>
-              <div class="text-danger">優惠價 NT${{ addon.price }}</div>
-            </div>
-          </div>
-        </div> -->
-
-        <div class="row g-2">
-          <div class="col-6">
-            <button class="btn w-100 py-2 fw-bold text-white btn-add-cart" @click="addToCart">加入購物車</button>
-          </div>
-          <div class="col-6">
-            <button class="btn w-100 py-2 fw-bold text-white btn-buy-now">立即購買</button>
-          </div>
-        </div>
-        
-        <!-- <div class="text-center mt-3">
-          <a href="#" class="text-muted small text-decoration-none">♡ 加入追蹤清單</a>
-        </div> -->
+  <div class="col-lg-6" v-if="product.images && product.images.length > 0">
+  <div id="productCarousel" class="carousel slide border rounded shadow-sm overflow-hidden mb-3" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <div 
+        v-for="(img, index) in product.images" 
+      
+        :key="'main-' + index"
+        class="carousel-item" 
+        :class="{ active: index === 0 }"
+        data-bs-interval="2500"
+      >
+        <img 
+          :src="BASE_URL + img" 
+          class="d-block w-100" 
+          style="object-fit: cover; aspect-ratio: 1/1;"
+          alt="產品主圖"
+        >
       </div>
     </div>
+    
+    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar">
+    <div 
+      v-for="(img, index) in product.images" 
+      :key="'thumb-' + index"
+      class="thumb-box border rounded"
+      data-bs-target="#productCarousel" 
+      :data-bs-slide-to="index"
+      style="width: 80px; height: 80px; flex-shrink: 0; overflow: hidden; cursor: pointer;"
+    >
+      <img 
+        :src="BASE_URL + img" 
+        class="w-100 h-100" 
+        style="object-fit: cover;"
+        alt="產品縮圖"
+      >
+    </div>
+  </div>
+</div>
+  
+  <div class="col-lg-6">
+    <h1 class="product-title fs-3 fw-bold mb-2">{{ product.name }}({{ product.specName }})</h1>
+    <p class="text-muted small mb-4 line-height-base">{{ product.description }}</p>
+    
+    <div class="promo-banner border-start border-warning border-4 ps-3 py-2 mb-4 bg-light small">
+      <div class="text-dark mb-1">至 03/14 00:00 截止 全店，馬上紅包袋</div>
+      <div class="text-dark">至 03/14 00:00 截止 全店，滿 $1,288 送品牌春聯</div>
+    </div>
+
+    <div class="price-rating-area mb-4">
+      <div class="d-flex align-items-baseline mb-1">
+        <span class="text-danger fs-2 fw-bold me-2">
+          NT${{ (product.discountPrice && product.discountPrice > 0) ? product.discountPrice : product.price }}
+        </span>
+        <span v-if="product.discountPrice && product.discountPrice > 0" class="text-muted text-decoration-line-through small">
+          NT${{ product.price }}
+        </span>
+      </div>
+      <div class="rating text-warning small">
+        ★★★★★ <span class="text-muted ms-2">{{ product.rating }} | {{ product.reviewCount }} 個評價</span>
+      </div>
+    </div>
+
+    <div class="quantity-control mb-4">
+      <label class="small text-muted d-block mb-2">數量</label>
+      <div class="input-group" style="width: 130px;">
+        <button class="btn btn-outline-secondary py-1" @click="decreaseQty">-</button>
+        <input type="text" class="form-control text-center border-secondary py-1" v-model="quantity" readonly>
+        <button class="btn btn-outline-secondary py-1" @click="increaseQty">+</button>
+      </div>
+    </div>
+
+    <div class="row g-2">
+      <div class="col-6">
+        <button class="btn w-100 py-2 fw-bold text-white btn-add-cart" @click="addToCart" style="background-color: #ff8c00; border: none;">加入購物車</button>
+      </div>
+      <div class="col-6">
+        <button class="btn w-100 py-2 fw-bold text-white" @click="buyNow" style="background-color: #f4511e; border: none;">立即購買</button>
+      </div>
+    </div>
+  </div>
+</div>
     <div class="product-info-tabs mt-5">
       <ul class="nav nav-tabs justify-content-center border-bottom-0" id="productTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -276,14 +331,52 @@ watch(
         </div>
 
         <div class="tab-pane fade" id="reviews" role="tabpanel">
-          <div class="mx-auto max-width-800 py-4 text-center">
-             <div class="fs-2 text-warning mb-2">★★★★★</div>
-             <p class="fw-bold">{{ product.rating }} / 5.0</p>
-             <p class="text-muted">共有 {{ product.reviewCount }} 位顧客留下評價</p>
-             <hr>
-             <p class="text-muted italic small py-5">目前尚無詳細文字評論內容</p>
+  <div class="mx-auto max-width-800 py-4">
+    <div class="row align-items-center mb-5">
+      <div class="col-md-4 text-center border-end">
+        <h4 class="fw-bold mb-1">{{ product.reviewCount }} 個評價</h4>
+        <div class="text-warning fs-5 mb-1">
+          <span v-for="i in 5" :key="i">{{ i <= Math.round(product.rating) ? '★' : '☆' }}</span>
+          <span class="ms-2 text-dark fs-6">{{ product.rating }} 分</span>
+        </div>
+      </div>
+      <div class="col-md-8 ps-md-4">
+        <div v-for="i in [5,4,3,2,1]" :key="i" class="d-flex align-items-center mb-1 small text-muted">
+          <span class="me-2" style="width: 30px;">{{ i }} 分</span>
+          <div class="progress flex-grow-1" style="height: 4px;">
+            <div class="progress-bar bg-warning" :style="{ width: (i === 5 ? '98%' : (i === 4 ? '2%' : '0%')) }"></div>
+          </div>
+          <span class="ms-2" style="width: 30px;">{{ i === 5 ? '98%' : (i === 4 ? '2%' : '0%') }}</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div v-if="product.comments && product.comments.length > 0">
+      <div v-for="(comment, index) in product.comments" :key="index" class="row mb-5">
+        <div class="col-md-4 d-flex align-items-start mb-2 mb-md-0">
+          <div class="avatar-circle bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+            <i class="bi bi-person text-secondary fs-4"></i>
+          </div>
+          <div>
+            <div class="fw-bold">{{ comment.userName }}</div>
+            <div class="text-muted small">{{ comment.date }}</div>
           </div>
         </div>
+        <div class="col-md-8">
+          <div class="text-warning mb-2">
+            <span v-for="star in 5" :key="star">{{ star <= comment.star ? '★' : '☆' }}</span>
+          </div>
+          <p class="text-secondary small">{{ comment.content }}</p>
+        </div>
+      </div>
+    </div>
+    <div v-else class="text-center py-5">
+      <p class="text-muted italic">目前尚無詳細評價內容</p>
+    </div>
+  </div>
+</div>
       </div>
     </div>
     <div class="related-products-section mt-5 pt-5 border-top">
@@ -303,10 +396,10 @@ watch(
             <div class="image-wrapper bg-light rounded p-3 mb-3 position-relative">
               <img :src="item.image" class="img-fluid" :alt="item.name">
               <span class="badge bg-warning position-absolute top-0 end-0 m-2 opacity-75 small">
-                {{ item.tag || '500g' }}
+                
               </span>
             </div>
-            <p class="product-name small mb-2 text-dark text-truncate-2">{{ item.name }}</p>
+            <p class="product-name small mb-2 text-dark text-truncate-2">{{ item.name }}({{ item.specName }})</p>
             <div class="product-price">
               <span class="text-warning fw-bold me-1">NT${{ item.price }}</span>
               <span class="text-muted text-decoration-line-through x-small">NT${{ item.originalPrice }}</span>
@@ -319,11 +412,33 @@ watch(
 </template>
 
 <style scoped>
+.avatar-circle {
+  border: 1px solid #eee;
+}
+
+.progress {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
+.progress-bar {
+  border-radius: 10px;
+}
+
+/* 確保評價內容的文字顏色與圖片一致 */
+.text-secondary {
+  color: #666 !important;
+}
+
+.max-width-800 {
+  max-width: 800px;
+}
+
 /* 相關產品樣式 */
 .x-small { font-size: 0.75rem; }
 .text-truncate-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;  
   overflow: hidden;
   height: 2.8rem; /* 確保對齊 */

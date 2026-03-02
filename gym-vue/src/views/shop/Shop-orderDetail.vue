@@ -1,70 +1,101 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import axios from 'axios';
 
 const route = useRoute();
-const orderId = ref('');
+const API_URL = import.meta.env.VITE_API_URL;
 
-// --- 📍 補上遺漏的響應式狀態 ---
-const isCartExpanded = ref(false); // 控制購物車展開/收合
-const toggleCart = () => {
-  isCartExpanded.value = !isCartExpanded.value;
+// --- 響應式狀態 ---
+const isCartExpanded = ref(false);
+const toggleCart = () => { isCartExpanded.value = !isCartExpanded.value; };
+
+// 訂單商品資料 (由 API 填充)
+const cartItems = ref([]);
+
+// 訂單詳細資訊 (預設空值，避免樣式報錯)
+const orderInfo = ref({
+  orderNumber: '',
+  orderDate: '',
+  orderStatus: '',
+  totalAmount: 0,
+  customer: { name: '', phone: '', email: '' },
+  delivery: { receiver: '', phone: '', method: '', status: '', address: '' },
+  payment: { method: '', status: '' },
+  note: ''
+});
+
+// 運費與小計計算
+const shippingFee = ref(0);
+const subtotal = computed(() => {
+  return cartItems.value.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+});
+
+// --- 📍 核心：抓取後端資料 ---
+const fetchOrderDetail = async () => {
+  // 💡 同時嘗試從路徑 (params.id) 或 參數 (query.orderNumber) 抓取
+  const orderNumber = route.params.id || route.query.orderNumber;
+  
+  if (!orderNumber) {
+    console.error("URL 中找不到任何訂單編號");
+    return;
+  }
+
+  try {
+    const res = await axios.get(`${API_URL}SOrder/byOrderNumber/${orderNumber}`);
+    const data = res.data;
+    console.log("後端回傳原始資料：", data);
+
+    // 💡 根據你 image_c6a520.png 看到的真實大寫欄位進行對應
+    orderInfo.value = {
+      orderNumber: data.OrderNumber,
+      orderDate: data.Date ? new Date(data.Date).toLocaleString('zh-TW') : '無日期',
+      orderStatus: data.oStatus,
+      totalAmount: data.Total,
+      customer: {
+        name: data.MName,
+        phone: data.MPhone,
+        email: data.Email
+      },
+      delivery: {
+        receiver: data.MName,
+        phone: data.MPhone,
+        method: data.ship?.Shipping || '宅配',
+        status: data.oStatus,
+        address: data.MAddress
+      },
+      payment: {
+        method: data.pay?.Payment || '付款方式',
+        status: data.PayStatus
+      },
+      note: data.Note || '無'
+    };
+
+    shippingFee.value = data.ShipFee || 0;
+
+    if (data.sOrderDetails) {
+      cartItems.value = data.sOrderDetails.map(item => ({
+        id: item.OdId,
+        name: item.PName,
+        // 修正圖片路徑並強制使用 https
+        image: item.spec?.ImagePath ? item.spec.ImagePath.replace('http://', 'https://') : '',
+        price: item.SPrice,
+        originalPrice: item.SPrice,
+        quantity: item.Quantity
+      }));
+    }
+  } catch (error) {
+    console.error("抓取詳細資料失敗", error);
+  }
 };
 
-// --- 📍 補上購物車商品資料 (建議從 orderInfo 或 API 取得) ---
-const cartItems = ref([
-  {
-    id: 1,
-    name: '濃縮乳清蛋白【純粹那堤】隨身包35克',
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    price: 55,
-    originalPrice: 80,
-    quantity: 1
-  },
-  {
-    id: 2,
-    name: '水解乳清蛋白【可可歐蕾】500克',
-    image: new URL('./images/乳清蛋白 可可.png', import.meta.url).href,
-    price: 729,
-    originalPrice: 1100,
-    quantity: 1
-  }
-]);
-
-// 計算小計與運費
-const subtotal = computed(() => cartItems.value.reduce((acc, item) => acc + (item.price * item.quantity), 0));
-const shippingFee = ref(80);
-
-// 訂單詳細資料
-const orderInfo = ref({
-  orderNumber: '202405200001',
-  orderDate: '2024-05-20 14:30',
-  orderStatus: '已確認',
-  totalAmount: 864, // 總金額
-  customer: { 
-    name: '王小明', 
-    phone: '0912 345 678',
-    email: 'aaa****@gmail.com' 
-  },
-  delivery: {
-    receiver: '王小明',
-    phone: '0912 345 678',
-    method: '宅配',
-    status: '備貨中',
-    address: '台南市安平區建平十一街24巷30號'
-  },
-  payment: { method: '信用卡', status: '已付款' },
-  note: '無'
-});
 onMounted(() => {
-  orderId.value = route.params.id;
-  orderInfo.value.orderNumber = route.params.id;
+  fetchOrderDetail();
 });
 
 const reAddToCart = () => {
   console.log('將訂單商品重新加入購物車:', cartItems.value);
   alert('商品已重新加入購物車！');
-  // 這裡之後可以串接您的購物車 Store (如 Pinia)
 };
 </script>
 
