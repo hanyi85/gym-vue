@@ -5,7 +5,7 @@
     <!-- 會員 Header -->
     <MemberHeader class="mb-4" />
 
-    <!-- ① 今日健康摘要 -->
+    <!--  今日健康摘要 -->
     <div class="card home-card mb-4">
       <div class="card-body">
 
@@ -69,9 +69,7 @@
     </div>
 
 
-    <!-- ③ 快捷功能 -->
     <!-- 功能區塊 -->
-<!-- ③ 快捷功能 -->
 <div class="card home-card mb-4">
   <div class="card-body">
 

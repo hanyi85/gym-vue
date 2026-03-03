@@ -33,11 +33,6 @@
     <p class="message">{{ message }}</p>
   </div>
 
-  <!-- Loading -->
-  <div v-else-if="status === 'loading'">
-    <div class="icon">⏳</div>
-    <p class="message">{{ message }}</p>
-  </div>
 
   <!-- Success -->
   <div v-else-if="status === 'success'">
@@ -61,13 +56,24 @@
 
   <p class="message">
     驗證失敗或連結已過期。<br />
-    我們可以重新發送一封新的驗證信給您。
+    請重新輸入您的電子信箱取得新的驗證連結。
   </p>
-  
+
+  <!--  新增輸入框 -->
+  <div class="input-wrapper">
+    <input
+      type="email"
+      v-model="resendEmail"
+      class="resend-input"
+      placeholder="請輸入電子信箱"
+    />
+  </div>
+
   <div class="actions">
     <router-link to="/users/login" class="btn outline">
       返回登入
     </router-link>
+
     <button
       class="btn primary"
       :disabled="cooldown > 0 || isResending"
@@ -83,7 +89,6 @@
         重新發送驗證信
       </span>
     </button>
-
   </div>
 </div>
 
@@ -91,6 +96,13 @@
       </div>
     </main>
 
+  <!-- Loading -->
+<div v-if="status === 'loading'" class="loading-overlay">
+  <div class="loading-box">
+    <div class="line-spinner"></div>
+    <p>{{ message }}</p>
+  </div>
+</div>
   </div>
 </template>
 
@@ -100,7 +112,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useEmailVerify } from '@/composables/useEmailVerify'
 import { verifyEmail, resendVerifyEmail } from '@/services/auth'
-
+const resendEmail = ref('')
 const route = useRoute()
 
 const cooldown = ref(0)
@@ -124,15 +136,33 @@ const handleResend = async () => {
   try {
     isResending.value = true
 
-    const email = localStorage.getItem('pendingVerifyEmail')
+    if (!resendEmail.value) {
+      message.value = '請輸入電子信箱'
+      return
+    }
 
-    await resendVerifyEmail(email)
+    await resendVerifyEmail(resendEmail.value)
 
     message.value = '驗證信已重新發送，請前往信箱查收。'
     startCooldown()
 
   } catch (error) {
+
+    //  帳號已驗證情境
+    if (error.response?.data?.message === '帳號已完成驗證') {
+
+      status.value = 'success'
+      message.value = '您的帳號已完成驗證，正在前往下一步...'
+
+      setTimeout(() => {
+        router.push('/users/profile-health')
+      }, 2000)
+
+      return
+    }
+
     message.value = '發送失敗，請稍後再試。'
+
   } finally {
     isResending.value = false
   }
@@ -153,6 +183,12 @@ const { status, message, execute } =
 onMounted(() => {
   const token = route.query.token
   const verified = route.query.verified
+
+  // 如果 localStorage 有，就帶入
+  const storedEmail = localStorage.getItem('pendingVerifyEmail')
+  if (storedEmail) {
+    resendEmail.value = storedEmail
+  }
 
   if (token) {
     execute(token)
@@ -376,5 +412,55 @@ onMounted(() => {
   background-color: #fdecea;
   color: #e53935;
 
+}
+
+
+/* Loading 遮罩 */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Loading 盒子 */
+.loading-box {
+  text-align: center;
+}
+
+/* LINE 風轉圈 */
+.line-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #e5e5e5;
+  border-top: 4px solid #06C755; /* LINE 綠 */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.input-wrapper {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.resend-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  outline: none;
+  transition: 0.3s;
+}
+
+.resend-input:focus {
+  border-color: #f38d00;
 }
 </style>
