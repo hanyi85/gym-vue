@@ -54,8 +54,8 @@
 
             <div
               class="detail-image-box rounded-4 bg-light mb-5 d-flex align-items-center justify-content-center overflow-hidden shadow-sm">
-              <img v-if="post.ImageUrl" :src="post.ImageUrl" class="img-fluid w-100 h-100 object-fit-cover"
-                :alt="post.Title" />
+              <img v-if="post.ImageUrls && post.ImageUrls.length > 0" :src="post.ImageUrls[0]"
+                class="img-fluid w-100 h-100 object-fit-cover" :alt="post.Title" />
               <div v-else class="placeholder-gradient w-100 h-100 d-flex align-items-center justify-content-center">
                 <span class="text-white opacity-25 fw-bold display-4">FitnessBar</span>
               </div>
@@ -87,9 +87,12 @@
                 <div @click="goToOtherDetail(related.Id)"
                   class="related-card bg-white rounded-4 shadow-sm overflow-hidden p-2 transition hover-up pointer">
                   <div class="related-img-sm rounded-3 mb-2 overflow-hidden">
-                    <img v-if="related.ImageUrl" :src="related.ImageUrl" class="w-100 h-100 object-fit-cover"
-                      :alt="related.Title" />
-                    <div v-else class="placeholder-gradient w-100 h-100"></div>
+                    <img v-if="related.ImageUrls && related.ImageUrls.length > 0" :src="related.ImageUrls[0]"
+                      class="w-100 h-100 object-fit-cover" :alt="related.Title" />
+                    <div v-else
+                      class="placeholder-gradient w-100 h-100 d-flex align-items-center justify-content-center">
+                      <i class="bi bi-image text-white opacity-25"></i>
+                    </div>
                   </div>
                   <div class="px-2 pb-2">
                     <div class="text-orange x-small fw-bold mb-1">
@@ -119,6 +122,9 @@ import axios from 'axios';
 const route = useRoute();
 const router = useRouter();
 
+// API 基礎網址
+const apiBaseUrl = 'https://localhost:7218';
+
 // 資料狀態
 const post = ref({});
 const allNews = ref([]);
@@ -137,19 +143,35 @@ const formatDate = (dateStr) => {
   });
 };
 
+// 處理圖片路徑的輔助函式
+const processImageUrls = (data) => {
+  if (Array.isArray(data)) {
+    // 處理陣列 (allNews)
+    return data.map(item => ({
+      ...item,
+      ImageUrls: (item.ImageUrls || []).map(url => url.startsWith('/') ? `${apiBaseUrl}${url}` : url)
+    }));
+  } else {
+    // 處理單一物件 (post detail)
+    return {
+      ...data,
+      ImageUrls: (data.ImageUrls || []).map(url => url.startsWith('/') ? `${apiBaseUrl}${url}` : url)
+    };
+  }
+};
+
 // 抓取單篇文章詳情
 const fetchPostDetail = async (id) => {
   loading.value = true;
   try {
-    const response = await axios.get(`https://localhost:7218/api/YPosts/${id}`);
-    post.value = response.data;
-    // 每次載入新文章時，回到頁面頂部
+    const response = await axios.get(`${apiBaseUrl}/api/YPosts/${id}`);
+    // 處理圖片路徑
+    post.value = processImageUrls(response.data);
     scrollToTop();
   } catch (error) {
     console.error('抓取詳情失敗:', error);
     router.push('/post/card');
   } finally {
-    // 稍微延遲讓 skeleton 動畫自然一點
     setTimeout(() => { loading.value = false; }, 400);
   }
 };
@@ -157,14 +179,15 @@ const fetchPostDetail = async (id) => {
 // 抓取所有文章列表（用於側邊欄推薦）
 const fetchAllPosts = async () => {
   try {
-    const response = await axios.get('https://localhost:7218/api/YPosts');
-    allNews.value = response.data || [];
+    const response = await axios.get(`${apiBaseUrl}/api/YPosts`);
+    // 處理圖片路徑
+    allNews.value = processImageUrls(response.data || []);
   } catch (error) {
     console.error('抓取列表失敗:', error);
   }
 };
 
-// 優化後的相關貼文邏輯：排除當前 ID 並限制數量
+// 相關貼文邏輯
 const relatedPosts = computed(() => {
   if (!allNews.value.length) return [];
   const currentId = Number(route.params.id);
@@ -173,28 +196,22 @@ const relatedPosts = computed(() => {
     .slice(0, 4);
 });
 
-// 跳轉邏輯
-const goToOtherDetail = (id) => {
-  router.push(`/post/postDetail/${id}`);
-};
-
+// 跳轉與滾動
+const goToOtherDetail = (id) => router.push(`/post/postDetail/${id}`);
 const goToJoinForm = (id) => router.push(`/post/join/${id}`);
+const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
-// 監聽路由 ID 變化（當點擊右側推薦文章時）
+// 監聽路由 ID 變化
 watch(() => route.params.id, (newId) => {
-  if (newId) {
-    fetchPostDetail(newId);
-  }
+  if (newId) fetchPostDetail(newId);
 }, { immediate: true });
 
-// 滾動監聽邏輯
+// 滾動監聽
 const handleScroll = () => {
   scrollY.value = window.scrollY;
   const docHeight = document.documentElement.scrollHeight - window.innerHeight;
   scrollPercent.value = docHeight > 0 ? (window.scrollY / docHeight) * 100 : 0;
 };
-
-const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 onMounted(() => {
   fetchAllPosts();
@@ -207,7 +224,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 原有樣式保持並微調 */
+/* 樣式保持不變，已優化圖片顯示容器 */
 .reading-progress-bar {
   position: fixed;
   top: 0;
