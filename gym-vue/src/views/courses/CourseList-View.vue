@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
@@ -26,6 +26,45 @@ const selectedCategoryId = ref('')
 const level = ref('')
 const duration = ref('')
 const price = ref('')
+// ===== pagination (每頁 6 筆) =====
+const PAGE_SIZE = 6
+const courseListRef = ref(null)
+// 課程分頁
+const coursePage = ref(1)
+const courseTotalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredCourses.value.length / PAGE_SIZE))
+)
+const pagedCourses = computed(() => {
+  const start = (coursePage.value - 1) * PAGE_SIZE
+  return filteredCourses.value.slice(start, start + PAGE_SIZE)
+})
+
+async function changeCoursePage(p) {
+  if (p < 1 || p > courseTotalPages.value) return
+
+  coursePage.value = p
+
+  // 等 DOM 更新
+  await nextTick()
+
+  const el = courseListRef.value
+  if (!el) return
+
+  // 抓 header 高度（假設你的 header class 是 .page-header）
+  const header = document.querySelector('.page-header')
+  const headerHeight = header ? header.offsetHeight : 0
+
+  const top =
+    el.getBoundingClientRect().top +
+    window.pageYOffset -
+    headerHeight -
+    20   // 額外留一點空間
+
+  window.scrollTo({
+    top,
+    behavior: 'smooth'
+  })
+}
 
 // ===== coaches =====
 const coaches = ref([])
@@ -108,6 +147,14 @@ function resetCoachFilters() {
   coachMaxPrice.value = ''
   coachSkill.value = ''
 }
+
+watch([keyword, selectedCategoryId, level, duration, price], () => {
+  coursePage.value = 1
+})
+
+watch(tab, () => {
+  coursePage.value = 1
+})
 // ===== init (courses + categories) =====
 onMounted(async () => {
   try {
@@ -317,10 +364,10 @@ watch(
         </div>
 
         <!-- 課程列表 -->
-        <div class="row g-4 mt-3">
+      <div class="row g-4 mt-3" ref="courseListRef">
           <div
             class="col-lg-4 col-md-6"
-            v-for="c in filteredCourses"
+            v-for="c in pagedCourses"
             :key="courseId(c)"
           >
             <div class="course-card">
@@ -334,6 +381,8 @@ watch(
                   alt="課程圖片"
                 />
               </div>
+
+             
 
               <div class="card-body">
                 <div class="card-header">
@@ -363,6 +412,34 @@ watch(
             </div>
           </div>
         </div>
+
+         <!-- 課程分頁 -->
+<div v-if="courseTotalPages > 1" class="pagination-wrapper">
+  <button
+    class="page-btn"
+    @click="changeCoursePage(coursePage - 1)"
+    :disabled="coursePage === 1"
+  >
+    上一頁
+  </button>
+
+  <button
+    v-for="p in courseTotalPages"
+    :key="'c' + p"
+    @click="changeCoursePage(p)"
+    :class="['page-btn', { active: coursePage === p }]"
+  >
+    {{ p }}
+  </button>
+
+  <button
+    class="page-btn"
+    @click="changeCoursePage(coursePage + 1)"
+    :disabled="coursePage === courseTotalPages"
+  >
+    下一頁
+  </button>
+</div>
       </template>
 
       <!-- ================= 教練 ================= -->
@@ -906,5 +983,46 @@ height: 340px;
 :deep(.main),
 :deep(#app) {
   background: #f8fafc !important;
+}
+
+/* ===== Pagination ===== */
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;   /* 置中 */
+  align-items: center;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.page-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  background: #fff;
+  color: #555;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #fff3e6;
+  border-color: #ff8c2a;
+  color: #ff8c2a;
+}
+
+.page-btn.active {
+  background: #ff8c2a;      /* 橘色 */
+  border-color: #ff8c2a;
+  color: #fff;
+  font-weight: 600;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
