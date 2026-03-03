@@ -32,7 +32,7 @@
           <div
             :class="['banner-box d-flex rounded-4 bg-white shadow-sm border-top border-4 overflow-hidden h-100', index === 0 ? 'border-orange' : 'border-warning']">
             <div class="pinned-img-side flex-shrink-0 d-none d-sm-block">
-              <img v-if="p.ImageUrl" :src="p.ImageUrl" class="side-img" />
+              <img v-if="p.ImageUrls && p.ImageUrls.length > 0" :src="p.ImageUrls[0]" class="side-img" />
               <div v-else :class="['side-img-placeholder', index === 0 ? 'bg-orange-grad' : 'bg-warning-grad']"></div>
             </div>
             <div class="p-4 flex-grow-1 d-flex flex-column justify-content-center">
@@ -116,7 +116,8 @@
                 <div v-if="viewMode === 'card'" @click="goToDetail(news.Id)"
                   class="card h-100 border-0 shadow-sm rounded-4 news-card bg-white overflow-hidden cursor-pointer">
                   <div class="card-img-wrapper">
-                    <img v-if="news.ImageUrl" :src="news.ImageUrl" class="post-img w-100 h-100 object-fit-cover" />
+                    <img v-if="news.ImageUrls && news.ImageUrls.length > 0" :src="news.ImageUrls[0]"
+                      class="post-img w-100 h-100 object-fit-cover" />
                     <div v-else class="post-img-placeholder d-flex align-items-center justify-content-center">
                       <span class="text-white opacity-50 fw-bold">FitnessBar News</span>
                     </div>
@@ -134,7 +135,8 @@
                 <div v-else @click="goToDetail(news.Id)"
                   class="list-item d-flex mb-3 shadow-sm rounded-4 bg-white border-start border-orange border-4 overflow-hidden cursor-pointer">
                   <div class="list-img-side flex-shrink-0">
-                    <img v-if="news.ImageUrl" :src="news.ImageUrl" class="side-img w-100 h-100 object-fit-cover" />
+                    <img v-if="news.ImageUrls && news.ImageUrls.length > 0" :src="news.ImageUrls[0]"
+                      class="side-img w-100 h-100 object-fit-cover" />
                     <div v-else class="list-img-placeholder d-flex align-items-center justify-content-center">
                       <i class="bi bi-image text-white opacity-25"></i>
                     </div>
@@ -214,8 +216,26 @@ const catCount = computed(() => {
 const fetchPosts = async () => {
   loading.value = true;
   try {
+    // 1. 從 API 抓取原始資料
     const response = await axios.get('https://localhost:7218/api/YPosts');
-    newsList.value = response.data;
+
+    // 2. 定義後端 API 網址 (不要漏掉 https 與 port)
+    const apiBaseUrl = 'https://localhost:7218';
+
+    // 3. 處理圖片路徑：將 /images/... 轉換為 https://localhost:7218/images/...
+    newsList.value = response.data.map(post => {
+      return {
+        ...post,
+        // 判斷 ImageUrls 是否存在並處理
+        ImageUrls: (post.ImageUrls || []).map(url => {
+          if (url && url.startsWith('/')) {
+            return `${apiBaseUrl}${url}`;
+          }
+          return url;
+        })
+      };
+    });
+
     setTimeout(() => { loading.value = false; }, 800);
     triggerGuide();
   } catch (error) {
@@ -223,7 +243,6 @@ const fetchPosts = async () => {
     loading.value = false;
   }
 };
-
 const triggerGuide = () => {
   setTimeout(() => {
     showGuideBanner.value = true;
@@ -280,7 +299,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* --- 麵包屑樣式 --- */
+/* 原有樣式完全保留，未作修改 */
 .custom-breadcrumb-wrapper .breadcrumb {
   display: inline-flex;
   align-items: center;
@@ -290,7 +309,6 @@ onUnmounted(() => {
 
 .breadcrumb-item+.breadcrumb-item::before {
   content: "›";
-  /* 使用更高級的間隔符號 */
   font-size: 1.2rem;
   line-height: 1;
   vertical-align: sub;
@@ -309,7 +327,6 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-/* --- 分頁按鈕樣式 --- */
 .pagination .page-link {
   background-color: #fff;
   border: 1px solid #ffdecb !important;
@@ -338,7 +355,6 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-/* --- 動畫樣式 --- */
 .list-stagger-enter-active {
   transition: opacity 0.4s ease-out, transform 0.4s ease-out;
 }
@@ -384,7 +400,6 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* --- 基礎結構 --- */
 .cursor-pointer {
   cursor: pointer;
 }

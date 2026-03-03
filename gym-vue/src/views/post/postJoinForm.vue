@@ -104,7 +104,7 @@
                       class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
-                    <input value="陸小鳳0303" v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
+                    <input v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="王小明" required>
                   </div>
                 </div>
@@ -137,7 +137,7 @@
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i
                         class="bi bi-envelope"></i></span>
-                    <input value="test0303@gmail.com" v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
+                    <input  v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="example@fitness.com" required>
                   </div>
                 </div>
@@ -147,7 +147,7 @@
                       class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-phone"></i></span>
-                    <input value="0978555888" v-model="form.Phone" type="tel" class="form-control border-start-0 ps-0 shadow-none"
+                    <input v-model="form.Phone" type="tel" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="0912345678" required>
                   </div>
                 </div>
@@ -248,8 +248,13 @@ const checkUserStatus = () => {
       const userData = JSON.parse(savedData);
       isLoggedIn.value = true;
       form.Name = userData.name || '';
-      form.Sex = userData.sex !== undefined ? String(userData.sex) : '1';
-      form.Email = userData.email || '';
+      if (userData.sex === '男' || userData.sex === 1 || userData.sex === '1') {
+        form.Sex = '1';
+      } else if (userData.sex === '女' || userData.sex === 0 || userData.sex === '0') {
+        form.Sex = '0';
+      } else {
+        form.Sex = '2'; // 其他
+      }      form.Email = userData.email || '';
       form.Phone = userData.phone || '';
     } catch (e) {
       console.error('會員資料解析失敗', e);
