@@ -305,15 +305,14 @@ const handleFormSubmit = async () => {
     // 2. 組合 Payload (對應你的 yJoinForm 資料表)
     const userData = JSON.parse(localStorage.getItem('userInfo') || '{}');
     const payload = {
-      EventId: Number(postData.value.EventInfo.EventId), // 修改為 EventId 
+      EventId: Number(postData.value.EventInfo.EventId), // 轉成數字
       UserId: userData.userId ? Number(userData.userId) : null,
       Name: form.Name,
-      Sex: Number(form.Sex), // 轉為數字對應 SQL INT
+      Sex: String(form.Sex),       // 後端 DTO 是 string
       Email: form.Email,
       Phone: form.Phone,
-      Fee: postData.value.EventInfo.Fee,
-      PayMethod: form.PaymentMethod === 'LINEPAY' ? 1 : 2, // 1:LINEPay, 2:ATM
-      CaptchaToken: token
+      Fee: Number(postData.value.EventInfo.Fee), // 轉成數字 (decimal)
+      PaymentMethod: form.PaymentMethod // "LINEPAY"
     };
 
     // 3. 費用確認與金流判定
@@ -335,8 +334,7 @@ const handleFormSubmit = async () => {
 
       // --- 重點：呼叫後端發起 LINE Pay ---
       // 這裡呼叫你的後端 API (例如 RegisterWithLinePay)
-      const response = await axios.post('https://localhost:7218/api/YPosts/RegisterWithLinePay', payload);
-
+      const response = await axios.post('https://localhost:7218/api/YLINEPAY/RequestPayment', payload);
       if (response.data.returnCode === '0000') {
         // 成功取得連結，執行跳轉
         window.location.href = response.data.info.paymentUrl.web;

@@ -17,7 +17,7 @@
             <router-link to="/" class="breadcrumb-link text-decoration-none">首頁</router-link>
           </li>
           <li class="breadcrumb-item">
-            <router-link to="/post/card" class="breadcrumb-link text-decoration-none">最新消息</router-link>
+            <router-link to="/post/card" class="breadcrumb-link text-decoration-none">資訊公告</router-link>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
             <span class="text-orange fw-bold">文章內容</span>
