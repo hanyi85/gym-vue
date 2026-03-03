@@ -62,7 +62,13 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api';
+
+
+const auth = useAuthStore()
+
+
 //loading狀態
 const isLoading = ref(false);
 const handleRegister = async () => {
@@ -79,9 +85,11 @@ const handleRegister = async () => {
 
     await api.post("/Auth/register", {
       email: form.email,
-      password: form.password
-    });
+      password: form.password,
 
+    });
+auth.email = form.email
+localStorage.setItem('email', form.email)
     router.push("/users/profile");
 
   } catch (err) {

@@ -29,7 +29,7 @@
 
   <!-- 查收信件狀態 -->
   <div v-if="status === 'notice'">
-    <div class="icon">📧</div>
+    <div class="icon notice"><i class="fa fa-envelope-o" aria-hidden="true"></i></div>
     <p class="message">{{ message }}</p>
   </div>
 
@@ -54,11 +54,38 @@
     </div>
   </div>
 
+
   <!-- Error -->
-  <div v-else>
-    <div class="icon error">✕</div>
-    <p class="message">{{ message }}</p>
+<div v-else>
+  <div class="icon error">✕</div>
+
+  <p class="message">
+    驗證失敗或連結已過期。<br />
+    我們可以重新發送一封新的驗證信給您。
+  </p>
+  
+  <div class="actions">
+    <router-link to="/users/login" class="btn outline">
+      返回登入
+    </router-link>
+    <button
+      class="btn primary"
+      :disabled="cooldown > 0 || isResending"
+      @click="handleResend"
+    >
+      <span v-if="cooldown > 0">
+        請 {{ cooldown }} 秒後再試
+      </span>
+      <span v-else-if="isResending">
+        發送中...
+      </span>
+      <span v-else>
+        重新發送驗證信
+      </span>
+    </button>
+
   </div>
+</div>
 
 </div>
       </div>
@@ -72,9 +99,44 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useEmailVerify } from '@/composables/useEmailVerify'
-import { verifyEmail } from '@/services/auth'
+import { verifyEmail, resendVerifyEmail } from '@/services/auth'
 
 const route = useRoute()
+
+const cooldown = ref(0)
+const isResending = ref(false)
+let timer = null
+
+const startCooldown = () => {
+  cooldown.value = 60
+
+  timer = setInterval(() => {
+    cooldown.value--
+    if (cooldown.value <= 0) {
+      clearInterval(timer)
+    }
+  }, 1000)
+}
+
+const handleResend = async () => {
+  if (cooldown.value > 0) return
+
+  try {
+    isResending.value = true
+
+    const email = localStorage.getItem('pendingVerifyEmail')
+
+    await resendVerifyEmail(email)
+
+    message.value = '驗證信已重新發送，請前往信箱查收。'
+    startCooldown()
+
+  } catch (error) {
+    message.value = '發送失敗，請稍後再試。'
+  } finally {
+    isResending.value = false
+  }
+}
 
 const currentStep = ref(1)
 
@@ -90,20 +152,17 @@ const { status, message, execute } =
 
 onMounted(() => {
   const token = route.query.token
-   const verified = route.query.verified
-console.log('token =', token)
+  const verified = route.query.verified
 
-if (token) {
-  console.log('loading') //準備執行驗證
+  if (token) {
     execute(token)
-  }else if (verified === 'true') {
+  } else if (verified === 'true') {
     status.value = 'success'
     message.value = '您的電子郵件已由第三方平台完成驗證。'
-  } 
-  else {
+  } else {
     status.value = 'notice'
     message.value =
-      '我們已寄送驗證信至您的信箱，請前往收信並點擊驗證連結完成註冊。'
+      '我們已寄送驗證信至您的信箱，\n請前往收信並點擊驗證連結完成註冊。'
   }
 })
 </script>
@@ -189,12 +248,6 @@ if (token) {
 
 /* ===== 驗證卡片 ===== */
 
-.title {
-  font-size: 20px;
-  margin-bottom: 32px;
-  color: #333;
-}
-
 .state {
   display: flex;
   flex-direction: column;
@@ -205,6 +258,7 @@ if (token) {
 .message {
   color: #555;
   font-size: 15px;
+    white-space: pre-line;
 }
 
 .icon {
@@ -217,7 +271,9 @@ if (token) {
   align-items: center;
   justify-content: center;
 }
-
+.icon.notice i {
+  color: #f38d00;
+}
 .icon.success {
   background-color: #e8f5e9;
   color: #4caf50;
@@ -246,11 +302,14 @@ if (token) {
   padding: 40px 32px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   text-align: center;
+
+   display: flex;
+  flex-direction: column;
 }
 
 .title {
-    font-size: 22px;
-  margin-bottom: 28px;
+  font-size: 22px;
+  margin-bottom: 16px;
   font-weight: 600;
   color: #333;
 }
@@ -258,13 +317,20 @@ if (token) {
 .state {
   display: flex;
   flex-direction: column;
+   justify-content: center; 
   align-items: center;
   gap: 16px;
 }
-
+.state > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
 .message {
   color: #555;
   font-size: 15px;
+ line-height: 1.8;
 }
 
 .icon {
@@ -275,13 +341,10 @@ if (token) {
   display: flex;
   align-items: center;
   justify-content: center;
+   background: #fff4e5;
 }
 
-.icon.success {
-  background-color: #e8f5e9;
-  color: #4caf50;
-  background: red !important;
-}
+
 
 .btn {
   margin-top: 8px;
@@ -292,11 +355,7 @@ if (token) {
   text-decoration: none;
 }
 
-.btn.primary {
-  background-color: #409eff;
-  color: #fff;
-  border: none;
-}
+
 .actions {
   margin-top: 8px;
   display: flex;
@@ -316,6 +375,6 @@ if (token) {
 .icon.error {
   background-color: #fdecea;
   color: #e53935;
-  background: red !important;
+
 }
 </style>
