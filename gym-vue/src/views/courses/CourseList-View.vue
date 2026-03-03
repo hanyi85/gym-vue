@@ -10,6 +10,7 @@ const api = axios.create({
   baseURL: 'https://localhost:7218/api',
 })
 
+// 入口參數：城市/場館（slug 或 query 都支援）
 const city = decodeURIComponent(route.params.city || route.query.city || '')
 const venue = decodeURIComponent(route.params.venue || route.query.venue || '')
 
@@ -21,79 +22,25 @@ const venueName = ref('')
 const courses = ref([])
 const categories = ref([])
 
+// ===== course filters =====
 const keyword = ref('')
 const selectedCategoryId = ref('')
 const level = ref('')
-const duration = ref('')
-const price = ref('')
-// ===== pagination (每頁 6 筆) =====
+const duration = ref('') // 後端若未支援會被忽略
+const price = ref('')    // 對應後端 maxPrice
+
+// ===== pagination: 後端分頁 =====
 const PAGE_SIZE = 6
 const courseListRef = ref(null)
-// 課程分頁
 const coursePage = ref(1)
-const courseTotalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredCourses.value.length / PAGE_SIZE))
-)
-const pagedCourses = computed(() => {
-  const start = (coursePage.value - 1) * PAGE_SIZE
-  return filteredCourses.value.slice(start, start + PAGE_SIZE)
-})
+const courseTotalPages = ref(1)
+const courseTotalCount = ref(0)
 
-async function changeCoursePage(p) {
-  if (p < 1 || p > courseTotalPages.value) return
+const pagedCourses = computed(() => courses.value)
 
-  coursePage.value = p
-
-  // 等 DOM 更新
-  await nextTick()
-
-  const el = courseListRef.value
-  if (!el) return
-
-  // 抓 header 高度（假設你的 header class 是 .page-header）
-  const header = document.querySelector('.page-header')
-  const headerHeight = header ? header.offsetHeight : 0
-
-  const top =
-    el.getBoundingClientRect().top +
-    window.pageYOffset -
-    headerHeight -
-    20   // 額外留一點空間
-
-  window.scrollTo({
-    top,
-    behavior: 'smooth'
-  })
-}
-
-// ===== coaches =====
-const coaches = ref([])
-const coachesLoading = ref(false)
-const coachesLoaded = ref(false)
-const coachPlaceholders = [
-  
-  'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-
-  'https://images.unsplash.com/photo-1619361728853-2542f3864532?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-
-
-  'https://images.unsplash.com/photo-1696563996353-214a3690bb11?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-
-
- 'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-
-
-  'https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-]
-const coachImageResolved = (c) => {
-  const real = coachImage(c)
-  if (real) return real
-  const id = coachId(c) || 0
-  return coachPlaceholders[id % coachPlaceholders.length]
-}
-
+// ===== helpers：欄位大小寫兼容 =====
 const courseName = (c) => c?.name ?? c?.CourseName ?? ''
-const courseId = (c) => c?.id ?? c?.courseId ?? c?.CourseId ?? c?.courseId ?? 0
+const courseId = (c) => c?.id ?? c?.courseId ?? c?.CourseId ?? 0
 const courseCategoryId = (c) => c?.categoryId ?? c?.CategoryId ?? 0
 const courseLevel = (c) => c?.courseLevel ?? c?.CourseLevel ?? ''
 const courseDuration = (c) => c?.duration ?? c?.Duration ?? 0
@@ -103,93 +50,69 @@ const courseImageUrl = (c) => c?.imageUrl ?? c?.ImageUrl ?? ''
 const catId = (x) => x?.id ?? x?.categoryId ?? x?.CategoryId ?? 0
 const catName = (x) => x?.name ?? x?.categoryName ?? x?.CategoryName ?? ''
 
-const coachId = (c) => c?.coachId ?? c?.CoachId ?? c?.id ?? 0
-const coachName = (c) => c?.name ?? c?.Name ?? ''
-const coachDesc = (c) => c?.description ?? c?.Description ?? c?.descrition ?? c?.Descrition ?? ''
-const coachRate = (c) => c?.hourlyRate ?? c?.HourlyRate ?? null
-const coachSkills = (c) => c?.skills ?? c?.Skills ?? []
-const coachImage = (c) => c?.imageUrl ?? c?.ImageUrl ?? ''
-// ===== coach filters =====
-const coachKeyword = ref('')
-const coachMaxPrice = ref('')    // 例如 800/1000/1200
-const coachSkill = ref('')      
+// ===== fetch courses (後端篩選 + 後端分頁) =====
+const coursesLoading = ref(false)
+const coursesLoaded = ref(false)
 
-const coachSkillOptions = computed(() => {
-  const set = new Set()
-  coaches.value.forEach(c => {
-    ;(coachSkills(c) || []).forEach(s => set.add(s))
-  })
-  return Array.from(set)
-})
+async function fetchCourses() {
+  if (!city || !venue) return
 
-// 篩選後教練
-const filteredCoaches = computed(() => {
-  const kw = coachKeyword.value.trim()
-  const maxP = coachMaxPrice.value ? Number(coachMaxPrice.value) : null
-  const skill = coachSkill.value
+  coursesLoading.value = true
+  try {
+    const params = {
+      city,
+      venue,
+      keyword: keyword.value || '',
+      categoryId: selectedCategoryId.value || '',
+      level: level.value || '',
+      // duration：後端若未支援會忽略（你之後加上即可生效）
+      duration: duration.value || '',
+      maxPrice: price.value || '',
+      page: coursePage.value,
+      pageSize: PAGE_SIZE,
+    }
 
-  return coaches.value.filter(c => {
-    const name = coachName(c)
-    const desc = coachDesc(c)
-    const rate = Number(coachRate(c) ?? 0)
-    const skills = coachSkills(c) || []
+    const res = await api.get('/CCourses/search', { params })
 
-    const okKw = !kw || name.includes(kw) || desc.includes(kw) || skills.some(s => s.includes(kw))
-    const okPrice = !maxP || rate <= maxP
-    const okSkill = !skill || skills.includes(skill)
+    courses.value = res.data?.courses || []
+    cityName.value = res.data?.city?.name || city
+    venueName.value = res.data?.venue?.name || venue
 
-    return okKw && okPrice && okSkill
-  })
-})
-
-function resetCoachFilters() {
-  coachKeyword.value = ''
-  coachMaxPrice.value = ''
-  coachSkill.value = ''
+    const pg = res.data?.pagination
+    courseTotalPages.value = pg?.totalPages ?? 1
+    courseTotalCount.value = pg?.totalCount ?? 0
+    coursesLoaded.value = true
+  } catch (err) {
+    console.error('載入課程失敗', err)
+    courses.value = []
+    courseTotalPages.value = 1
+    courseTotalCount.value = 0
+    coursesLoaded.value = true
+  } finally {
+    coursesLoading.value = false
+  }
 }
 
-watch([keyword, selectedCategoryId, level, duration, price], () => {
-  coursePage.value = 1
-})
+async function changeCoursePage(p) {
+  if (p < 1 || p > courseTotalPages.value) return
+  coursePage.value = p
+  await fetchCourses()
 
-watch(tab, () => {
-  coursePage.value = 1
-})
-// ===== init (courses + categories) =====
-onMounted(async () => {
-  try {
-    if (!city || !venue) return
+  await nextTick()
+  const el = courseListRef.value
+  if (!el) return
 
-    const courseRes = await api.get('/CCourses/search', { params: { city, venue } })
-    courses.value = courseRes.data?.courses || []
-    cityName.value = courseRes.data?.city?.name || city
-    venueName.value = courseRes.data?.venue?.name || venue
+  const header = document.querySelector('.page-header')
+  const headerHeight = header ? header.offsetHeight : 0
 
-    const catRes = await api.get('/CCourseCategories')
-    categories.value = catRes.data || []
-  } catch (err) {
-    console.error('初始化失敗', err)
-  }
-})
+  const top =
+    el.getBoundingClientRect().top +
+    window.pageYOffset -
+    headerHeight -
+    20
 
-// ===== courses filter =====
-const filteredCourses = computed(() => {
-  return courses.value.filter((c) => {
-    const name = courseName(c)
-    const k = !keyword.value || name.includes(keyword.value)
-
-    const cat =
-      !selectedCategoryId.value || courseCategoryId(c) === Number(selectedCategoryId.value)
-
-    const lvl = !level.value || courseLevel(c) === level.value
-
-    const d = !duration.value || String(courseDuration(c)) === String(duration.value)
-
-    const p = !price.value || Number(coursePrice(c)) <= Number(price.value)
-
-    return k && cat && lvl && d && p
-  })
-})
+  window.scrollTo({ top, behavior: 'smooth' })
+}
 
 function resetAll() {
   keyword.value = ''
@@ -213,11 +136,92 @@ function goBooking(course) {
   })
 }
 
-// ===== fetch coaches (切到 coach 才抓) =====
+// 篩選變更：回到第 1 頁並重抓（後端篩選）
+watch([keyword, selectedCategoryId, level, duration, price], async () => {
+  if (tab.value !== 'course') return
+  coursePage.value = 1
+  await fetchCourses()
+})
+
+// 切 tab：課程回到第 1 頁並重抓（教練另外處理）
+watch(tab, async (v) => {
+  if (v === 'course') {
+    coursePage.value = 1
+    await fetchCourses()
+  }
+})
+
+/* ===== coaches（維持前端篩選；切到 coach 才抓） ===== */
+const coaches = ref([])
+const coachesLoading = ref(false)
+const coachesLoaded = ref(false)
+
+const coachPlaceholders = [
+  'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1619361728853-2542f3864532?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1696563996353-214a3690bb11?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1606902965551-dce093cda6e7?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1548690312-e3b507d8c110?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+]
+
+const coachId = (c) => c?.coachId ?? c?.CoachId ?? c?.id ?? 0
+const coachName = (c) => c?.name ?? c?.Name ?? ''
+const coachDesc = (c) => c?.description ?? c?.Description ?? c?.descrition ?? c?.Descrition ?? ''
+const coachRate = (c) => c?.hourlyRate ?? c?.HourlyRate ?? null
+const coachSkills = (c) => c?.skills ?? c?.Skills ?? []
+const coachImage = (c) => c?.imageUrl ?? c?.ImageUrl ?? ''
+
+const coachImageResolved = (c) => {
+  const real = coachImage(c)
+  if (real) return real
+  const id = coachId(c) || 0
+  return coachPlaceholders[id % coachPlaceholders.length]
+}
+
+// coach filters
+const coachKeyword = ref('')
+const coachMaxPrice = ref('')
+const coachSkill = ref('')
+
+const coachSkillOptions = computed(() => {
+  const set = new Set()
+  coaches.value.forEach(c => {
+    ;(coachSkills(c) || []).forEach(s => set.add(s))
+  })
+  return Array.from(set)
+})
+
+const filteredCoaches = computed(() => {
+  const kw = coachKeyword.value.trim()
+  const maxP = coachMaxPrice.value ? Number(coachMaxPrice.value) : null
+  const skill = coachSkill.value
+if (duration.HasValue && duration.Value > 0)
+{
+    q = q.Where(c => c.Duration == duration.Value);
+}
+  return coaches.value.filter(c => {
+    const name = coachName(c)
+    const desc = coachDesc(c)
+    const rate = Number(coachRate(c) ?? 0)
+    const skills = coachSkills(c) || []
+
+    const okKw = !kw || name.includes(kw) || desc.includes(kw) || skills.some(s => s.includes(kw))
+    const okPrice = !maxP || rate <= maxP
+    const okSkill = !skill || skills.includes(skill)
+
+    return okKw && okPrice && okSkill
+  })
+})
+
+function resetCoachFilters() {
+  coachKeyword.value = ''
+  coachMaxPrice.value = ''
+  coachSkill.value = ''
+}
+
 async function fetchCoaches() {
   coachesLoading.value = true
   try {
-    // 如果你後端目前只有 GET /api/coaches（可選 venueId），先不帶參數也能看到資料
     const res = await api.get('/coaches')
     coaches.value = res.data || []
     coachesLoaded.value = true
@@ -237,6 +241,19 @@ watch(
   },
   { immediate: true }
 )
+
+// init
+onMounted(async () => {
+  try {
+    if (!city || !venue) return
+    await fetchCourses()
+
+    const catRes = await api.get('/CCourseCategories')
+    categories.value = catRes.data || []
+  } catch (err) {
+    console.error('初始化失敗', err)
+  }
+})
 </script>
 
 <template>
@@ -363,8 +380,17 @@ watch(
           </div>
         </div>
 
+        <!-- loading / empty -->
+        <div v-if="coursesLoading" class="text-center text-muted mt-4">
+          載入課程中...
+        </div>
+
+        <div v-else-if="coursesLoaded && pagedCourses.length === 0" class="text-center text-muted mt-4">
+          找不到符合條件的課程
+        </div>
+
         <!-- 課程列表 -->
-      <div class="row g-4 mt-3" ref="courseListRef">
+        <div v-else class="row g-4 mt-3" ref="courseListRef">
           <div
             class="col-lg-4 col-md-6"
             v-for="c in pagedCourses"
@@ -381,8 +407,6 @@ watch(
                   alt="課程圖片"
                 />
               </div>
-
-             
 
               <div class="card-body">
                 <div class="card-header">
@@ -413,33 +437,38 @@ watch(
           </div>
         </div>
 
-         <!-- 課程分頁 -->
-<div v-if="courseTotalPages > 1" class="pagination-wrapper">
-  <button
-    class="page-btn"
-    @click="changeCoursePage(coursePage - 1)"
-    :disabled="coursePage === 1"
-  >
-    上一頁
-  </button>
+        <!-- 課程分頁（後端回傳 totalPages） -->
+        <div v-if="courseTotalPages > 1" class="pagination-wrapper">
+          <button
+            class="page-btn"
+            @click="changeCoursePage(coursePage - 1)"
+            :disabled="coursePage === 1"
+          >
+            上一頁
+          </button>
 
-  <button
-    v-for="p in courseTotalPages"
-    :key="'c' + p"
-    @click="changeCoursePage(p)"
-    :class="['page-btn', { active: coursePage === p }]"
-  >
-    {{ p }}
-  </button>
+          <button
+            v-for="p in courseTotalPages"
+            :key="'c' + p"
+            @click="changeCoursePage(p)"
+            :class="['page-btn', { active: coursePage === p }]"
+          >
+            {{ p }}
+          </button>
 
-  <button
-    class="page-btn"
-    @click="changeCoursePage(coursePage + 1)"
-    :disabled="coursePage === courseTotalPages"
-  >
-    下一頁
-  </button>
-</div>
+          <button
+            class="page-btn"
+            @click="changeCoursePage(coursePage + 1)"
+            :disabled="coursePage === courseTotalPages"
+          >
+            下一頁
+          </button>
+        </div>
+
+        <!-- 可選：顯示總筆數（不想顯示就刪掉這塊） -->
+        <p class="text-center text-muted mt-3" v-if="courseTotalCount">
+          共 {{ courseTotalCount }} 筆課程
+        </p>
       </template>
 
       <!-- ================= 教練 ================= -->
@@ -528,7 +557,6 @@ watch(
     </div>
   </div>
 </template>
-
 <style scoped>
 .page-wrapper {
   padding-bottom: 80px;
