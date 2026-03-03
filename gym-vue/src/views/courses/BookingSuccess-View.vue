@@ -16,7 +16,7 @@ const api = axios.create({
 // ===== 顯示用 =====
 const bookingNo = ref('') // BK000000123（顯示）
 const tradeNo = ref('') // NP...
-const bookingId = ref(0) // ✅ 真實 bookingId（給 QR / 報到驗證用）
+const bookingId = ref(0) // 真實 bookingId（給 QR / 報到驗證用）
 
 const course = ref('')
 const date = ref('')
@@ -24,6 +24,10 @@ const time = ref('')
 const price = ref(0)
 
 const saving = ref(false)
+
+// ✅ 付款狀態（關鍵）
+const paidFlag = ref(false)        // 前端判斷是否顯示 QR
+const checkingPaid = ref(false)    // 查詢中（顯示 loading）
 
 // ===== API helpers =====
 async function createBookingFromPending(p) {
@@ -39,9 +43,32 @@ async function createBookingFromPending(p) {
   return res.data?.CourseBookingId ?? res.data?.courseBookingId ?? 0
 }
 
-// 你現在 confirmPaid() 先不做也 OK（真正應該由 notify 更新 DB）
-async function confirmPaid() {
-  return true
+// ✅ 用 bookingId 去後端確認是否已付款（防止 query 被改）
+async function refreshPaidByBookingId(id) {
+  if (!id) return false
+  checkingPaid.value = true
+  try {
+    // 你後端路由可能是 /CourseBookings/{id} 或 /coursebookings/{id}
+    // 先試第一個，失敗再試第二個
+    let data = null
+    try {
+      const r1 = await api.get(`/CourseBookings/${id}`)
+      data = r1.data
+    } catch {
+      const r2 = await api.get(`/coursebookings/${id}`)
+      data = r2.data
+    }
+
+    const pay = (data?.PaymentStatus ?? data?.paymentStatus ?? '').toString()
+    paidFlag.value = pay.includes('已付款')
+    return paidFlag.value
+  } catch (e) {
+    // 查不到就保持目前 paidFlag（但後端 checkin 已擋未付款，安全性仍OK）
+    console.warn('refreshPaidByBookingId failed', e)
+    return paidFlag.value
+  } finally {
+    checkingPaid.value = false
+  }
 }
 
 async function getBookingIdBySchedule(scheduleId) {
@@ -69,13 +96,26 @@ function applyQueryBasics() {
     else tradeNo.value = qOrderId
   }
 
-  //  把 bookingId 吃進來（不再靠 BK 反推）
+  // ✅ bookingId
   const qBookingId = Number(route.query.bookingId || 0)
   if (qBookingId > 0) {
     bookingId.value = qBookingId
-    bookingNo.value = toBkNo(qBookingId) // 保險：確保顯示一致
+    bookingNo.value = toBkNo(qBookingId)
   }
+
+  // ✅ paid 兼容：history 帶 '1'/'0'，舊流程可能帶 'true'
+  const qPaid = (route.query.paid || '').toString()
+  if (qPaid === '1' || qPaid.toLowerCase() === 'true') paidFlag.value = true
+  if (qPaid === '0' || qPaid.toLowerCase() === 'false') paidFlag.value = false
 }
+
+// ===== 去付款（未付款用）=====
+function goPayFromHere() {
+  if (!bookingId.value) return alert('找不到 bookingId，請回訂單頁重新操作')
+  paymentStore.setBooking(bookingId.value)
+  router.push({ name: 'courses-booking-payment' })
+}
+
 // ===== main flow =====
 onMounted(async () => {
   console.log('booking-success mounted', route.fullPath)
@@ -83,7 +123,7 @@ onMounted(async () => {
   applyQueryBasics()
 
   try {
-    // ✅ 1) 最優先：從 pending_booking 拿 bookingId（不靠 URL）
+    // ✅ 1) pending_booking（通常是付款流程完成後來這頁）
     const raw = localStorage.getItem('pending_booking')
     if (raw) {
       const p = JSON.parse(raw)
@@ -94,18 +134,19 @@ onMounted(async () => {
       if (!time.value) time.value = p.time || ''
       if (!price.value) price.value = Number(p.price || 0)
 
-      // ✅ 如果 Payment 頁已經有 bookingId（從 history 來一定會有），就直接用
+      // ✅ 付款成功流程：基本上視為已付款（但仍用 API 再確認一次更穩）
+      paidFlag.value = true
+
       if (p.bookingId) {
         const id = Number(p.bookingId || 0)
         if (id) {
           bookingId.value = id
           bookingNo.value = toBkNo(id)
-          await confirmPaid(id)
+          await refreshPaidByBookingId(id)
         }
         localStorage.removeItem('pending_booking')
       } else {
-        // ⚠️ 只有「尚未建單」的流程才需要 create（你現在從 history 付款通常不會走到）
-        // 用 lock 避免重複建立
+        // ⚠️ 尚未建單才需要 create
         const lockKey = `booking_created_${p.scheduleId}_${p.price}`
         const cached = sessionStorage.getItem(lockKey)
 
@@ -114,7 +155,7 @@ onMounted(async () => {
           if (cachedId > 0) {
             bookingId.value = cachedId
             bookingNo.value = toBkNo(cachedId)
-            await confirmPaid(cachedId)
+            await refreshPaidByBookingId(cachedId)
           }
           localStorage.removeItem('pending_booking')
         } else {
@@ -125,7 +166,7 @@ onMounted(async () => {
               sessionStorage.setItem(lockKey, toBkNo(id))
               bookingId.value = id
               bookingNo.value = toBkNo(id)
-              await confirmPaid(id)
+              await refreshPaidByBookingId(id)
               localStorage.removeItem('pending_booking')
             }
           } finally {
@@ -134,28 +175,32 @@ onMounted(async () => {
         }
       }
 
-      // ✅ 重要：pending_booking 已處理完就 return（避免下面相容流程又亂改）
       return
     }
 
-    // ✅ 2) 相容：paid=true + scheduleId（舊 return 可能會帶）
-    // 但：我們只拿來查 bookingId，不會寫回 URL
-    const paid = (route.query.paid || '').toString() === 'true'
+    // ✅ 2) 相容：舊 return 可能用 scheduleId 查 bookingId
+    const paid = (route.query.paid || '').toString().toLowerCase() === 'true'
     const scheduleId = Number(route.query.scheduleId || 0)
 
     if (paid && scheduleId) {
+      paidFlag.value = true
       const id = await getBookingIdBySchedule(scheduleId)
       if (id) {
         bookingId.value = id
         bookingNo.value = toBkNo(id)
-        await confirmPaid(id)
+        await refreshPaidByBookingId(id)
       }
+      return
+    }
+
+    // ✅ 3) 從訂單列表點進來：一定會有 bookingId（你已經帶了）
+    // 這邊做雙保險：用 bookingId 反查付款狀態，避免 paid query 被亂改
+    if (bookingId.value > 0) {
+      await refreshPaidByBookingId(bookingId.value)
     }
   } catch (err) {
     console.error(err)
-    // 不要整頁掛掉，頂多 QR 顯示「產生中...」
   } finally {
-    // ✅ 最後才清 store（確保上面已吃完 pending / bookingId）
     paymentStore.clear()
   }
 })
@@ -166,7 +211,9 @@ const qrValue = computed(() =>
     bookingId: bookingId.value,
   })
 )
-const canShowQr = computed(() => bookingId.value > 0)
+
+// ✅ 只有「有bookingId + 已付款」才顯示 QR
+const canShowQr = computed(() => bookingId.value > 0 && paidFlag.value)
 </script>
 
 <template>
@@ -174,7 +221,8 @@ const canShowQr = computed(() => bookingId.value > 0)
     <div class="booking-title">
       <div class="success-icon">✓</div>
       <h2>預約成功</h2>
-      <p>請於上課時出示 QR Code 報到</p>
+      <p v-if="paidFlag">請於上課時出示 QR Code 報到</p>
+      <p v-else>此訂單尚未付款，付款完成後才可出示 QR Code 報到</p>
     </div>
 
     <div class="success-card">
@@ -212,15 +260,21 @@ const canShowQr = computed(() => bookingId.value > 0)
       <div class="qr-section">
         <h5>報到 QR Code</h5>
 
-        <div v-if="canShowQr" class="qr-box">
+        <!-- ✅ 已付款才顯示 QR -->
+        <div v-if="checkingPaid" class="qr-loading">確認付款狀態中...</div>
+
+        <div v-else-if="canShowQr" class="qr-box">
           <QrcodeVue :value="qrValue" :size="240" level="M" />
+          <p class="hint">現場掃描即可完成報到</p>
         </div>
 
+        <!-- ❌ 未付款 -->
         <div v-else class="qr-loading">
-          QR 產生中...
+          <p class="hint">尚未付款，無法產生報到 QR Code</p>
+          <button class="primary-btn" style="margin-top: 10px" @click="goPayFromHere">
+            去付款
+          </button>
         </div>
-
-        <p class="hint">現場掃描即可完成報到</p>
       </div>
 
       <div class="btn-row">

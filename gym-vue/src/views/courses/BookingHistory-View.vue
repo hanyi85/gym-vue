@@ -8,6 +8,7 @@ import { useReviewStore } from '@/stores/Course/reviewStore'
 const router = useRouter()
 const paymentStore = usePaymentStore()
 const reviewStore = useReviewStore()
+
 const orders = ref([])
 const loading = ref(true)
 
@@ -19,9 +20,11 @@ const api = axios.create({
 const getBookingId = (o) => Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
 const getStartTime = (o) => o.StartTime ?? o.startTime
 const getFinalPrice = (o) => Number(o.FinalPrice ?? o.finalPrice ?? 0)
+
 const getPayment = (o) => (o.PaymentStatus ?? o.paymentStatus ?? '').toString()
 const isPaid = (o) => getPayment(o).includes('已付款')
 
+const getRawStatus = (o) => (o.Status ?? o.status ?? '').toString()
 
 function minutesToStart(o) {
   const start = new Date(getStartTime(o))
@@ -31,27 +34,40 @@ function minutesToStart(o) {
 
 function isPast(o) {
   const start = new Date(getStartTime(o))
-  return start.getTime() <= Date.now() // 已開始(含) 就算過去
+  return start.getTime() <= Date.now()
+}
+
+// ===== UI 狀態：即將到來 / 已完成 / 已取消 / 已報到 =====
+function uiStatus(o) {
+  const st = getRawStatus(o)
+  if (st.includes('取消') || st.toLowerCase().includes('canceled')) return '已取消'
+  if (st.includes('已報到')) return '已報到'
+
+  const start = new Date(getStartTime(o))
+  const now = new Date()
+  if (start <= now) return '已完成'
+
+  return '即將到來'
 }
 
 function canPay(o) {
-  // 1) 已付款不顯示付款
-  if ((o.PaymentStatus ?? o.paymentStatus ?? '').toString().includes('已付款')) return false
-  // 2) 已開始/已結束不給付
+  // 已付款不給付
+  if (isPaid(o)) return false
+
+  // 已取消 / 已報到 / 已完成 不給付
+  const s = uiStatus(o)
+  if (s === '已取消' || s === '已報到' || s === '已完成') return false
+
+  // 已開始(含) 不給付
   if (isPast(o)) return false
-  // 3) 已取消也不給付
-  if (uiStatus(o) === '已取消') return false
-  // 4) 已報到當然也不會去付
-  if (uiStatus(o) === '已報到') return false
+
   return true
 }
 
 function canCancel(o) {
-  // 已報到/已取消/已完成 不可取消
   const s = uiStatus(o)
   if (s === '已報到' || s === '已取消' || s === '已完成') return false
-  // 開課前 5 小時不可取消
-  return minutesToStart(o) > 300
+  return minutesToStart(o) > 300 // 5 小時
 }
 
 // ===== 取訂單 =====
@@ -68,7 +84,6 @@ async function fetchOrders() {
     loading.value = false
   }
 }
-
 onMounted(fetchOrders)
 
 // ===== 格式化顯示 =====
@@ -79,35 +94,15 @@ function formatDate(dt) {
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}`
 }
-
 function formatTime(dt) {
   const d = new Date(dt)
   const hh = String(d.getHours()).padStart(2, '0')
   const mi = String(d.getMinutes()).padStart(2, '0')
   return `${hh}:${mi}`
 }
-
 function displayBkNo(o) {
   const id = getBookingId(o)
   return id > 0 ? `BK${String(id).padStart(9, '0')}` : ''
-}
-
-/**
- * UI 狀態：即將到來 / 已完成 / 已取消 / 已報到
- */
-function uiStatus(o) {
-  const st = (o.Status ?? o.status ?? '').toString()
-
-  if (st.includes('取消')) return '已取消'
-  if (st.includes('已報到')) return '已報到'
-
-  const start = new Date(getStartTime(o))
-  const now = new Date()
-
-  // 過了時間但沒有報到
-  if (start < now) return '已報到'   //  統一視覺為已報到
-
-  return '即將到來'
 }
 
 // ===== 取消 Modal =====
@@ -116,41 +111,25 @@ const cancelTarget = ref(null)
 const canceling = ref(false)
 
 function openCancel(o) {
-  if (uiStatus(o) === '已報到') {
-    alert('已報到不可取消')
+  if (!canCancel(o)) {
+    alert(uiStatus(o) === '已完成' ? '課程已結束，無法取消' : '開課前 5 小時內不可取消')
     return
   }
   cancelTarget.value = o
   showCancelModal.value = true
 }
-
 function closeCancel() {
   showCancelModal.value = false
   cancelTarget.value = null
 }
-function canReview(o) {
-  // 1) 必須已付款
-  if (!isPaid(o)) return false
 
-  // 2) 必須已完成或已報到（依你 UI 規則）
-  const s = uiStatus(o)
-  if (s !== '已完成' && s !== '已報到') return false
-
-  // 3) 已評論就不能再評論
-  if ((o.IsReviewed ?? o.isReviewed) === true) return false
-
-  return true
-}
 async function confirmCancel() {
   if (!cancelTarget.value || canceling.value) return
   canceling.value = true
 
   try {
     const id = getBookingId(cancelTarget.value)
-    if (!id) {
-      alert('找不到 CourseBookingId')
-      return
-    }
+    if (!id) return alert('找不到 CourseBookingId')
 
     await api.delete(`/coursebookings/${id}`)
     closeCancel()
@@ -163,34 +142,45 @@ async function confirmCancel() {
   }
 }
 
+// ===== 評論 =====
+const isReviewed = (o) => (o.IsReviewed ?? o.isReviewed) === true
+
+function canReview(o) {
+  if (!isPaid(o)) return false
+  const s = uiStatus(o)
+  if (s !== '已完成' && s !== '已報到') return false
+  if (isReviewed(o)) return false
+  return true
+}
+
 // ===== 導頁 =====
 function goDetail(o) {
   const id = getBookingId(o)
-
   router.push({
     name: 'courses-booking-success',
     query: {
-      bookingId: id,                 //  這個是關鍵（給 QR 用）
-      orderId: displayBkNo(o),       // 顯示用（可留）
+      bookingId: id,
+      orderId: displayBkNo(o),
       course: (o.CourseName ?? o.courseName ?? '').toString(),
       date: formatDate(getStartTime(o)),
       time: formatTime(getStartTime(o)),
       price: getFinalPrice(o),
+      paid: isPaid(o) ? '1' : '0',
     },
   })
 }
 
 function goPay(o) {
-  const id = Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
+  const id = getBookingId(o)
   if (!id) return alert('找不到 bookingId')
 
   localStorage.removeItem('pending_booking')
   paymentStore.setBooking(id)
-
   router.push({ name: 'courses-booking-payment' })
 }
+
 function goReview(o) {
-  const id = Number(o.CourseBookingId ?? o.courseBookingId ?? 0)
+  const id = getBookingId(o)
   if (!id) return alert('找不到 bookingId')
 
   reviewStore.setBooking(id)
@@ -214,9 +204,7 @@ function goReview(o) {
             <div class="order-left">
               <h5 class="course-title">{{ o.CourseName ?? o.courseName }}</h5>
               <p>教練：{{ o.CoachName ?? o.coachName }}</p>
-              <p>
-                時間：{{ formatDate(getStartTime(o)) }} {{ formatTime(getStartTime(o)) }}
-              </p>
+              <p>時間：{{ formatDate(getStartTime(o)) }} {{ formatTime(getStartTime(o)) }}</p>
               <p>訂單編號：{{ displayBkNo(o) }}</p>
             </div>
 
@@ -227,15 +215,15 @@ function goReview(o) {
                 </span>
 
                 <span
-  class="status"
-  :class="{
-    upcoming: uiStatus(o) === '即將到來',
-    cancel: uiStatus(o) === '已取消',
-    checkin: uiStatus(o) === '已報到' || uiStatus(o) === '已完成',
-  }"
->
-  {{ uiStatus(o) }}
-</span>
+                  class="status"
+                  :class="{
+                    upcoming: uiStatus(o) === '即將到來',
+                    cancel: uiStatus(o) === '已取消',
+                    checkin: uiStatus(o) === '已報到' || uiStatus(o) === '已完成',
+                  }"
+                >
+                  {{ uiStatus(o) }}
+                </span>
               </div>
 
               <div class="price">NT$ {{ getFinalPrice(o) }}</div>
@@ -243,48 +231,37 @@ function goReview(o) {
               <div class="btn-group">
                 <button class="detail-btn" @click="goDetail(o)">查看詳情</button>
 
-              <button v-if="canPay(o)" class="pay-btn" @click="goPay(o)">
-  去付款
-</button>
+                <button v-if="canPay(o)" class="pay-btn" @click="goPay(o)">
+                  去付款
+                </button>
 
-                <!-- 已取消 -->
-                <button
-                  v-if="uiStatus(o) === '已取消'"
-                  class="review-btn disabled"
-                  disabled
-                >
+                <!-- 取消 -->
+                <button v-if="uiStatus(o) === '已取消'" class="review-btn disabled" disabled>
                   已取消
                 </button>
 
-                <!-- 已報到 或 已完成 + 已評論 -->
-           <button
-  v-else-if="canReview(o) && (o.IsReviewed ?? o.isReviewed)"
-  class="review-btn disabled"
-  disabled
->
-  已評論
-</button>
-                <!-- 已報到 或 已完成 + 未評論 -->
-               <button
-  v-else-if="canReview(o) && !(o.IsReviewed ?? o.isReviewed)"
-  class="review-btn"
-  @click="goReview(o)"
->
-  去評論
-</button>
-
+                <!-- 已評論（已付款 + 完成/報到 + 已評論） -->
                 <button
-                  class="cancel-btn"
-                  :disabled="!canCancel(o)"
-                  @click="canCancel(o) ? openCancel(o) : alert(uiStatus(o)==='已完成' ? '課程已結束，無法取消' : '開課前 5 小時內不可取消')"
+                  v-else-if="isPaid(o) && (uiStatus(o) === '已完成' || uiStatus(o) === '已報到') && isReviewed(o)"
+                  class="review-btn disabled"
+                  disabled
                 >
+                  已評論
+                </button>
+
+                <!-- 去評論（已付款 + 完成/報到 + 未評論） -->
+                <button v-else-if="canReview(o)" class="review-btn" @click="goReview(o)">
+                  去評論
+                </button>
+
+                <button class="cancel-btn" :disabled="!canCancel(o)" @click="openCancel(o)">
                   取消預約
                 </button>
               </div>
 
-             <small v-if="uiStatus(o) === '即將到來' && !canCancel(o)" class="hint">
-  距離上課不足 5 小時，無法取消
-</small>
+              <small v-if="uiStatus(o) === '即將到來' && !canCancel(o)" class="hint">
+                距離上課不足 5 小時，無法取消
+              </small>
             </div>
           </div>
         </div>
@@ -292,7 +269,7 @@ function goReview(o) {
     </div>
   </div>
 
-  <!-- ✅ Cancel Modal -->
+  <!-- Cancel Modal -->
   <div v-if="showCancelModal" class="modal-mask" @click.self="closeCancel">
     <div class="modal-card" role="dialog" aria-modal="true">
       <div class="modal-header">
