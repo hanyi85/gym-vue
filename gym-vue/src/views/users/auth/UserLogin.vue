@@ -140,7 +140,7 @@ async function handleLogin() {
     }
 
     // 使用 Pinia 存登入資訊
-    auth.login(data.token, data.name, data.userId)
+    auth.login(data.token, data.name, data.userId, data.showWelcomeMessage)
 
     router.push('/')
 

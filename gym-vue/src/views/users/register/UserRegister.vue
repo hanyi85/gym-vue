@@ -50,14 +50,24 @@
       </div>
     </div>
   </div>
+
+  <div v-if="isLoading" class="loading-overlay">
+  <div class="loading-box">
+    <div class="line-spinner"></div>
+    <p>處理中...</p>
+  </div>
+</div>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/services/api';
-
+//loading狀態
+const isLoading = ref(false);
 const handleRegister = async () => {
+
+  errors.confirmPassword = "";
 
   if (form.password !== form.confirmPassword) {
     errors.confirmPassword = "密碼不一致";
@@ -65,6 +75,8 @@ const handleRegister = async () => {
   }
 
   try {
+    isLoading.value = true;
+
     await api.post("/Auth/register", {
       email: form.email,
       password: form.password
@@ -73,7 +85,9 @@ const handleRegister = async () => {
     router.push("/users/profile");
 
   } catch (err) {
-    alert("註冊失敗：" + err.response.data);
+    alert("註冊失敗：" + err.response?.data);
+  } finally {
+    isLoading.value = false;
   }
 };
 const router = useRouter();
@@ -209,4 +223,36 @@ const socialAuth = (platform) => {
 .error-msg { color: #f44336; font-size: 11px; margin-top: 5px; position: absolute; }
 
 .login-link { color: #f38d00; text-decoration: none; margin-left: 5px; }
+
+/* Loading 遮罩 */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Loading 盒子 */
+.loading-box {
+  text-align: center;
+}
+
+/* LINE 風轉圈 */
+.line-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #e5e5e5;
+  border-top: 4px solid #06C755; /* LINE 綠 */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 </style>
