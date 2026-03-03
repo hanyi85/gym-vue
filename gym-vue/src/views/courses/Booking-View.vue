@@ -160,7 +160,7 @@ onMounted(async () => {
       <!-- 課程資訊卡 -->
       <section v-if="courseInfo" class="course-card">
         <img
-          :src="courseInfo.imageUrl || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400'"
+          :src="courseInfo.imageUrl || 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200'"
           alt="course"
         />
 
