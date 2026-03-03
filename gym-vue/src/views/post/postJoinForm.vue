@@ -13,7 +13,7 @@
                   <span v-else>{{ n }}</span>
                 </div>
                 <span class="step-label fw-bold" :class="currentStep >= n ? 'text-dark' : 'text-muted'">
-                  {{ n === 1 ? '基本資料' : '完成報名' }}
+                  {{ n === 1 ? '填寫資料' : '完成報名' }}
                 </span>
               </div>
             </div>
@@ -100,17 +100,17 @@
             <form @submit.prevent="handleFormSubmit">
               <div class="row g-4 mb-4">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold small text-secondary">姓名 Name <span
+                  <label class="form-label fw-bold small text-secondary">姓名<span
                       class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
-                    <input v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
+                    <input value="陸小鳳0303" v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="王小明" required>
                   </div>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label fw-bold small text-secondary">性別 Sex <span
+                  <label class="form-label fw-bold small text-secondary">性別<span
                       class="text-danger">*</span></label>
                   <div class="d-flex gap-3 mt-2">
                     <div class="form-check custom-radio">
@@ -132,22 +132,22 @@
                 </div>
 
                 <div class="col-12">
-                  <label class="form-label fw-bold small text-secondary">電子信箱 Email <span
+                  <label class="form-label fw-bold small text-secondary">電子信箱(Email) <span
                       class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i
                         class="bi bi-envelope"></i></span>
-                    <input v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
+                    <input value="test0303@gmail.com" v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="example@fitness.com" required>
                   </div>
                 </div>
 
                 <div class="col-12">
-                  <label class="form-label fw-bold small text-secondary">聯絡電話 Phone <span
+                  <label class="form-label fw-bold small text-secondary">聯絡電話<span
                       class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-phone"></i></span>
-                    <input v-model="form.Phone" type="tel" class="form-control border-start-0 ps-0 shadow-none"
+                    <input value="0978555888" v-model="form.Phone" type="tel" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="0912345678" required>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ const checkUserStatus = () => {
 
 const goToLogin = () => {
   sessionStorage.setItem('redirectUrl', route.fullPath);
-  router.push('/login');
+  router.push('/users/login');
 };
 
 // 處理 reCAPTCHA 手動渲染
@@ -302,17 +302,21 @@ const handleFormSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    // 2. 組合 Payload (對應你的 yJoinForm 資料表)
     const userData = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+    // 組合基礎 Payload
     const payload = {
-      EventId: Number(postData.value.EventInfo.EventId), // 轉成數字
+      // 這裡要包含後端可能需要的兩個 ID，確保萬無一失
+      PostId: Number(route.params.id),
+      EventId: Number(postData.value.EventInfo.EventId),
       UserId: userData.userId ? Number(userData.userId) : null,
       Name: form.Name,
-      Sex: String(form.Sex),       // 後端 DTO 是 string
+      Sex: String(form.Sex),
       Email: form.Email,
       Phone: form.Phone,
-      Fee: Number(postData.value.EventInfo.Fee), // 轉成數字 (decimal)
-      PaymentMethod: form.PaymentMethod // "LINEPAY"
+      Fee: Number(postData.value.EventInfo.Fee),
+      PaymentMethod: form.PaymentMethod,
+      CaptchaToken: token // <--- 補上這個！這是 400 錯誤最常見的原因
     };
 
     // 3. 費用確認與金流判定
@@ -332,18 +336,20 @@ const handleFormSubmit = async () => {
         return;
       }
 
-      // --- 重點：呼叫後端發起 LINE Pay ---
-      // 這裡呼叫你的後端 API (例如 RegisterWithLinePay)
+      // 呼叫 YLINEPAY 控制器
       const response = await axios.post('https://localhost:7218/api/YLINEPAY/RequestPayment', payload);
+
+      // 注意：LINE Pay Sandbox 的 returnCode 可能是字串或數字，視後端實作而定
+      // 如果你的後端直接回傳 LINE Pay API 的原始 JSON，這裡要檢查 response.data.returnCode
       if (response.data.returnCode === '0000') {
-        // 成功取得連結，執行跳轉
         window.location.href = response.data.info.paymentUrl.web;
       } else {
-        throw new Error(response.data.returnMessage || 'LINE Pay 發起失敗');
+        throw new Error(response.data.returnMessage || 'LINE Pay 請求失敗');
       }
 
     } else {
-      // 4. 免費活動或 ATM 的一般報名流程
+      // 4. 一般報名流程 (ATM 或 免費)
+      // 這裡呼叫的是 YPosts/Register
       const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
 
       await Swal.fire({
@@ -357,13 +363,19 @@ const handleFormSubmit = async () => {
 
   } catch (error) {
     if (window.grecaptcha) window.grecaptcha.reset(recaptchaWidgetId);
-    const errorMsg = error.response?.data?.message || error.message || '報名失敗，請稍後再試';
+
+    // 這裡幫助你抓出 400 的具體原因
+    console.error("伺服器回傳錯誤:", error.response?.data);
+
+    const errorMsg = error.response?.data?.message ||
+      (error.response?.data?.errors ? "資料格式不正確" : null) ||
+      "報名失敗，請稍後再試";
+
     Swal.fire('系統錯誤', errorMsg, 'error');
   } finally {
     isSubmitting.value = false;
   }
-};
-onMounted(() => {
+}; onMounted(() => {
   window.scrollTo(0, 0);
   checkUserStatus();
   fetchAllInfo();
