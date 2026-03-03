@@ -23,7 +23,7 @@
     <!-- 右側內容 -->
     <main class="content">
       <div class="verify-card">
-        <h2 class="title">設定完成 🎉</h2>
+        <h2 class="title">設定完成 </h2>
 
         <div class="state success">
           <div class="icon success">✓</div>
