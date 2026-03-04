@@ -1,5 +1,46 @@
 <template>
   <div class="join-page bg-light min-vh-100 py-5">
+
+    <Transition name="fade">
+      <div v-if="isLoginModalShow" class="login-overlay d-flex align-items-center justify-content-center"
+        @click.self="isLoginModalShow = false">
+        <div class="auth-card shadow animate-pop">
+          <button class="close-modal-btn" @click="isLoginModalShow = false">&times;</button>
+
+          <div class="text-center mb-5">
+            <h2 class="fw-bold tech-blue-text">歡迎回來 (Demo)</h2>
+            <p class="text-muted small">登入後將自動帶入您的報名資料</p>
+          </div>
+
+          <form @submit.prevent="handleFakeLogin">
+            <div class="input-wrapper mb-4">
+              <input type="text" v-model="loginEmail" class="minimal-input" placeholder=" " required>
+              <label class="floating-label">信箱(Email)</label>
+            </div>
+
+            <div class="input-wrapper mb-5">
+              <input type="password" v-model="loginPassword" class="minimal-input" placeholder=" " required>
+              <label class="floating-label">密碼</label>
+            </div>
+
+            <button type="submit" class="btn-primary-tech-login w-100 mb-3">登入</button>
+          </form>
+
+          <div class="social-section">
+            <div class="divider-login"><span>或使用其他方式</span></div>
+            <div class="d-flex justify-content-center gap-4">
+              <button class="social-circle-login" @click="handleFakeLogin">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+              </button>
+              <button class="social-circle-login" @click="handleFakeLogin">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" alt="LINE">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -84,13 +125,13 @@
                   <i class="bi bi-person-circle fs-3 text-orange me-3"></i>
                   <div>
                     <div class="fw-bold text-dark small">您目前以訪客身份報名</div>
-                    <div class="text-muted extra-small">登入會員可自動填寫資料</div>
+                    <div class="text-muted extra-small">立即註冊登入享有更多優惠資訊!</div>
                   </div>
                 </div>
-                <button @click="goToLogin" type="button"
+                <button @click="isLoginModalShow = true" type="button"
                   class="btn btn-orange btn-sm rounded-pill px-3 fw-bold shadow-sm">立即登入</button>
               </div>
-              <div v-else class="mt-3">
+              <div v-else class="mt-3 d-flex align-items-center justify-content-center">
                 <span class="badge bg-success-light text-success rounded-pill px-3 py-2">
                   <i class="bi bi-check-circle-fill me-1"></i> 會員資料已自動帶入
                 </span>
@@ -100,18 +141,16 @@
             <form @submit.prevent="handleFormSubmit">
               <div class="row g-4 mb-4">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold small text-secondary">姓名<span
-                      class="text-danger">*</span></label>
+                  <label class="form-label fw-bold small text-secondary">姓名<span class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
                     <input v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
-                      placeholder="王小明" required>
+                      placeholder="陸小美" required>
                   </div>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label fw-bold small text-secondary">性別<span
-                      class="text-danger">*</span></label>
+                  <label class="form-label fw-bold small text-secondary">性別<span class="text-danger">*</span></label>
                   <div class="d-flex gap-3 mt-2">
                     <div class="form-check custom-radio">
                       <input v-model="form.Sex" class="form-check-input shadow-none" type="radio" value="1"
@@ -137,14 +176,13 @@
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i
                         class="bi bi-envelope"></i></span>
-                    <input  v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
+                    <input v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
                       placeholder="example@fitness.com" required>
                   </div>
                 </div>
 
                 <div class="col-12">
-                  <label class="form-label fw-bold small text-secondary">聯絡電話<span
-                      class="text-danger">*</span></label>
+                  <label class="form-label fw-bold small text-secondary">聯絡電話<span class="text-danger">*</span></label>
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-phone"></i></span>
                     <input v-model="form.Phone" type="tel" class="form-control border-start-0 ps-0 shadow-none"
@@ -192,7 +230,6 @@
               </p>
             </form>
           </div>
-
         </div>
       </div>
     </div>
@@ -200,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, onUnmounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -212,6 +249,11 @@ const isSubmitting = ref(false);
 const currentStep = ref(1);
 const isLoggedIn = ref(false);
 
+// 彈窗控制與假登入資料
+const isLoginModalShow = ref(false);
+const loginEmail = ref('ming01@test.com');
+const loginPassword = ref('pwd123');
+
 const form = reactive({
   PostId: route.params.id,
   Name: '',
@@ -221,14 +263,12 @@ const form = reactive({
   PaymentMethod: 'LINEPAY'
 });
 
-// 格式化日期
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '未定';
   const date = new Date(dateStr);
   return date.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
-// 取得貼文與活動詳細資訊
 const fetchAllInfo = async () => {
   try {
     const id = route.params.id;
@@ -236,82 +276,88 @@ const fetchAllInfo = async () => {
     postData.value = response.data;
   } catch (error) {
     console.error('資料讀取失敗', error);
-    Swal.fire('錯誤', '無法取得活動資訊', 'error');
   }
 };
 
-// 檢查會員登入狀態並帶入資料
+// 檢查並帶入資料
 const checkUserStatus = () => {
-  const savedData = localStorage.getItem('userInfo'); // 假設你的登入資料存在這
+  const savedData = localStorage.getItem('userInfo');
   if (savedData) {
     try {
       const userData = JSON.parse(savedData);
       isLoggedIn.value = true;
       form.Name = userData.name || '';
-      if (userData.sex === '男' || userData.sex === 1 || userData.sex === '1') {
-        form.Sex = '1';
-      } else if (userData.sex === '女' || userData.sex === 0 || userData.sex === '0') {
-        form.Sex = '0';
-      } else {
-        form.Sex = '2'; // 其他
-      }      form.Email = userData.email || '';
+      form.Email = userData.email || '';
       form.Phone = userData.phone || '';
+      // 性別判定
+      if (userData.sex === '男' || userData.sex === 1 || userData.sex === '1') form.Sex = '1';
+      else if (userData.sex === '女' || userData.sex === 0 || userData.sex === '0') form.Sex = '0';
+      else form.Sex = '2';
     } catch (e) {
       console.error('會員資料解析失敗', e);
     }
+  } else {
+    isLoggedIn.value = false;
   }
 };
 
-const goToLogin = () => {
-  sessionStorage.setItem('redirectUrl', route.fullPath);
-  router.push('/users/login');
+// ================= 核心：假登入邏輯 (原地更新) =================
+const handleFakeLogin = () => {
+  const mockUser = {
+    userId:1,
+    name: '王小明',
+    sex: '1',
+    email: loginEmail.value || 'ming01@test.com',
+    phone: '0912345678'
+  };
+
+  localStorage.setItem('userInfo', JSON.stringify(mockUser));
+
+  isLoginModalShow.value = false; // 關閉彈窗
+  checkUserStatus(); // 原地更新表單
+
+  Swal.fire({
+    icon: 'success',
+    title: '登入成功',
+    text: '已為您自動帶入會員資料',
+    timer: 1500,
+    showConfirmButton: false
+  });
 };
 
-// 處理 reCAPTCHA 手動渲染
+const handleLogout = () => {
+  localStorage.removeItem('userInfo');
+  form.Name = ''; form.Email = ''; form.Phone = '';
+  isLoggedIn.value = false;
+  Swal.fire('已登出', '資料已清除', 'info');
+};
+
+// reCAPTCHA 處理
 let recaptchaWidgetId = null;
 const renderRecaptcha = () => {
-  // 檢查 grecaptcha 是否存在
   if (window.grecaptcha && window.grecaptcha.render) {
-    const element = document.getElementById('recaptcha-element');
-    if (element) {
-      // 如果已經渲染過，先重置或不處理，避免重複渲染報錯
-      try {
-        recaptchaWidgetId = window.grecaptcha.render('recaptcha-element', {
-          'sitekey': '6LcNAHcsAAAAAFgudKK9KwtxBbWF7yrTTDZODESg'
-        });
-      } catch (e) {
-        console.warn("reCAPTCHA 已經渲染過了");
-      }
-    }
+    try {
+      recaptchaWidgetId = window.grecaptcha.render('recaptcha-element', {
+        'sitekey': '6LcNAHcsAAAAAFgudKK9KwtxBbWF7yrTTDZODESg'
+      });
+    } catch (e) { }
   } else {
-    // 如果還沒載入完，過 500ms 再試一次
     setTimeout(renderRecaptcha, 500);
   }
 };
 
-// 表單提交邏輯
+// 表單提交
 const handleFormSubmit = async () => {
-  // 1. 取得 reCAPTCHA Token
   const token = window.grecaptcha.getResponse(recaptchaWidgetId);
-
   if (!token) {
-    Swal.fire({
-      icon: 'warning',
-      title: '驗證提醒',
-      text: '請先勾選「我不是機器人」',
-      confirmButtonColor: '#f3722c'
-    });
+    Swal.fire({ icon: 'warning', title: '驗證提醒', text: '請先勾選「我不是機器人」' });
     return;
   }
 
   isSubmitting.value = true;
-
   try {
     const userData = JSON.parse(localStorage.getItem('userInfo') || '{}');
-
-    // 組合基礎 Payload
     const payload = {
-      // 這裡要包含後端可能需要的兩個 ID，確保萬無一失
       PostId: Number(route.params.id),
       EventId: Number(postData.value.EventInfo.EventId),
       UserId: userData.userId ? Number(userData.userId) : null,
@@ -321,66 +367,28 @@ const handleFormSubmit = async () => {
       Phone: form.Phone,
       Fee: Number(postData.value.EventInfo.Fee),
       PaymentMethod: form.PaymentMethod,
-      CaptchaToken: token // <--- 補上這個！這是 400 錯誤最常見的原因
+      CaptchaToken: token
     };
 
-    // 3. 費用確認與金流判定
     if (postData.value?.EventInfo?.Fee > 0 && form.PaymentMethod === 'LINEPAY') {
-      const result = await Swal.fire({
-        title: '確認報名並付款？',
-        text: `報名費用：$${payload.Fee}，將跳轉至 LINE Pay 付款頁面`,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#f3722c',
-        confirmButtonText: '前往 LINE Pay',
-        cancelButtonText: '取消'
-      });
-
-      if (!result.isConfirmed) {
-        isSubmitting.value = false;
-        return;
-      }
-
-      // 呼叫 YLINEPAY 控制器
       const response = await axios.post('https://localhost:7218/api/YLINEPAY/RequestPayment', payload);
-
-      // 注意：LINE Pay Sandbox 的 returnCode 可能是字串或數字，視後端實作而定
-      // 如果你的後端直接回傳 LINE Pay API 的原始 JSON，這裡要檢查 response.data.returnCode
       if (response.data.returnCode === '0000') {
         window.location.href = response.data.info.paymentUrl.web;
-      } else {
-        throw new Error(response.data.returnMessage || 'LINE Pay 請求失敗');
       }
-
     } else {
-      // 4. 一般報名流程 (ATM 或 免費)
-      // 這裡呼叫的是 YPosts/Register
       const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
-
-      await Swal.fire({
-        icon: 'success',
-        title: '報名完成！',
-        text: response.data.message || '已成功收到您的報名資料',
-        confirmButtonColor: '#f3722c'
-      });
+      await Swal.fire({ icon: 'success', title: '報名完成！', text: response.data.message });
       router.push('/post/card');
     }
-
   } catch (error) {
-    if (window.grecaptcha) window.grecaptcha.reset(recaptchaWidgetId);
-
-    // 這裡幫助你抓出 400 的具體原因
-    console.error("伺服器回傳錯誤:", error.response?.data);
-
-    const errorMsg = error.response?.data?.message ||
-      (error.response?.data?.errors ? "資料格式不正確" : null) ||
-      "報名失敗，請稍後再試";
-
-    Swal.fire('系統錯誤', errorMsg, 'error');
+    console.error(error);
+    Swal.fire('錯誤', '提交失敗', 'error');
   } finally {
     isSubmitting.value = false;
   }
-}; onMounted(() => {
+};
+
+onMounted(() => {
   window.scrollTo(0, 0);
   checkUserStatus();
   fetchAllInfo();
@@ -389,7 +397,154 @@ const handleFormSubmit = async () => {
 </script>
 
 <style scoped>
-/* 這裡保留你原本優雅的 CSS 樣式 */
+/* ================= 彈窗專屬 CSS (完全復刻您的登入 UI) ================= */
+.login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px;
+  position: relative;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.tech-blue-text {
+  color: #f38d00;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.minimal-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 12px 0;
+  font-size: 16px;
+  background: transparent;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.minimal-input:focus {
+  border-bottom: 2px solid #f38d00;
+}
+
+.floating-label {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  color: #999;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.minimal-input:focus~.floating-label,
+.minimal-input:not(:placeholder-shown)~.floating-label {
+  top: -18px;
+  font-size: 12px;
+  color: #f38d00;
+}
+
+.btn-primary-tech-login {
+  background: #f38d00;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.btn-primary-tech-login:hover {
+  background: #d67d00;
+  transform: translateY(-2px);
+}
+
+.divider-login {
+  display: flex;
+  align-items: center;
+  margin: 30px 0 20px;
+}
+
+.divider-login::before,
+.divider-login::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #eee;
+}
+
+.divider-login span {
+  padding: 0 15px;
+  font-size: 12px;
+  color: #999;
+}
+
+.social-circle-login {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-circle-login img {
+  width: 24px;
+}
+
+/* 過渡動畫 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.animate-pop {
+  animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ================= 原本的 CSS ================= */
 .process-steps {
   position: relative;
 }
@@ -523,5 +678,9 @@ const handleFormSubmit = async () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.border-orange-dashed {
+  border: 2px dashed #f3722c !important;
 }
 </style>
