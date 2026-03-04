@@ -135,6 +135,7 @@
                 <span class="badge bg-success-light text-success rounded-pill px-3 py-2">
                   <i class="bi bi-check-circle-fill me-1"></i> 會員資料已自動帶入
                 </span>
+                <button @click="handleLogout" class="btn btn-link btn-sm text-secondary ms-2">登出</button>
               </div>
             </div>
 
@@ -145,7 +146,7 @@
                   <div class="input-group custom-input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person"></i></span>
                     <input v-model="form.Name" type="text" class="form-control border-start-0 ps-0 shadow-none"
-                      placeholder="陸小美" required>
+                      placeholder="您的姓名" required>
                   </div>
                 </div>
 
@@ -177,7 +178,7 @@
                     <span class="input-group-text bg-white border-end-0 text-muted"><i
                         class="bi bi-envelope"></i></span>
                     <input v-model="form.Email" type="email" class="form-control border-start-0 ps-0 shadow-none"
-                      placeholder="example@fitness.com" required>
+                      placeholder="example@email.com" required>
                   </div>
                 </div>
 
@@ -249,7 +250,7 @@ const isSubmitting = ref(false);
 const currentStep = ref(1);
 const isLoggedIn = ref(false);
 
-// 彈窗控制與假登入資料
+// 彈窗與假登入
 const isLoginModalShow = ref(false);
 const loginEmail = ref('ming01@test.com');
 const loginPassword = ref('pwd123');
@@ -276,10 +277,10 @@ const fetchAllInfo = async () => {
     postData.value = response.data;
   } catch (error) {
     console.error('資料讀取失敗', error);
+    Swal.fire('錯誤', '無法載入活動資訊', 'error');
   }
 };
 
-// 檢查並帶入資料
 const checkUserStatus = () => {
   const savedData = localStorage.getItem('userInfo');
   if (savedData) {
@@ -289,40 +290,27 @@ const checkUserStatus = () => {
       form.Name = userData.name || '';
       form.Email = userData.email || '';
       form.Phone = userData.phone || '';
-      // 性別判定
-      if (userData.sex === '男' || userData.sex === 1 || userData.sex === '1') form.Sex = '1';
-      else if (userData.sex === '女' || userData.sex === 0 || userData.sex === '0') form.Sex = '0';
+      if (userData.sex == '1' || userData.sex == '男') form.Sex = '1';
+      else if (userData.sex == '0' || userData.sex == '女') form.Sex = '0';
       else form.Sex = '2';
     } catch (e) {
-      console.error('會員資料解析失敗', e);
+      console.error('解析失敗', e);
     }
-  } else {
-    isLoggedIn.value = false;
   }
 };
 
-// ================= 核心：假登入邏輯 (原地更新) =================
 const handleFakeLogin = () => {
   const mockUser = {
-    userId:1,
+    userId: 1,
     name: '王小明',
     sex: '1',
     email: loginEmail.value || 'ming01@test.com',
     phone: '0912345678'
   };
-
   localStorage.setItem('userInfo', JSON.stringify(mockUser));
-
-  isLoginModalShow.value = false; // 關閉彈窗
-  checkUserStatus(); // 原地更新表單
-
-  Swal.fire({
-    icon: 'success',
-    title: '登入成功',
-    text: '已為您自動帶入會員資料',
-    timer: 1500,
-    showConfirmButton: false
-  });
+  isLoginModalShow.value = false;
+  checkUserStatus();
+  Swal.fire({ icon: 'success', title: '登入成功', timer: 1500, showConfirmButton: false });
 };
 
 const handleLogout = () => {
@@ -332,7 +320,7 @@ const handleLogout = () => {
   Swal.fire('已登出', '資料已清除', 'info');
 };
 
-// reCAPTCHA 處理
+// reCAPTCHA
 let recaptchaWidgetId = null;
 const renderRecaptcha = () => {
   if (window.grecaptcha && window.grecaptcha.render) {
@@ -346,7 +334,7 @@ const renderRecaptcha = () => {
   }
 };
 
-// 表單提交
+// 表單提交核心邏輯
 const handleFormSubmit = async () => {
   const token = window.grecaptcha.getResponse(recaptchaWidgetId);
   if (!token) {
@@ -370,19 +358,37 @@ const handleFormSubmit = async () => {
       CaptchaToken: token
     };
 
-    if (postData.value?.EventInfo?.Fee > 0 && form.PaymentMethod === 'LINEPAY') {
+    // 判斷是否走 LINE Pay 流程
+    if (payload.Fee > 0 && form.PaymentMethod === 'LINEPAY') {
       const response = await axios.post('https://localhost:7218/api/YLINEPAY/RequestPayment', payload);
+
       if (response.data.returnCode === '0000') {
-        window.location.href = response.data.info.paymentUrl.web;
+        const paymentUrl = response.data.info.paymentUrl.web;
+
+        Swal.fire({
+          title: '導向支付中...',
+          text: '請在開啟的視窗中完成付款',
+          icon: 'info',
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          willOpen: () => { Swal.showLoading(); }
+        });
+
+        // 跳轉金流
+        window.location.href = paymentUrl;
+      } else {
+        throw new Error(response.data.returnMessage || 'LINE Pay 初始化失敗');
       }
     } else {
+      // 免費活動或 ATM 流程
       const response = await axios.post('https://localhost:7218/api/YPosts/Register', payload);
       await Swal.fire({ icon: 'success', title: '報名完成！', text: response.data.message });
       router.push('/post/card');
     }
   } catch (error) {
-    console.error(error);
-    Swal.fire('錯誤', '提交失敗', 'error');
+    console.error('提交失敗:', error);
+    const errorText = error.response?.data?.message || error.message || '系統忙碌中，請稍後再試';
+    Swal.fire('提交失敗', errorText, 'error');
   } finally {
     isSubmitting.value = false;
   }
@@ -397,7 +403,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ================= 彈窗專屬 CSS (完全復刻您的登入 UI) ================= */
+/* 這裡保留您原本精美的 CSS 樣式即可，內容與您提供的完全一致 */
 .login-overlay {
   position: fixed;
   top: 0;
@@ -517,7 +523,6 @@ onMounted(() => {
   width: 24px;
 }
 
-/* 過渡動畫 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s;
@@ -544,7 +549,6 @@ onMounted(() => {
   }
 }
 
-/* ================= 原本的 CSS ================= */
 .process-steps {
   position: relative;
 }
@@ -624,6 +628,10 @@ onMounted(() => {
   background-color: rgba(25, 135, 84, 0.08);
 }
 
+.bg-danger-light {
+  background-color: rgba(220, 53, 69, 0.08);
+}
+
 .btn-orange {
   background-color: #f3722c;
   border: none;
@@ -682,5 +690,9 @@ onMounted(() => {
 
 .border-orange-dashed {
   border: 2px dashed #f3722c !important;
+}
+
+.extra-small {
+  font-size: 0.75rem;
 }
 </style>

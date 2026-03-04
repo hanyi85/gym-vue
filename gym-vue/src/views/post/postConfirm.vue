@@ -59,25 +59,27 @@ const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
 const userEmail = ref('');
-const countdown = ref(5); // 倒數計時顯示
+const countdown = ref(5);
 
 onMounted(async () => {
   const transactionId = route.query.transactionId;
   const joinId = route.query.joinId;
 
   if (!transactionId || !joinId) {
-    Swal.fire('錯誤', '非法訪問，請從正常流程進入', 'error');
+    Swal.fire('錯誤', '缺少交易資訊，請重新操作', 'error');
     router.push('/post/card');
     return;
   }
 
   try {
-    // 呼叫後端 API
+    // 呼叫後端 API 進行最後扣款確認
     const response = await axios.get(`https://localhost:7218/api/YLINEPAY/ConfirmPayment`, {
       params: { transactionId, joinId }
     });
 
     if (response.data.returnCode === '0000') {
+      // 取得後端回傳的 Email 顯示在畫面上
+      userEmail.value = response.data.email;
       loading.value = false;
 
       // 啟動倒數計時器
@@ -88,15 +90,19 @@ onMounted(async () => {
           router.push('/post/card');
         }
       }, 1000);
+    } else {
+      throw new Error(response.data.message || '付款失敗');
     }
   } catch (error) {
     console.error('確認失敗', error);
-    Swal.fire('系統錯誤', '付款狀態確認失敗，請聯繫客服', 'error');
-    router.push('/post/card');
+    // 顯示更詳細的錯誤訊息
+    const errorMsg = error.response?.data?.message || '付款確認失敗，請聯繫客服';
+    Swal.fire('付款失敗', errorMsg, 'error').then(() => {
+      router.push('/post/card');
+    });
   }
 });
 </script>
-
 <style scoped>
 /* 流程圖表樣式 */
 .process-steps {
