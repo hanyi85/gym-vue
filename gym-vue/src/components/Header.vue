@@ -50,7 +50,9 @@
 
                   <ul v-if="isAccountOpen" class="account_selection shadow">
                     <template v-if="!auth.isLoggedIn">
-                      <li><a href="javascript:void(0)" @click="handleLogin">假登入</a></li>
+                       <!-- 上方空白區（點擊直接假登入） -->
+  <li class="fake-login-area" @click="handleLogin"></li>
+
                       <li><router-link to="/users/login" @click="closeAccount">登入系統</router-link></li>
                       <li><router-link to="/users/forgot-password" @click="closeAccount">忘記密碼</router-link></li>
                       <li><router-link to="/users/register" @click="closeAccount">註冊帳號</router-link></li>
@@ -625,5 +627,10 @@ html {
     linear-gradient(60deg, var(--g)),
     linear-gradient(-60deg, var(--g)) var(--c2);
   background-size: var(--s) calc(tan(60deg)*var(--s));
+}
+
+.fake-login-area {
+  height: 15px;       /* 空白高度可自行調整 */
+  cursor: pointer;
 }
 </style>

@@ -72,9 +72,7 @@
       <div class="container d-flex flex-column flex-lg-row justify-content-between align-items-center">
         <div class="copyright-content sitename">
           <p>© Copyright <strong><span>練吧 Fitness bar</span></strong>. All Rights Reserved</p>
-          <div class="credits">
-            Designed by <a href="#">YourTeam</a> Distributed by <a href="#">Fitness bar</a>
-          </div>
+          
         </div>
 
         <div class="social-links mt-3 mt-lg-0">
