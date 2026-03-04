@@ -142,7 +142,7 @@ onMounted(() => {
                 常溫商品滿 $899 免運，
                 <span class="text-gym-green fw-bold">再買 NT${{ 899 - cartStore.subtotal }} 即享有免運</span>
               </span>
-              <span v-else class="small text-gym-green fw-bold">🎉 已達成免運門檻！</span>
+              <span v-else class="small text-gym-green fw-bold"> 已達成免運門檻！</span>
             </div>
             <div class="text-end">
               <a @click="router.push('/shop/products')" class="text-decoration-underline small text-dark cursor-pointer">繼續購物</a>
