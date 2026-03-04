@@ -10,14 +10,17 @@ const auth = useAuthStore()
 
 onMounted(async () => {
   const code = route.query.code
-  const state = route.query.state
-  const savedState = sessionStorage.getItem("line_state")
+  const returnedState = route.query.state
+  const originalState = sessionStorage.getItem("line_state")
 
-  if (!code || state !== savedState) {
+  // 驗證 code 與 state
+  if (!code || !returnedState || returnedState !== originalState) {
+    alert("State 驗證失敗或授權無效")
     router.push("/users/login")
     return
   }
 
+  // 驗證完就刪除
   sessionStorage.removeItem("line_state")
 
   try {
