@@ -1,8 +1,8 @@
 <script setup>
 import Hero from '@/components/Hero.vue'
-import { ref, computed } from 'vue'
+import { ref,computed } from 'vue'
 
-// 教練消息資料
+
 const trainers = ref([
   {
     id: 1,
