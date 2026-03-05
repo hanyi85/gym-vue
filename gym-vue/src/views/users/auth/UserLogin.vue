@@ -140,7 +140,7 @@ async function handleLogin() {
     }
 
     // 使用 Pinia 存登入資訊
-    auth.login(data.token, data.name, data.userId)
+    auth.login(data.token, data.name, data.userId, data.showWelcomeMessage)
 
     router.push('/')
 
@@ -192,11 +192,13 @@ const handleGoogleCallback = async ({ credential }) => {
    LINE 登入
 ===================== */
 function socialLogin(provider) {
-  if (provider === 'LINE') {
-    const clientId = '2009268953'
-    const redirectUri = 'http://localhost:5173/line-callback'
+  if (provider === "LINE") {
+    const clientId = "2009268953"
+    const redirectUri = "http://localhost:5173/line-callback"
     const state = Math.random().toString(36).substring(2)
-    const scope = 'profile openid'
+    const scope = "profile openid"
+
+    sessionStorage.setItem("line_state", state)
 
     const url =
       `https://access.line.me/oauth2/v2.1/authorize?` +

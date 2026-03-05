@@ -1,217 +1,3 @@
-<script setup>
-import Hero from '@/components/Hero.vue'
-import { ref, computed } from 'vue'
-
-// 教練消息資料
-const trainers = ref([
-  {
-    id: 1,
-    name: '阿強 Coach Ken',
-    specialty: '專精：健力、肌力訓練',
-    certs: 'NSCA-CPT / NASM-PES',
-    image:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 2,
-    name: '李安 Annie',
-    specialty: '專精：空中瑜珈、皮拉提斯',
-    certs: 'RYT-200 國際瑜珈證照',
-    image:
-      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 3,
-    name: '張飛 Jeff',
-    specialty: '專精：拳擊燃脂、格鬥訓練',
-    certs: 'WBC 職業拳擊教練認證',
-    image:
-      'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 4,
-    name: '小梅 May',
-    specialty: '專精：產後體態恢復、增肌減脂',
-    certs: 'ACE-CPT 國際教練證照',
-    image:
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=500&q=80',
-  },
-])
-
-// 商品資料
-// 分類選單
-const categories = [
-  { id: 'all', name: '所有商品' },
-  { id: 'Supplements', name: '營養補給' },
-  { id: 'Equipment', name: '重訓器材' },
-  { id: 'Apparel', name: '運動服飾' },
-  { id: 'Accessories', name: '訓練配件' },
-]
-
-const currentTab = ref('all')
-
-// 商品資料（健身商品版本）
-const products = ref([
-  {
-    id: 1,
-    title: '分離式乳清蛋白 (2kg)',
-    category: 'Supplements',
-    price: 1880,
-    description: '高純度、極速吸收，每份含有 25g 優質蛋白質，助你高效增肌。',
-    image: 'https://images.unsplash.com/photo-1579722820308-d74e571900a9?q=500',
-  },
-  {
-    id: 2,
-    title: '可調式啞鈴組 (24kg)',
-    category: 'Equipment',
-    price: 3200,
-    description: '15 段重量一秒切換，節省空間，是居家健身的最佳重量選擇。',
-    image: 'https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?w=500',
-  },
-  {
-    id: 3,
-    title: '高強度彈性拉力帶',
-    category: 'Accessories',
-    price: 450,
-    description: '天然乳膠材質，輔助引體向上或加強深蹲阻力。',
-    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500',
-  },
-  {
-    id: 4,
-    title: '超輕量排汗訓練衫',
-    category: 'Apparel',
-    price: 790,
-    description: '極致透氣纖維，保持運動時的乾爽體感。',
-    image: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=500',
-  },
-  {
-    id: 5,
-    title: '專業牛皮護掌',
-    category: 'Accessories',
-    price: 880,
-    description: '高摩擦力防護，預防重訓老繭，提升抓握穩定度。',
-    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500',
-  },
-  {
-    id: 6,
-    title: '肌酸補給粉 (無味)',
-    category: 'Supplements',
-    price: 650,
-    description: '提升爆發力與運動表現，讓你挑戰更高重量。',
-    image: 'https://images.unsplash.com/photo-1579722820308-d74e571900a9?w=500',
-  },
-])
-// 根據點選的分類過濾商品
-const filteredProducts = computed(() => {
-  if (currentTab.value === 'all') return products.value
-  return products.value.filter((p) => p.category === currentTab.value)
-})
-
-// 課程消息資料
-const courses = ref([
-  {
-    id: 1,
-    name: '基礎跑步心肺',
-    price: 275,
-    status: '開放報名',
-    image: 'https://images.unsplash.com/photo-1538370621607-4919ce7889b3?q=80&w=600',
-  },
-  {
-    id: 2,
-    name: '專業重量訓練',
-    price: 200,
-    status: '開放報名',
-    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
-  },
-  {
-    id: 3,
-    name: '團體拳擊燃脂',
-    price: 225,
-    status: '名額緊張',
-    image: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=600',
-  },
-  {
-    id: 4,
-    name: '空中瑜珈放鬆',
-    price: 300,
-    status: '開放報名',
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
-  },
-  {
-    id: 5,
-    name: '高強度間歇 HIIT',
-    price: 500,
-    status: '專業進階',
-    image: 'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?q=80&w=600',
-  },
-  {
-    id: 6,
-    name: '健體健美專修',
-    price: 250,
-    status: '開放報名',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600',
-  },
-])
-
-// 健身房消息資料
-const newsPosts = ref([
-  {
-    id: 1,
-    title: '春季增肌大挑戰：報名即享教練課 8 折優惠',
-    date: 'March 01',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600', // 示意圖，可換成在地路徑
-    author: '專業教練組',
-    category: '優惠活動',
-  },
-  {
-    id: 2,
-    title: '生酮飲食 vs. 低 GI 飲食：哪種更適合你的健身計畫？',
-    date: 'February 25',
-    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=600',
-    author: '營養師團隊',
-    category: '健康飲食',
-  },
-  {
-    id: 3,
-    title: '新場館落成！全台最頂級悍馬機進駐，邀請您來體驗',
-    date: 'February 10',
-    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=600',
-    author: '管理中心',
-    category: '場館公告',
-  },
-])
-
-// 學員好評資料
-const testimonials = ref([
-  {
-    id: 1,
-    name: '王小明 - 科技業工程師',
-    comment:
-      '以前下班總是腰酸背痛，加入練吧後，教練針對我的久坐問題調整訓練，現在體力變超好，工作效率也提升了！',
-    avatar: 'https://i.pravatar.cc/150?u=1', // 隨機頭像產生器
-  },
-  {
-    id: 2,
-    name: '李佳佳 - 職場媽媽',
-    comment: '團體課程氣氛超棒！拳擊燃脂課程讓我壓力全消，三個月內體脂掉了 5%，真的找回了自信。',
-    avatar: 'https://i.pravatar.cc/150?u=2',
-  },
-  {
-    id: 3,
-    name: '張大衛 - 業餘運動員',
-    comment:
-      '這裡的器材是全台最頂尖的，悍馬機配置非常齊全。特別推薦一對一私人教學，細節抓得很精準。',
-    avatar: 'https://i.pravatar.cc/150?u=3',
-  },
-  {
-    id: 4,
-    name: '陳艾琳 - 大學生',
-    comment: '空中瑜珈環境非常安靜舒適，老師很有耐心。很適合初學者加入，完全沒有壓力！',
-    avatar: 'https://i.pravatar.cc/150?u=4',
-  },
-])
-</script>
-
 <template>
   <!-- 全站導覽列 -->
 
@@ -254,73 +40,95 @@ const testimonials = ref([
       <!-- /教練 Section -->
 
       <!-- 商品 Section -->
-      <div class="container-fluid fruite py-5">
-        <div class="container py-5">
-          <div class="tab-class text-center">
-            <div class="row g-4">
-              <div class="col-lg-4 text-start">
-                <h1>我們的精選商品</h1>
-              </div>
-              <div class="col-lg-8 text-end">
-                <ul class="nav nav-pills d-inline-flex text-center mb-5">
-                  <li class="nav-item" v-for="(category, index) in categories" :key="index">
-                    <a
-                      class="d-flex m-2 py-2 bg-light rounded-pill"
-                      :class="{ active: currentTab === category.id }"
-                      @click.prevent="currentTab = category.id"
-                      href="#"
-                    >
-                      <span class="text-dark" style="width: 130px">{{ category.name }}</span>
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
+<section class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="fw-bold">推薦商品</h1>
+    <p class="text-muted">精選熱銷健身補給，助你突破極限</p>
+  </div>
 
-            <div class="tab-content">
-              <div class="tab-pane fade show p-0 active">
-                <div class="row g-4">
-                  <div
-                    class="col-md-6 col-lg-4 col-xl-3"
-                    v-for="item in filteredProducts"
-                    :key="item.id"
-                  >
-                    <div class="rounded position-relative fruite-item border border-secondary">
-                      <div class="fruite-img">
-                        <img
-                          :src="item.image"
-                          class="img-fluid w-100 rounded-top"
-                          :alt="item.title"
-                          style="height: 250px; object-fit: cover"
-                        />
-                      </div>
-                      <div
-                        class="text-white bg-secondary px-3 py-1 rounded position-absolute"
-                        style="top: 10px; left: 10px"
-                      >
-                        {{ item.category }}
-                      </div>
-                      <div class="p-4 border-top-0 rounded-bottom">
-                        <h4>{{ item.title }}</h4>
-                        <p>{{ item.description }}</p>
-                        <div class="d-flex justify-content-between flex-lg-wrap">
-                          <p class="text-dark fs-5 fw-bold mb-0">${{ item.price }} / kg</p>
-                          <a
-                            href="#"
-                            class="btn border border-secondary rounded-pill px-3 text-primary"
-                          >
-                            <i class="fa fa-shopping-bag me-2 text-primary"></i> 加入購物車
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+<div
+    id="recommendedCarousel"
+    class="carousel slide"
+    data-bs-ride="false"
+  >
+    <div class="carousel-inner">
+
+      <div
+        v-for="(group, index) in groupedProducts"
+        :key="index"
+        :class="['carousel-item', { active: index === 0 }]"
+      >
+        <div class="row g-4 justify-content-center">
+          <div
+            v-for="product in group"
+            :key="product.PId"
+            class="col-md-3 col-sm-6"
+            @click="goToDetail(product.PId)"
+          >
+            <div class="product-card">
+              <div class="img-wrapper mb-3 rounded bg-light shadow-sm d-flex align-items-center justify-content-center">
+                <img
+                  v-if="product.ImagePath"
+                  :src="`https://localhost:7218${product.ImagePath.startsWith('/') ? '' : '/'}${product.ImagePath}`"
+                  class="product-img"
+                />
               </div>
+
+              <p class="small mb-1 product-name">
+                {{ product.FullName }}
+              </p>
+
+              <div>
+                <span class="price-orange fw-bold me-2">
+                  NT${{
+                    product.DiscountPrice && product.DiscountPrice > 0
+                      ? product.DiscountPrice
+                      : product.Price
+                  }}
+                </span>
+
+                <span
+                  v-if="product.DiscountPrice && product.DiscountPrice > 0"
+                  class="text-muted text-decoration-line-through small"
+                >
+                  NT${{ product.Price }}
+                </span>
+              </div>
+
             </div>
           </div>
         </div>
       </div>
+
+    </div>
+
+    <!-- 左右按鈕 -->
+    <button
+      class="carousel-control-prev"
+      type="button"
+      data-bs-target="#recommendedCarousel"
+      data-bs-slide="prev"
+    >
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+
+    <button
+      class="carousel-control-next"
+      type="button"
+      data-bs-target="#recommendedCarousel"
+      data-bs-slide="next"
+    >
+      <span class="carousel-control-next-icon"></span>
+    </button>
+    </div>
+
+
+  <div class="text-center mt-4">
+    <router-link to="/shop/products" class="btn btn-outline-dark px-4">
+      查看更多商品
+    </router-link>
+  </div>
+</section>
       <!-- /商品 Section -->
 
       <!-- 課程預約 Section-->
@@ -336,21 +144,36 @@ const testimonials = ref([
           </div>
 
           <div class="row">
-            <div v-for="course in courses" :key="course.id" class="col-lg-4 col-md-6">
-              <div class="single-course">
-                <div class="thumb">
-                  <img class="img-fluid" :src="course.image" :alt="course.name" />
-                  <span class="course-status">{{ course.status }}</span>
-                </div>
-                <div class="course-details">
-                  <router-link :to="`/courses/${course.id}`">
-                    <h4>
-                      {{ course.name }} <span>${{ course.price }}</span>
-                    </h4>
-                  </router-link>
-                </div>
-              </div>
-            </div>
+            <div
+  v-for="course in courses.slice(0, 6)"
+  :key="course.id"
+  class="col-lg-4 col-md-6"
+>
+  <div class="course-card">
+
+    <div class="course-img-wrapper">
+      <img :src="course.image" :alt="course.name" />
+      <span class="course-tag">{{ course.status }}</span>
+    </div>
+
+    <div class="course-body">
+      <h4 class="course-title">
+        {{ course.name }}
+      </h4>
+
+      <div class="course-footer">
+        <span class="course-price">
+          NT$ {{ course.price }}
+        </span>
+
+        <button class="reserve-btn">
+          立即預約
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
           </div>
         </div>
       </section>
@@ -570,6 +393,207 @@ const testimonials = ref([
   </div>
 </template>
 
+<script setup>
+import Hero from '@/components/Hero.vue'
+import axios from 'axios'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const API_URL = import.meta.env.VITE_API_URL
+const chunkSize = 4
+
+const groupedProducts = computed(() => {
+  const result = []
+  for (let i = 0; i < recommendedProducts.value.length; i += chunkSize) {
+    result.push(recommendedProducts.value.slice(i, i + chunkSize))
+  }
+  return result
+})
+
+const products = ref([])
+
+// 只取前 4 筆當推薦商品
+const recommendedProducts = computed(() => {
+  return Array.isArray(products.value)
+  ? products.value.slice(0, 16)
+  : []
+})
+function getProducts() {
+  axios.get(API_URL + 'SProducts')
+  .then(res => {
+    products.value = res.data  
+  })
+  .catch(err => {
+    console.error('載入商品失敗', err)
+  })
+}
+
+onMounted(() => {
+  getProducts()
+})
+
+const goToDetail = (id) => {
+  router.push({
+    name: 'shop-product-detail',
+    params: { id }
+  })
+}
+
+
+
+const trainers = ref([
+  {
+    id: 1,
+    name: '阿強 Coach Ken',
+    specialty: '專精：健力、肌力訓練',
+    certs: 'NSCA-CPT / NASM-PES',
+    image:
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    id: 2,
+    name: '李安 Annie',
+    specialty: '專精：空中瑜珈、皮拉提斯',
+    certs: 'RYT-200 國際瑜珈證照',
+    image:
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    id: 3,
+    name: '張飛 Jeff',
+    specialty: '專精：拳擊燃脂、格鬥訓練',
+    certs: 'WBC 職業拳擊教練認證',
+    image:
+      'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    id: 4,
+    name: '小梅 May',
+    specialty: '專精：產後體態恢復、增肌減脂',
+    certs: 'ACE-CPT 國際教練證照',
+    image:
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=500&q=80',
+  },
+])
+
+// 商品資料
+// 分類選單
+const categories = [
+  { id: 'all', name: '所有商品' },
+  { id: 'Supplements', name: '營養補給' },
+  { id: 'Equipment', name: '重訓器材' },
+  { id: 'Apparel', name: '運動服飾' },
+  { id: 'Accessories', name: '訓練配件' },
+]
+
+
+// 課程消息資料
+const courses = ref([
+  {
+    id: 1,
+    name: '基礎跑步心肺',
+    price: 275,
+    status: '開放報名',
+    image: 'https://images.unsplash.com/photo-1538370621607-4919ce7889b3?q=80&w=600',
+  },
+  {
+    id: 2,
+    name: '專業重量訓練',
+    price: 200,
+    status: '開放報名',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
+  },
+  {
+    id: 3,
+    name: '團體拳擊燃脂',
+    price: 225,
+    status: '名額緊張',
+    image: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=600',
+  },
+  {
+    id: 4,
+    name: '空中瑜珈放鬆',
+    price: 300,
+    status: '開放報名',
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
+  },
+  {
+    id: 5,
+    name: '高強度間歇 HIIT',
+    price: 500,
+    status: '專業進階',
+    image: 'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?q=80&w=600',
+  },
+  {
+    id: 6,
+    name: '健體健美專修',
+    price: 250,
+    status: '開放報名',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600',
+  },
+])
+
+// 健身房消息資料
+const newsPosts = ref([
+  {
+    id: 1,
+    title: '春季增肌大挑戰：報名即享教練課 8 折優惠',
+    date: 'March 01',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600', // 示意圖，可換成在地路徑
+    author: '專業教練組',
+    category: '優惠活動',
+  },
+  {
+    id: 2,
+    title: '生酮飲食 vs. 低 GI 飲食：哪種更適合你的健身計畫？',
+    date: 'February 25',
+    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=600',
+    author: '營養師團隊',
+    category: '健康飲食',
+  },
+  {
+    id: 3,
+    title: '新場館落成！全台最頂級悍馬機進駐，邀請您來體驗',
+    date: 'February 10',
+    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=600',
+    author: '管理中心',
+    category: '場館公告',
+  },
+])
+
+// 學員好評資料
+const testimonials = ref([
+  {
+    id: 1,
+    name: '李佳佳 - 職場媽媽',
+    comment:
+      '以前下班總是腰酸背痛，加入練吧後，教練針對我的久坐問題調整訓練，現在體力變超好，工作效率也提升了！',
+    avatar: 'https://i.pravatar.cc/150?u=1', // 隨機頭像產生器
+  },
+  {
+    id: 2,
+    name: '王小明 - 科技業工程師',
+    comment: '團體課程氣氛超棒！拳擊燃脂課程讓我壓力全消，三個月內體脂掉了 5%，真的找回了自信。',
+    avatar: 'https://i.pravatar.cc/150?u=2',
+  },
+  {
+    id: 3,
+    name: '張大衛 - 業餘運動員',
+    comment:
+      '這裡的器材是全台最頂尖的，悍馬機配置非常齊全。特別推薦一對一私人教學，細節抓得很精準。',
+    avatar: 'https://i.pravatar.cc/150?u=3',
+  },
+  {
+    id: 4,
+    name: '陳艾琳 - 大學生',
+    comment: '空中瑜珈環境非常安靜舒適，老師很有耐心。很適合初學者加入，完全沒有壓力！',
+    avatar: 'https://i.pravatar.cc/150?u=4',
+  },
+])
+</script>
+
+
 <style scoped>
 /* 帳號 */
 /* 確保選單在 Vue 控制下能正確顯示 */
@@ -687,118 +711,136 @@ const testimonials = ref([
 }
 
 /* 商品 */
-/* 確保標籤定位在圖片左上角 */
-.category-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-}
-
-/* 統一商品圖片的容器大小 */
-.product-card img {
-  width: 100%;
-  height: 200px; /* 強制所有圖片高度固定為 200px (可依需求調整) */
-  object-fit: cover; /* 關鍵！這會讓圖片自動裁切填滿容器，不變形 */
-  object-position: center; /* 確保裁切時以中心為主 */
-}
-
 .product-card {
-  position: relative;
-  overflow: hidden; /* 確保圖片不會超出邊框 */
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-.btn.text-primary,
-.text-primary {
-  color: #f38d00 !important;
+.product-card:hover {
+  transform: translateY(-5px);
 }
 
-.btn.border-secondary:hover {
-  background: #f38d00;
-  color: #fff !important;
-  border-color: #f38d00;
-}
-
-
-/* 課程 */
-.top-course-area {
-  padding: 100px 0;
-  background: #f1f3f6;
-}
-
-.pb-70 {
-  padding-bottom: 70px;
-}
-
-/* --- 核心卡片樣式 --- */
-.single-course {
-  background: #ffffff;
-  border-radius: 15px;
-  overflow: hidden;
-  margin-bottom: 30px;
-  transition: all 0.4s ease;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  /* 移除 padding-bottom，讓卡片由內容決定高度 */
-  height: 100%;
-}
-
-/* --- 圖片統一尺寸的關鍵 --- */
-.single-course .thumb {
-  position: relative;
-  overflow: hidden;
-  /* 強制設定圖片容器的高度，你可以根據需求調整 200px 或 250px */
+.img-wrapper {
   height: 220px;
+  overflow: hidden;
 }
 
-.single-course img {
-  width: 100%;
-  height: 100%; /* 強制填滿容器高度 */
-  object-fit: cover; /* 關鍵：這會自動裁切圖片，保持比例不變形 */
-  object-position: center; /* 裁切時以中間為準 */
-  transition: transform 0.6s ease;
-  display: block;
+.product-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
 }
 
-/* 懸浮效果 */
-.single-course:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+.product-name {
+  min-height: 40px;
 }
 
-.single-course:hover img {
-  transform: scale(1.1);
+.price-info {
+  font-size: 0.95rem;
+}
+.price-orange{
+  color: #f3722c;
 }
 
-/* --- 狀態標籤 --- */
-.single-course .course-status {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background-color: #f6214b;
-  color: #fff;
-  padding: 5px 15px;
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: 500;
-  z-index: 2;
-}
-
-/* --- 文字區域 --- */
-.course-details {
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: #f3722c;
+  border-radius: 50%;
   padding: 20px;
 }
 
-.single-course h4 {
-  margin: 0;
-  font-size: 17px; /* 稍微縮小字體確保一行能放完 */
-  font-weight: 600;
-  color: #222;
+.carousel-control-prev,
+.carousel-control-next {
+  width: 5%;
 }
 
-.single-course h4 span {
-  float: right;
-  color: #f6214b;
+
+/* ===== 首頁課程新風格 ===== */
+
+.course-card {
+  background: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+  transition: 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.course-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.course-img-wrapper {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+
+.course-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: 0.5s ease;
+}
+
+.course-card:hover img {
+  transform: scale(1.08);
+}
+
+.course-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: #f3722c;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 700;
+}
+
+.course-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.course-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  min-height: 2.6em;
+}
+
+.course-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.course-price {
+  color: #f3722c;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.reserve-btn {
+  background: #f3722c;
+  border: none;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: 0.3s;
+}
+
+.reserve-btn:hover {
+  background: #e55d00;
 }
 /* 課程結束 */
 
@@ -881,4 +923,6 @@ const testimonials = ref([
   padding: 6px 12px;
   font-size: 13px;
 }
+
+
 </style>

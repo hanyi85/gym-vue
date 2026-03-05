@@ -66,7 +66,10 @@ const routes = [
   path: "/line-callback",
   component: () => import("@/views/users/auth/UserLogin-LineCallback.vue")
 },
-
+ {
+  path: "/users/line-register",
+  component: () => import("@/views/users/register/LineRegister.vue")
+},
   // 忘記密碼
   {
     path: '/users/forgot-password',

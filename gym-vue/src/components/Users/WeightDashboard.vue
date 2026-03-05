@@ -57,7 +57,7 @@
         </div>
 
         <div class="stat-card p-4 border-0 shadow-sm flex-fill d-flex flex-column justify-content-center">
-          <small class="text-label fw-bold">累積減重</small>
+          <small class="text-label fw-bold">體重變化</small>
           <h2 class="fw-bold mt-2 mb-0 text-orange">
             {{ totalLoss }}
             <span class="unit-text text-orange">kg</span>

@@ -71,7 +71,7 @@
                             <label class="field-label email-group">電子信箱</label>
                             <input type="email" v-model="form.email" disabled name="email" autocomplete="email" />
                             <!-- 驗證完成 -->
-                            <span class="email-verified">
+                            <span class="email-verified" v-if="emailVerified" >
                                 <i class="fa fa-icon fa-check"></i> 驗證完成
                             </span>
                         </div>
@@ -131,39 +131,80 @@
 
                 <hr class="section-divider" />
 
-                <!-- 修改密碼 -->
-                <div class="form-section">
-                    <h4 class="form-title">修改密碼</h4>
+<!-- ===== 有密碼 → 修改密碼 ===== -->
+<div v-if="hasPassword">
+    <div class="form-section">
+        <h4 class="form-title">修改密碼</h4>
 
-                    <div class="grid">
-                        <div class="field">
-                            <label class="field-label">目前密碼</label>
-                            <input type="password" v-model="password.current" placeholder="請輸入目前密碼" />
-                        </div>
+        <div class="grid">
+            <div class="field">
+                <label class="field-label">目前密碼</label>
+                <input type="password"
+                       v-model="password.current"
+                       placeholder="請輸入目前密碼" />
+            </div>
 
-                        <div class="field">
-                            <label class="field-label">新密碼</label>
-                            <input type="password" v-model="password.new" placeholder="請輸入新密碼" />
-                        </div>
-                    </div>
+            <div class="field">
+                <label class="field-label">新密碼</label>
+                <input type="password"
+                       v-model="password.new"
+                       placeholder="請輸入新密碼" />
+            </div>
+        </div>
 
-                    <div class="field">
-                        <label class="field-label">確認新密碼</label>
-                        <input type="password" v-model="password.confirm" placeholder="再次輸入新密碼" />
-                    </div>
+        <div class="field">
+            <label class="field-label">確認新密碼</label>
+            <input type="password"
+                   v-model="password.confirm"
+                   placeholder="再次輸入新密碼" />
+        </div>
 
-                    <!-- 密碼錯誤提示 -->
-                    <p v-if="passwordError" class="error-text">
-                        {{ passwordError }}
-                    </p>
-                </div>
+        <p v-if="passwordError" class="error-text">
+            {{ passwordError }}
+        </p>
+    </div>
 
-                <!-- 修改密碼按鈕 -->
-                <div class="actions" style="margin-top:16px;">
-                    <button class="next btn-next" :disabled="savingPassword" @click="changePassword">
-                        {{ savingPassword ? "修改中..." : "修改密碼" }}
-                    </button>
-                </div>
+    <div class="actions" style="margin-top:16px;">
+        <button class="next btn-next"
+                :disabled="savingPassword"
+                @click="changePassword">
+            {{ savingPassword ? "修改中..." : "修改密碼" }}
+        </button>
+    </div>
+</div>
+
+<!-- ===== 沒有密碼 → 設定密碼 ===== -->
+<div v-else>
+    <div class="form-section">
+        <h4 class="form-title">設定密碼</h4>
+
+        <div class="field">
+            <label class="field-label">新密碼</label>
+            <input type="password"
+                   v-model="password.new"
+                   placeholder="請輸入新密碼" />
+        </div>
+
+        <div class="field">
+            <label class="field-label">確認新密碼</label>
+            <input type="password"
+                   v-model="password.confirm"
+                   placeholder="再次輸入新密碼" />
+        </div>
+
+        <p v-if="passwordError" class="error-text">
+            {{ passwordError }}
+        </p>
+    </div>
+
+    <div class="actions" style="margin-top:16px;">
+        <button class="next btn-next"
+                :disabled="savingPassword"
+                @click="setPassword">
+            {{ savingPassword ? "設定中..." : "設定密碼" }}
+        </button>
+    </div>
+</div>
 
             </div>
         </main>
@@ -192,13 +233,13 @@ const form = ref({
     birthday: '',
     address:  ''
 })
-
+const emailVerified = ref(false)
 const password = ref({
     current: '',
     new: '',
     confirm: ''
 })
-
+const hasPassword = ref(false)
 const passwordError = ref('')
 const districts = computed(() => {
   return (
@@ -211,13 +252,21 @@ const zipcode = computed(() => {
     )
 })
 const fullAddress = computed(() => {
-  return `${zipcode.value}${city.value}${area.value}${detailAddress.value}`
+  return [
+    zipcode.value,
+    city.value,
+    area.value,
+    detailAddress.value
+  ].filter(Boolean).join('')
 })
 
 
-watch(fullAddress, (val) => {
-  form.value.address = val
-})
+watch(
+  [zipcode, city, area, detailAddress],
+  () => {
+    form.value.address = fullAddress.value
+  }
+)
 
 
 
@@ -227,6 +276,11 @@ watch(fullAddress, (val) => {
 const onUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
+
+    if (file.size > 800 * 1024) {
+        alert("圖片不能超過 800KB")
+        return
+    }
 
     const formData = new FormData()
     formData.append("file", file)
@@ -270,8 +324,10 @@ onMounted(async () => {
                 ? res.data.BirthDate.split("T")[0]
                 : '',
             address: res.data.Address
+            
         }
-
+        emailVerified.value = res.data.EmailVerified
+hasPassword.value = res.data.HasPassword
         gender.value = res.data.Sex
         if (res.data.Image) {
             avatar.value = `data:image/jpeg;base64,${res.data.Image}`
@@ -373,6 +429,11 @@ const changePassword = async () => {
         return
     }
 
+    if (password.value.new.length < 6) {
+  passwordError.value = "密碼至少 6 碼"
+  return
+}
+
     if (password.value.new !== password.value.confirm) {
         passwordError.value = "新密碼與確認密碼不一致"
         return
@@ -400,6 +461,53 @@ const changePassword = async () => {
             err.response?.data ||
             "修改失敗"
 
+    } finally {
+        savingPassword.value = false
+    }
+}
+
+const setPassword = async () => {
+    if (savingPassword.value) return
+
+    passwordError.value = ""
+
+    if (!password.value.new || !password.value.confirm) {
+        passwordError.value = "請填寫所有密碼欄位"
+        return
+    }
+
+    if (password.value.new.length < 6) {
+        passwordError.value = "密碼至少 6 碼"
+        return
+    }
+
+    if (password.value.new !== password.value.confirm) {
+        passwordError.value = "新密碼與確認密碼不一致"
+        return
+    }
+
+    savingPassword.value = true
+
+    try {
+        await api.post("/UUsers/set-password", {
+            newPassword: password.value.new
+        })
+
+        alert("密碼設定成功")
+
+        hasPassword.value = true
+
+        password.value = {
+            current: '',
+            new: '',
+            confirm: ''
+        }
+
+    } catch (err) {
+        passwordError.value =
+            err.response?.data?.message ||
+            err.response?.data ||
+            "設定失敗"
     } finally {
         savingPassword.value = false
     }

@@ -85,7 +85,7 @@
 
                         <div class="field">
                             <label class="field-label">電子信箱</label>
-                            <input placeholder="example@email.com" />
+                            <input    v-model="form.email"  readonly  class="readonly-input"/>
                         </div>
                     </div>
                 </div>
@@ -97,11 +97,15 @@
                 </div>
 
                 <!-- 操作按鈕 -->
-                <div class="actions">
-                    <router-link to="/users/verify-email" class="next btn-next">
-                        下一步
-                    </router-link>
-                </div>
+               <div class="actions">
+    <button class="btn-cancel" @click="goBack">
+        取消
+    </button>
+
+    <router-link to="/users/verify-email" class="next btn-next">
+        下一步
+    </router-link>
+</div>
 
             </div>
         </main>
@@ -111,8 +115,19 @@
 
 
 <script setup>
-import { ref,reactive } from 'vue'
+import { ref,reactive,onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AddressSelector from "@/components/AddressSelector.vue"
+import { useAuthStore } from '@/stores/auth'
+const router = useRouter()
+//將使用者email填入
+const auth = useAuthStore()
+
+onMounted(() => {
+  form.email = auth.email
+})
+
+
 const currentStep = ref(0)
 const gender = ref('男')
 
@@ -147,8 +162,9 @@ const removeAvatar = () => {
     avatar.value = null
 }
 
-const triggerUpload = () => {
-    document.querySelector('.avatar-edit input').click()
+//返回上一頁
+const goBack = () => {
+  router.push('/users/login')   // 或妳想回的頁面
 }
 </script>
 
@@ -434,7 +450,9 @@ select:focus {
 
 
 .actions {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .next {
@@ -446,5 +464,26 @@ select:focus {
     font-size: 16px;
     cursor: pointer;
      text-decoration: none;
+}
+
+.btn-cancel {
+    background: #e0e0e0;
+    color: #555;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 16px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-cancel:hover {
+    background: #d0d0d0;
+}
+
+/* 禁止鼠標 */
+.readonly-input {
+    cursor: not-allowed;
+    background: #f5f5f5;
 }
 </style>
