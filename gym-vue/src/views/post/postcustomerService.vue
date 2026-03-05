@@ -42,19 +42,17 @@
 
                 <div class="mb-4">
                   <label class="form-label small fw-bold text-muted">選擇問題類別 *</label>
-                  <select v-model="form.category" class="form-select rounded-3 py-2" required>
+                  <select v-model="form.questionCategoryId" class="form-select rounded-3 py-2" required>
                     <option value="" disabled>請選擇問題類型</option>
-                    <option value="membership">會籍/合約相關</option>
-                    <option value="course">課程/預約問題</option>
-                    <option value="venue">場館設施回報</option>
-                    <option value="trainer">教練服務意見</option>
-                    <option value="other">其他建議</option>
+                    <option v-for="cat in categoryList" :key="cat.id" :value="cat.id">
+                      {{ cat.name }}
+                    </option>
                   </select>
                 </div>
 
                 <div class="mb-4">
                   <label class="form-label small fw-bold text-muted">內容描述 *</label>
-                  <textarea v-model="form.content" class="form-control rounded-4 py-3" rows="5"
+                  <textarea v-model="form.detail" class="form-control rounded-4 py-3" rows="5"
                     placeholder="請詳細描述您的問題或建議..." required></textarea>
                 </div>
 
@@ -104,23 +102,6 @@
               </form>
             </div>
           </div>
-
-          <div class="mt-4 p-4 bg-white rounded-4 shadow-sm border text-center">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="small fw-bold text-muted">客服電話</div>
-                <div class="text-dark fw-bold">05-1234-567</div>
-              </div>
-              <div class="col-md-4">
-                <div class="small fw-bold text-muted">服務時間</div>
-                <div class="text-dark fw-bold">平日 07:00 ~ 20:00</div>
-              </div>
-              <div class="col-md-4">
-                <div class="small fw-bold text-muted">聯絡信箱</div>
-                <div class="text-dark fw-bold">FitnessBar123@gmail.com</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -128,18 +109,19 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import Banner from '@/components/banner.vue';
 
 const isSubmitting = ref(false);
 const imagePreview = ref(null);
+const categoryList = ref([]); // 儲存從後端抓取的分類清單
 
 const form = reactive({
   name: '',
   phone: '',
   email: '',
-  category: '',
-  content: '',
+  questionCategoryId: '', // 改為對應後端 ID
+  detail: '',
   agree: false
 });
 
@@ -149,7 +131,18 @@ const captcha = reactive({
   userAnswer: null
 });
 
-// 圖片上傳預覽邏輯
+// 初始化：抓取問題類別清單
+onMounted(async () => {
+  try {
+    const response = await fetch('https://localhost:7218/api/YCustomerService/Categories');
+    if (response.ok) {
+      categoryList.value = await response.json();
+    }
+  } catch (error) {
+    console.error("無法載入分類資料", error);
+  }
+});
+
 const handleFileUpload = (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -167,11 +160,11 @@ const handleFileUpload = (e) => {
 
 const removeImage = () => {
   imagePreview.value = null;
-  document.getElementById('fileUpload').value = '';
+  const fileInput = document.getElementById('fileUpload');
+  if (fileInput) fileInput.value = '';
 };
 
-const handleSubmit = () => {
-  // 驗證碼檢查
+const handleSubmit = async () => {
   if (captcha.userAnswer !== (captcha.num1 + captcha.num2)) {
     alert('驗證碼計算錯誤，請重新確認！');
     return;
@@ -179,12 +172,42 @@ const handleSubmit = () => {
 
   isSubmitting.value = true;
 
-  // 模擬 API 傳送
-  setTimeout(() => {
-    alert('感謝您的回報！我們已收到您的資訊，將盡快指派專人與您聯絡。');
+  // 使用 FormData 封裝資料以支援檔案上傳
+  const formData = new FormData();
+  formData.append('Name', form.name);
+  formData.append('Phone', form.phone);
+  formData.append('Email', form.email);
+  formData.append('QuestionCategoryId', form.questionCategoryId);
+  formData.append('Detail', form.detail);
+
+  const fileInput = document.getElementById('fileUpload');
+  if (fileInput && fileInput.files[0]) {
+    formData.append('ImageFile', fileInput.files[0]);
+  }
+
+  try {
+    const response = await fetch('http://localhost:7218/api/YCustomerService', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      alert('感謝您的回報！我們已收到您的資訊，將盡快指派專人與您聯絡。');
+      // 重設表單
+      Object.assign(form, { name: '', phone: '', email: '', questionCategoryId: '', detail: '', agree: false });
+      removeImage();
+      captcha.num1 = Math.floor(Math.random() * 10);
+      captcha.num2 = Math.floor(Math.random() * 10);
+      captcha.userAnswer = null;
+    } else {
+      const errorText = await response.text();
+      alert('送出失敗：' + errorText);
+    }
+  } catch (error) {
+    alert('網路通訊錯誤，請稍後再試。');
+  } finally {
     isSubmitting.value = false;
-    // 重設表單...
-  }, 2000);
+  }
 };
 </script>
 
@@ -206,11 +229,6 @@ const handleSubmit = () => {
   background-color: #d65a1a;
 }
 
-.border-orange {
-  border-color: #f3722c !important;
-}
-
-/* 圖片上傳區樣式 */
 .border-dashed {
   border: 2px dashed #dee2e6;
   transition: border-color 0.3s;
@@ -231,7 +249,6 @@ const handleSubmit = () => {
   cursor: pointer;
 }
 
-/* 其他優化 */
 .animate-fade-in {
   animation: fadeInDown 0.6s ease-out;
 }
@@ -254,9 +271,5 @@ const handleSubmit = () => {
 
 .transition-scale:active {
   transform: scale(0.98);
-}
-
-.x-small {
-  font-size: 0.75rem;
 }
 </style>
