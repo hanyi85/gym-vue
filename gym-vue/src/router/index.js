@@ -342,11 +342,11 @@ const routes = [
     component: () => import('@/views/post/postCard.vue'),
   },
 
-  // 最新消息列表
+  // 訂單確認頁面
   {
-    path: '/post/list',
-    name: 'postList',
-    component: () => import('@/views/post/postList.vue'),
+    path: '/post/confirm',
+    name: 'confirm',
+    component: () => import('@/views/post/postConfirm.vue'),
   },
 
   // 最新消息詳細
