@@ -190,7 +190,7 @@ const form = reactive({
   email: '',
   questionCategoryId: '',
   detail: '',
-  agree: false // 預設為未勾選
+  agree: false
 });
 
 // 檢查登入狀態
@@ -225,7 +225,7 @@ const handleLogout = () => {
   Swal.fire('已登出', '聯絡資料已清除', 'info');
 };
 
-// reCAPTCHA
+// reCAPTCHA 渲染
 let recaptchaWidgetId = null;
 const renderRecaptcha = () => {
   if (window.grecaptcha && window.grecaptcha.render) {
@@ -297,8 +297,23 @@ const handleSubmit = async () => {
     });
 
     if (response.ok) {
-      await Swal.fire('回報成功', '我們已收到您的資訊，將盡快聯絡。', 'success');
-      location.reload(); // 重置所有狀態
+      await Swal.fire({
+        title: '回報成功',
+        text: '我們已收到您的資訊，系統將自動發送確認信至您的電子信箱。',
+        icon: 'success',
+        confirmButtonColor: '#f3722c'
+      });
+
+      // 重置表單狀態 (不重新整理頁面，對寄信流程更友善)
+      Object.assign(form, {
+        questionCategoryId: '',
+        detail: '',
+        agree: false
+      });
+      imagePreview.value = null;
+      if (fileInput) fileInput.value = '';
+      window.grecaptcha.reset(recaptchaWidgetId);
+
     } else {
       const err = await response.json();
       Swal.fire('送出失敗', err.message || '請檢查輸入內容', 'error');
@@ -312,7 +327,7 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* 引用報名表的 CSS 變數與樣式 */
+/* 樣式保持與之前一致，確保 UI 美觀 */
 .tech-blue-text {
   color: #f3722c;
 }
@@ -342,7 +357,6 @@ const handleSubmit = async () => {
   box-shadow: 0 8px 20px rgba(243, 114, 44, 0.4);
 }
 
-/* 登入彈窗樣式 (完全與報名表一致) */
 .login-overlay {
   position: fixed;
   top: 0;
@@ -374,7 +388,6 @@ const handleSubmit = async () => {
   cursor: pointer;
 }
 
-/* 浮動標籤輸入框 */
 .input-wrapper {
   position: relative;
 }
@@ -454,7 +467,6 @@ const handleSubmit = async () => {
   width: 24px;
 }
 
-/* 表單元件樣式 */
 .custom-input-group {
   border: 2px solid #f1f1f1;
   border-radius: 12px;
@@ -485,7 +497,6 @@ const handleSubmit = async () => {
   outline: none;
 }
 
-/* 圖片上傳區域樣式 (已恢復成您原本的設計) */
 .border-dashed {
   border: 2px dashed #dee2e6;
 }
@@ -509,7 +520,6 @@ const handleSubmit = async () => {
   border: 2px dashed #f3722c !important;
 }
 
-/* 動畫 */
 .animate-up {
   animation: fadeInUp 0.6s ease-out both;
 }
