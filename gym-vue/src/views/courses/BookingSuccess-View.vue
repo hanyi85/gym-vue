@@ -15,8 +15,8 @@ const api = axios.create({
 
 // ===== 顯示用 =====
 const bookingNo = ref('') // BK000000123（顯示）
-const tradeNo = ref('') // NP...
-const bookingId = ref(0) // 真實 bookingId（給 QR / 報到驗證用）
+const tradeNo = ref('')   // NP...
+const bookingId = ref(0)  // 真實 bookingId（給 QR / 報到驗證用）
 
 const course = ref('')
 const date = ref('')
@@ -28,6 +28,86 @@ const saving = ref(false)
 // ✅ 付款狀態（關鍵）
 const paidFlag = ref(false)        // 前端判斷是否顯示 QR
 const checkingPaid = ref(false)    // 查詢中（顯示 loading）
+
+// ===== utils =====
+function toBkNo(id) {
+  const n = Number(id)
+  return n > 0 ? 'BK' + String(n).padStart(9, '0') : ''
+}
+
+/**
+ * ✅ 讀 query 基本資料（僅用來初次顯示）
+ */
+function applyQueryBasics() {
+  course.value = (route.query.course || '').toString()
+  date.value = (route.query.date || '').toString()
+  time.value = (route.query.time || '').toString()
+  price.value = Number(route.query.price || 0)
+
+  const qOrderId = (route.query.orderId || '').toString()
+  if (qOrderId) {
+    if (qOrderId.startsWith('BK')) bookingNo.value = qOrderId
+    else tradeNo.value = qOrderId
+  }
+
+  const qBookingId = Number(route.query.bookingId || 0)
+  if (qBookingId > 0) {
+    bookingId.value = qBookingId
+    bookingNo.value = toBkNo(qBookingId)
+  }
+
+  const qPaid = (route.query.paid || '').toString()
+  if (qPaid === '1' || qPaid.toLowerCase() === 'true') paidFlag.value = true
+  if (qPaid === '0' || qPaid.toLowerCase() === 'false') paidFlag.value = false
+}
+
+/**
+ * ✅ 把 query 清掉（封掉地址列一大串），但先存 snapshot，避免資料消失
+ */
+function sanitizeUrlIfHasQuery() {
+  const hasQuery = Object.keys(route.query || {}).length > 0
+  if (!hasQuery) return
+
+  const snapshot = {
+    bookingId: bookingId.value,
+    bookingNo: bookingNo.value,
+    tradeNo: tradeNo.value,
+    course: course.value,
+    date: date.value,
+    time: time.value,
+    price: price.value,
+    paidFlag: paidFlag.value,
+  }
+  sessionStorage.setItem('booking_success_snapshot', JSON.stringify(snapshot))
+
+  // ✅ 用 replace 清掉 query，不會新增 history 記錄
+  router.replace({ path: route.path, query: {} })
+}
+
+/**
+ * ✅ 若網址已乾淨（或使用者重整），就從 snapshot 還原顯示資料
+ */
+function restoreSnapshotIfNeeded() {
+  const hasQuery = Object.keys(route.query || {}).length > 0
+  if (hasQuery) return
+
+  const raw = sessionStorage.getItem('booking_success_snapshot')
+  if (!raw) return
+
+  try {
+    const s = JSON.parse(raw)
+    bookingId.value = Number(s.bookingId || 0)
+    bookingNo.value = s.bookingNo || toBkNo(bookingId.value)
+    tradeNo.value = s.tradeNo || ''
+    course.value = s.course || ''
+    date.value = s.date || ''
+    time.value = s.time || ''
+    price.value = Number(s.price || 0)
+    paidFlag.value = !!s.paidFlag
+  } catch {
+    // ignore
+  }
+}
 
 // ===== API helpers =====
 async function createBookingFromPending(p) {
@@ -43,28 +123,27 @@ async function createBookingFromPending(p) {
   return res.data?.CourseBookingId ?? res.data?.courseBookingId ?? 0
 }
 
-// ✅ 用 bookingId 去後端確認是否已付款（防止 query 被改）
+/**
+ * ✅ 你的後端 GET /CourseBookings/{id} 目前回 405（沒開 GET）
+ * 所以這裡改成：用 history 找出該 bookingId 的付款狀態
+ * GET /api/coursebookings/history?userId=1
+ */
 async function refreshPaidByBookingId(id) {
   if (!id) return false
   checkingPaid.value = true
   try {
-    // 你後端路由可能是 /CourseBookings/{id} 或 /coursebookings/{id}
-    // 先試第一個，失敗再試第二個
-    let data = null
-    try {
-      const r1 = await api.get(`/CourseBookings/${id}`)
-      data = r1.data
-    } catch {
-      const r2 = await api.get(`/coursebookings/${id}`)
-      data = r2.data
-    }
+    const r = await api.get('/coursebookings/history', { params: { userId: 1 } })
+    const list = Array.isArray(r.data) ? r.data : []
+    const target = list.find((x) => {
+      const bid = Number(x.CourseBookingId ?? x.courseBookingId ?? 0)
+      return bid === Number(id)
+    })
 
-    const pay = (data?.PaymentStatus ?? data?.paymentStatus ?? '').toString()
+    const pay = (target?.PaymentStatus ?? target?.paymentStatus ?? '').toString()
     paidFlag.value = pay.includes('已付款')
     return paidFlag.value
   } catch (e) {
-    // 查不到就保持目前 paidFlag（但後端 checkin 已擋未付款，安全性仍OK）
-    console.warn('refreshPaidByBookingId failed', e)
+    console.warn('refreshPaidByBookingId(history) failed', e)
     return paidFlag.value
   } finally {
     checkingPaid.value = false
@@ -78,37 +157,6 @@ async function getBookingIdBySchedule(scheduleId) {
   return r.data?.courseBookingId ?? r.data?.CourseBookingId ?? 0
 }
 
-// ===== utils =====
-function toBkNo(id) {
-  const n = Number(id)
-  return n > 0 ? 'BK' + String(n).padStart(9, '0') : ''
-}
-
-function applyQueryBasics() {
-  course.value = (route.query.course || '').toString()
-  date.value = (route.query.date || '').toString()
-  time.value = (route.query.time || '').toString()
-  price.value = Number(route.query.price || 0)
-
-  const qOrderId = (route.query.orderId || '').toString()
-  if (qOrderId) {
-    if (qOrderId.startsWith('BK')) bookingNo.value = qOrderId
-    else tradeNo.value = qOrderId
-  }
-
-  // ✅ bookingId
-  const qBookingId = Number(route.query.bookingId || 0)
-  if (qBookingId > 0) {
-    bookingId.value = qBookingId
-    bookingNo.value = toBkNo(qBookingId)
-  }
-
-  // ✅ paid 兼容：history 帶 '1'/'0'，舊流程可能帶 'true'
-  const qPaid = (route.query.paid || '').toString()
-  if (qPaid === '1' || qPaid.toLowerCase() === 'true') paidFlag.value = true
-  if (qPaid === '0' || qPaid.toLowerCase() === 'false') paidFlag.value = false
-}
-
 // ===== 去付款（未付款用）=====
 function goPayFromHere() {
   if (!bookingId.value) return alert('找不到 bookingId，請回訂單頁重新操作')
@@ -120,10 +168,17 @@ function goPayFromHere() {
 onMounted(async () => {
   console.log('booking-success mounted', route.fullPath)
 
+  // ✅ 1) 若已經是乾淨網址（例如重整），先還原 snapshot
+  restoreSnapshotIfNeeded()
+
+  // ✅ 2) 再吃一次 query（如果有）補資料
   applyQueryBasics()
 
+  // ✅ 3) 有 query 就立刻清掉（封掉地址列）
+  sanitizeUrlIfHasQuery()
+
   try {
-    // ✅ 1) pending_booking（通常是付款流程完成後來這頁）
+    // ✅ A) pending_booking（通常是付款流程完成後來這頁）
     const raw = localStorage.getItem('pending_booking')
     if (raw) {
       const p = JSON.parse(raw)
@@ -134,7 +189,7 @@ onMounted(async () => {
       if (!time.value) time.value = p.time || ''
       if (!price.value) price.value = Number(p.price || 0)
 
-      // ✅ 付款成功流程：基本上視為已付款（但仍用 API 再確認一次更穩）
+      // 先視為已付款（再用 API 確認）
       paidFlag.value = true
 
       if (p.bookingId) {
@@ -178,7 +233,7 @@ onMounted(async () => {
       return
     }
 
-    // ✅ 2) 相容：舊 return 可能用 scheduleId 查 bookingId
+    // ✅ B) 相容：舊 return 可能用 scheduleId 查 bookingId
     const paid = (route.query.paid || '').toString().toLowerCase() === 'true'
     const scheduleId = Number(route.query.scheduleId || 0)
 
@@ -193,8 +248,7 @@ onMounted(async () => {
       return
     }
 
-    // ✅ 3) 從訂單列表點進來：一定會有 bookingId（你已經帶了）
-    // 這邊做雙保險：用 bookingId 反查付款狀態，避免 paid query 被亂改
+    // ✅ C) 從訂單列表點進來：用 bookingId 反查付款狀態（避免 paid query 被亂改）
     if (bookingId.value > 0) {
       await refreshPaidByBookingId(bookingId.value)
     }
@@ -215,6 +269,7 @@ const qrValue = computed(() =>
 // ✅ 只有「有bookingId + 已付款」才顯示 QR
 const canShowQr = computed(() => bookingId.value > 0 && paidFlag.value)
 </script>
+
 
 <template>
   <div class="page-wrapper">
