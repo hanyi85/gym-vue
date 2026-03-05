@@ -1,13 +1,43 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import MealCard from '@/components/Meals/MealCardList.vue'
 import MealBbanner from '@/components/banner.vue'
 import MealSidebar from '@/components/Meals/MealSidebar.vue'
-import { useAuthStore } from '@/stores/mealAuthStore'
+// import { useAuthStore } from '@/stores/mealAuthStore'
 
-const authStore = useAuthStore()
-//const memberId = authStore.member.UserId
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+  // 模擬切換會員
+  const mockLogin = (id) => {
+    member.value = {
+      UserId: id,
+      Name: `測試會員${id}`,
+      Email: `test${id}@gmail.com`,
+      Phone: '0900000000'
+    }
+  }
+
+  const logout = () => {
+    member.value = null
+  }
+
+  // return {
+  //   member,
+  //   isLogin,
+  //   mockLogin,
+  //   logout
+  // }
+
+// const authStore = useAuthStore()
+const memberId = member.value.UserId
 
 
 const apiUrl="https://localhost:7218/api"
@@ -15,20 +45,22 @@ const apiUrl="https://localhost:7218/api"
 //====== 自動載入我喜愛的餐點 ======
 
 
-// const favoriteIds = ref([])
+const favoriteIds = ref([])
 
-// const fetchFavoriteIds = async () => {
+const fetchFavoriteIds = async () => {
 
-//   if (!authStore.isLogin) return
+  if (!member.value || !member.value.UserId) return
 
-//   const userId = memberId
+  if (!isLogin) return
 
-//   const res = await axios.get(
-//     `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
-//   )
+  const userId = memberId
 
-//   favoriteIds.value = res.data
-// }
+  const res = await axios.get(
+    `${apiUrl}/TMealFavoriteMeals/user/${userId}/ids`
+  )
+
+  favoriteIds.value = res.data
+}
 
 
 // ====== 狀態 ======

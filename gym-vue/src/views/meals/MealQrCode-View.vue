@@ -1,19 +1,32 @@
 <script setup>
-import { ref,onMounted } from 'vue'
+import { ref,onMounted,computed } from 'vue'
 import OrderQrcode from '@/components/Meals/OrderQrcode.vue'
-import { useAuthStore } from '@/stores/mealAuthStore'
 import axios from 'axios'
 
 const apiUrl="https://localhost:7218/api"
 
-const authStore = useAuthStore()
+/*會員資料*/
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+
+  const logout = () => {
+    member.value = null
+  }
+
 const orders = ref([])
 const qrItems = ref([])
 
 async function fetchQrCodes() {
   try {
   const res = await axios.get(
-    `${apiUrl}/TMealOrderItems/Qrcode/${authStore.member.UserId}`
+    `${apiUrl}/TMealOrderItems/Qrcode/${member.value.UserId}`
   )
 
   qrItems.value = res.data
@@ -24,7 +37,7 @@ async function fetchQrCodes() {
 
 
 onMounted(() => {
-  if (authStore.isLogin) {
+  if (isLogin.value) {
     fetchQrCodes()
   }
 })

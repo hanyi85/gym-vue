@@ -3,10 +3,22 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MealActionButton from '@/components/Meals/MealdetailButton.vue'
 import axios from 'axios'
-import { useAuthStore } from '@/stores/mealAuthStore'
 import Swal from 'sweetalert2'
 
-const authStore = useAuthStore()
+/*會員資料*/
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+
+  const logout = () => {
+    member.value = null
+  }
 
 const apiUrl="https://localhost:7218/api"
 
@@ -136,7 +148,7 @@ const validateForm = () => {
 /* 加入購物車 */
 async function addToCart() {
 
-  if (!authStore.member?.UserId) {
+  if (!member.value) {
     await Swal.fire({
     icon: 'warning',
     title: '尚未登入',
@@ -155,7 +167,7 @@ router.push({ name: 'User-login' })
   console.log('加入購物車')
 
   const payload = {
-    FUserId: authStore.member.UserId,
+    FUserId: member.value.UserId,
     FMealId: meal.value.id,
     FPickDate: selectedDate.value,
     FPickTimeId: selectedTimeSlotId.value,

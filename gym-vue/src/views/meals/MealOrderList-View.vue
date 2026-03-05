@@ -6,10 +6,23 @@ import StepIndicator from "@/components/Meals/StepIndicator.vue";
 import CartItemCard from '@/components/Meals/CartItemCard.vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
-import { useAuthStore } from '@/stores/mealAuthStore'
 
-const authStore = useAuthStore()
-const UserId = authStore.member.UserId
+
+/*會員資料*/
+const member = ref({
+    UserId: 1,
+    Name: '王小明',
+    Email: 'ming01@test.com',
+    Phone:'0912345678'
+  })
+
+  const isLogin = computed(() => !!member.value)
+
+
+  const logout = () => {
+    member.value = null
+  }
+const UserId = member.value.UserId
 
 const apiUrl="https://localhost:7218/api"
 
