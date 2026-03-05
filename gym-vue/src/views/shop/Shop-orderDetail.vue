@@ -104,7 +104,7 @@ const reAddToCart = () => {
     <div class="container" style="max-width: 900px;">
       
       <div class="mb-4">
-        <router-link to="/member/orders" class="text-secondary text-decoration-none small">
+        <router-link to="/shop/orders" class="text-secondary text-decoration-none small">
           <i class="bi bi-chevron-left"></i> 返回我的訂單
         </router-link>
       </div>

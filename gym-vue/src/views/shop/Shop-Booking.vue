@@ -13,6 +13,7 @@ const cityOptions = ref([]);       // 縣市
 const districtOptions = ref([]);   // 地區
 const selectedCity = ref('');
 const selectedDistrict = ref('');
+const isLoading = ref(false); // 控制載入狀態
 
 const API_URL = import.meta.env.VITE_API_URL;
 const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
@@ -68,15 +69,31 @@ const goToBookingSuccess = async () => {
   };
 
   try {
+    isLoading.value = true;
     const res = await axios.post(API_URL + 'SOrder', payload);
-    const orderNumber = res.data.orderNo; // ✅ 拿到訂單號碼
-    cartStore.clearCart();
+    
+    // ✅ 假設後端回傳格式為 { success: true, orderNo: "...", approvalUrl: "..." }
+    const { orderNo, approvalUrl } = res.data;
 
-    // 帶 orderNumber 到完成頁
-    router.push({ path: '/shop/booking-success', query: { orderNumber } });
+    // ⚡ 判斷支付方式：如果是 PayPal (payId 為 3)
+    if (payId === 3 && approvalUrl) {
+      // 這裡暫時不要清空購物車，等支付成功跳回來再清空（比較保險）
+      // 直接全頁跳轉到 PayPal 支付頁面
+      console.log('網址是:', approvalUrl)
+      window.location.href = approvalUrl;
+      return; 
+    }
+
+    // ⚡ 如果是其他支付方式 (如貨到付款)
+    cartStore.clearCart();
+    router.push({ path: '/shop/booking-success', query: { orderNumber: orderNo } });
+
   } catch (err) {
     console.error('❌ 訂單送出失敗:', err.response?.data || err);
     alert('訂單提交失敗，請檢查資料或重新整理');
+  }finally {
+    // ⚡ 無論成功或失敗，最後都要關閉轉圈圈 (如果是跳轉頁面則無感，但失敗時很重要)
+    isLoading.value = false; 
   }
 };
 
@@ -284,7 +301,7 @@ watch(selectedCity, async (newCity) => {
                 <label class="form-label small fw-bold">收件人電話號碼</label>
                 <div class="input-group">
                   <button class="btn btn-outline-secondary dropdown-toggle bg-white border-light-subtle" type="button">TW +886</button>
-                  <input v-model="cartStore.orderForm.receiverPhone" type="tel" class="form-control bg-light border-0" placeholder="0912 345 678">
+                  <input v-model="cartStore.orderForm.receiverPhone" type="tel" class="form-control bg-light border-0" placeholder="請輸入收件人電話號碼">
                 </div>
               </div>
               <div class="row g-2 mb-3">
@@ -328,9 +345,59 @@ watch(selectedCity, async (newCity) => {
       </div>
     </div>
   </div>
+  <div v-if="isLoading" class="loading-overlay">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <p class="loading-text">訂單處理中，請稍候...</p>
+  </div>
+</div>
 </template>
 
 <style scoped>
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(5px); /* 毛玻璃效果 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* 確保在最上層 */
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #f38d00; /* 練吧橘色 */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.loading-text {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.loading-subtext {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 /* 📍 核心佈局樣式 (完全保留原始設計) */
 .btn-gym-green {
   background-color: #f3722c;
