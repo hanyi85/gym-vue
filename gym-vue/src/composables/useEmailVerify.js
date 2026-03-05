@@ -1,10 +1,11 @@
 import { ref } from "vue"
-
+import { useAuthStore } from "@/stores/auth"
 export function useEmailVerify(verifyFn) {
+  const auth = useAuthStore()
   const status = ref("idle")
   const message = ref("")
 
- async function execute(token) {
+async function execute(token) {
   if (!token) {
     status.value = "error"
     message.value = "驗證連結無效"
@@ -16,32 +17,30 @@ export function useEmailVerify(verifyFn) {
 
   try {
     const res = await verifyFn(token)
-
-    // 直接檢查 token
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token)
-
-      status.value = "success"
-      message.value = "你的電子郵件已完成驗證"
-    } else {
-      status.value = "error"
-      message.value = res.data.message || "驗證失敗"
-    }
+     const jwt = res.data.token
+if (jwt) {
+        auth.setToken(jwt)   // 存 Pinia
+      }
+    // 只要成功回來就算驗證成功
+    status.value = "success"
+    message.value = res.data.message || "你的電子郵件已完成驗證"
 
   } catch (err) {
-  status.value = "error"
 
-  if (
-    err &&
-    err.response &&
-    err.response.data &&
-    err.response.data.message
-  ) {
-    message.value = err.response.data.message
-  } else {
-    message.value = "驗證失敗或連結已過期"
+    status.value = "error"
+
+    if (
+      err &&
+      err.response &&
+      err.response.data &&
+      err.response.data.message
+    ) {
+      message.value = err.response.data.message
+    } else {
+      message.value = "驗證失敗或連結已過期"
+    }
+
   }
-}
 }
 
   return {

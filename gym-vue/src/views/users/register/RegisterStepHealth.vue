@@ -89,7 +89,7 @@
         <!-- CTA -->
         <div class="footer-action">
           <button @click="saveProfile" :disabled="loading" class="btn-primary">
-           {{ loading ? '儲存中...' : '儲存並繼續 →' }}
+            {{ loading ? '儲存中...' : '儲存並繼續 →' }}
           </button>
         </div>
       </div>
@@ -175,7 +175,8 @@ const targetWeightDisplay = computed(() =>
 const loading = ref(false)
 // 儲存 API
 const saveProfile = async () => {
-   if (loading.value) return
+   console.log("saveProfile start")
+  if (loading.value) return
   loading.value = true
 
   try {
@@ -184,11 +185,12 @@ const saveProfile = async () => {
       weight: Number(weight.value),
       targetWeight: Number(targetWeight.value)
     })
+    console.log("API call finished")
 
     router.push('/users/profile-finished')
   } catch (err) {
     alert('儲存失敗')
-  }finally {
+  } finally {
     loading.value = false
   }
 }
