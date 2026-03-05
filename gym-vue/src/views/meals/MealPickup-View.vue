@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted, defineProps, watch} from "vue"
 import axios from "axios"
 import { QrcodeStream } from "vue-qrcode-reader"
 const apiUrl="https://localhost:7218/api"
@@ -9,6 +9,7 @@ const qrInput = ref("")
 const item = ref(null)
 const message = ref("")
 const loading = ref(false)
+const cameras = ref([])
 
 const payments = [
   { value: 'cash', label: '現金付款' },
@@ -104,6 +105,36 @@ function paintOutline(detectedCodes, ctx) {
   }
 }
 
+//選擇鏡頭
+const selectedCamera = ref(null)
+const cameraKey = ref(0)
+
+onMounted(async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices()
+
+  cameras.value = devices.filter(d => d.kind === "videoinput")
+
+  if (cameras.value.length > 0) {
+    selectedCamera.value = cameras.value[0].deviceId
+  }
+})
+const stream = ref(null)
+async function initCamera(deviceId) {
+
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop())
+  }
+
+  stream.value = await navigator.mediaDevices.getUserMedia({
+    video: { deviceId: { exact: deviceId } }
+  })
+}
+
+// 監聽 camera 改變
+watch(selectedCamera, async (newId) => {
+  await initCamera(newId)
+  cameraKey.value++   // 重新建立 qrcode-stream
+})
 
 // ✅ 確認取餐
 async function confirmPickup() {
@@ -145,6 +176,16 @@ async function confirmPickup() {
   <div class="row justify-content-center d-flex align-items-start">
     <div class=" col-md-4 col-12 ">
       <h2 class="text-center  order-title"><i class="bi bi-qr-code order-title"></i> 取餐系統</h2>
+
+      <select v-model="selectedCamera">
+  <option
+    v-for="camera in cameras"
+    :key="camera.deviceId"
+    :value="camera.deviceId"
+  >
+    {{ camera.label || "Camera" }}
+  </option>
+</select>
     <!-- 鏡頭掃描 -->
     <!-- <div class="mb-4 scanner">
       <qrcode-stream  @decode="onDecode" />
@@ -155,6 +196,8 @@ async function confirmPickup() {
 
     <div>
       <qrcode-stream
+       :key="cameraKey"
+        :constraints="{ deviceId: { exact: selectedCamera } }"
         @error="onError"
         @detect="onDetect"
         :track="paintOutline"
