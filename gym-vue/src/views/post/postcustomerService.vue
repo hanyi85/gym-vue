@@ -212,16 +212,29 @@ const handleFakeLogin = () => {
     email: loginEmail.value,
     phone: '0912345678'
   };
+  
   localStorage.setItem('userInfo', JSON.stringify(mockUser));
   isLoginModalShow.value = false;
   checkUserStatus();
+  if (categoryList.value.length > 0) {
+    form.questionCategoryId = categoryList.value[0].id;
+  }
+
+  form.detail = '您好，我目前非會員，想諮詢一對一教練課程。請問針對完全沒有基礎的新手，貴中心是否有提供預約制的體驗課？另外，想了解教練是否會根據個人體能目標（如減脂或增肌）規劃專屬課表與報價，謝謝！';
+  form.agree = true;
   Swal.fire({ icon: 'success', title: '登入成功', timer: 1500, showConfirmButton: false });
 };
 
 const handleLogout = () => {
   localStorage.removeItem('userInfo');
   isLoggedIn.value = false;
-  form.name = ''; form.email = ''; form.phone = '';
+  // 清空所有欄位
+  form.name = '';
+  form.email = '';
+  form.phone = '';
+  form.questionCategoryId = '';
+  form.detail = '';
+  form.agree = false;
   Swal.fire('已登出', '聯絡資料已清除', 'info');
 };
 
