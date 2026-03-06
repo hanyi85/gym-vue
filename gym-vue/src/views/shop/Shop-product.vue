@@ -128,7 +128,13 @@ const handleCategoryClick = (cat) => {
 };
 
 
-const updateTitle = (name) => { activeCategory.value = name; };
+const updateTitle = (name) => { 
+  activeCategory.value = name; 
+  if (name === '全部商品') {
+    selectedSubCategory.value = ''; // 清空子類別過濾條件
+    searchQuery.value = '';        // (選做) 是否連搜尋文字也清空
+  }
+};
 
 // const goToDetail = (id) => {
 //   router.push({ name: 'ProductDetail', params: { id: id } });

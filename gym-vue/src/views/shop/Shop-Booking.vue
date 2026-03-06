@@ -175,7 +175,7 @@ watch(selectedCity, async (newCity) => {
               class="cart-summary-header bg-white py-4 text-center cursor-pointer position-relative"
               @click="toggleCart"
             >
-              <h4 class="fw-bold mb-1">合計：NT${{ cartStore.totalAmount }}</h4>
+              <h4 class="fw-bold mb-1">合計：NT$ {{ cartStore.totalAmount?.toLocaleString() }}</h4>
               <div class="text-secondary small d-flex align-items-center justify-content-center gap-1">
                 購物車 ({{ cartStore.cartItems.length }} 件) 
                 <i class="bi" :class="isCartExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>

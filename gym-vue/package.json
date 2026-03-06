@@ -20,10 +20,13 @@
     "chart.js": "^4.5.1",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.3.1",
+    "html5-qrcode": "^2.3.8",
     "pinia": "^3.0.4",
     "sweetalert2": "^11.26.20",
     "vue": "^3.5.27",
+    "vue-qrcode-reader": "^5.7.3",
     "vue-router": "^4.6.4",
+    "vue3-google-login": "^2.0.37",
     "vue3-recaptcha-v2": "^2.1.0"
   },
   "devDependencies": {
