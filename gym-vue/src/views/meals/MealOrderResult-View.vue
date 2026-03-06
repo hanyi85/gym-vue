@@ -104,17 +104,25 @@ onMounted(() => {
 </div>
   <div class="container py-4">
     <div class="order-complete-container text-center">
-  <div class="success-checkmark">
-    <div class="check-icon">
-      <span class="icon-line line-tip"></span>
-      <span class="icon-line line-long"></span>
-      <div class="icon-circle"><i class="bi bi-check-lg"></i></div>
-      <div class="icon-fix"></div>
+  <div
+  v-if="order?.FOrderStatus !== '付款失敗'"
+  class="success-checkmark"
+>
+  <div class="check-icon">
+    <span class="icon-line line-tip"></span>
+    <span class="icon-line line-long"></span>
+    <div class="icon-circle">
+      <i class="bi bi-check-lg"></i>
     </div>
+    <div class="icon-fix"></div>
   </div>
+</div>
 
-  <h2 class="order-title mb-2">訂單已完成！</h2>
-  <p class="order-subtitle mb-4">感謝您的支持，我們將會準備好美味的餐點。</p>
+  <h2 class="order-title mb-2">{{ order?.FOrderStatus === '付款失敗' ? '訂單失敗' : '訂單已完成！' }}</h2>
+  <p class="order-subtitle mb-4">{{ order?.FOrderStatus === '付款失敗'
+      ? '付款未成功，請重新下單。'
+      : '感謝您的支持，我們將會準備好美味的餐點。'
+  }}</p>
   
 </div>
 
