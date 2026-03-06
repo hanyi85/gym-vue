@@ -131,15 +131,16 @@ const startCooldown = () => {
 }
 
 const handleResend = async () => {
+
+  if (!resendEmail.value || !resendEmail.value.includes('@')) {
+    message.value = '請輸入正確的電子信箱'
+    return
+  }
+
   if (cooldown.value > 0) return
 
   try {
     isResending.value = true
-
-    if (!resendEmail.value) {
-      message.value = '請輸入電子信箱'
-      return
-    }
 
     await resendVerifyEmail(resendEmail.value)
 
@@ -147,22 +148,7 @@ const handleResend = async () => {
     startCooldown()
 
   } catch (error) {
-
-    //  帳號已驗證情境
-    if (error.response?.data?.message === '帳號已完成驗證') {
-
-      status.value = 'success'
-      message.value = '您的帳號已完成驗證，正在前往下一步...'
-
-      setTimeout(() => {
-        router.push('/users/profile-health')
-      }, 2000)
-
-      return
-    }
-
     message.value = '發送失敗，請稍後再試。'
-
   } finally {
     isResending.value = false
   }
