@@ -224,17 +224,35 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 樣式保持不變，已優化圖片顯示容器 */
+
 .reading-progress-bar {
-  position: fixed;
+position: fixed;
   top: 0;
   left: 0;
-  height: 4px;
-  background: linear-gradient(to right, #f3722c, #f9c74f);
+  height: 6px;
+  background: linear-gradient(to right, #f3722c, #f9c74f, #f3722c);
+  background-size: 200% 100%;
   z-index: 2000;
-  transition: width 0.1s ease;
+  transition: width 0.2s ease-out;
+  box-shadow: 0 2px 10px rgba(243, 114, 44, 0.4);
+  border-bottom-right-radius: 4px;
+  border-top-right-radius: 4px;
+  animation: progress-shimmer 2s linear infinite;
 }
 
+@keyframes progress-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+.reading-progress-bar[style*="width: 100%"] {
+  background: #f3722c;
+  box-shadow: 0 0 15px rgba(243, 114, 44, 0.7);
+}
 .scroll-to-top {
   position: fixed;
   bottom: 30px;

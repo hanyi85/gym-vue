@@ -1,9 +1,9 @@
 <template>
   <div class="news-wrapper bg-light min-vh-100 pb-5">
     <div class="scroll-to-top" :class="{ 'show': scrollY > 300 }" @click="scrollToTop">
-      <svg class="progress-ring" width="50" height="50">
-        <circle class="progress-ring__circle" stroke="#f3722c" stroke-width="3" fill="transparent" r="20" cx="25"
-          cy="25" :style="{ strokeDasharray: '125.6', strokeDashoffset: 125.6 - (125.6 * scrollPercent / 100) }" />
+      <svg class="progress-ring" width="64" height="64">
+        <circle class="progress-ring__circle" stroke="#f3722c" stroke-width="4" fill="transparent" r="28" cx="32"
+          cy="32" :style="{ strokeDasharray: '175.9', strokeDashoffset: 175.9 - (175.9 * scrollPercent / 100) }" />
       </svg>
       <i class="bi bi-arrow-up-short"></i>
     </div>
@@ -37,7 +37,7 @@
             </div>
             <div class="p-4 flex-grow-1 d-flex flex-column justify-content-center">
               <div :class="['fw-bold mb-2', index === 0 ? 'text-orange' : 'text-warning']">
-                {{ index === 0 ? '📌 置頂公告' : '⭐ 精選活動' }}
+                {{ index === 0 ? '置頂公告' : '精選活動' }}
               </div>
               <div @click="goToDetail(p.Id)" class="cursor-pointer">
                 <h5 class="text-dark fw-bold mb-2">{{ p.Title }}</h5>
@@ -79,11 +79,11 @@
             <span class="small text-muted fw-bold text-nowrap me-2"><i class="bi bi-search me-1"></i>日期搜尋：</span>
             <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
               <div class="date-input-container flex-grow-1">
-                <input type="date" v-model="startDate" class="custom-date-input">
+                <input type="date" v-model="startDate" class="custom-date-input" @click="$el.querySelector('input').showPicker()">
               </div>
               <span class="text-muted small">~</span>
               <div class="date-input-container flex-grow-1">
-                <input type="date" v-model="endDate" class="custom-date-input">
+                <input type="date" v-model="endDate" class="custom-date-input" @click="$el.querySelector('input').showPicker()">
               </div>
               <button v-if="startDate || endDate" @click="clearDateFilter"
                 class="btn btn-sm btn-link text-orange p-0 ms-1"><i class="bi bi-x-circle-fill"></i></button>
@@ -483,47 +483,86 @@ onUnmounted(() => {
 
 .scroll-to-top {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 50px;
-  height: 50px;
+  bottom: 40px;
+  right: 40px;
+  width: 64px;
+  height: 64px;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  /* 強化陰影，讓按鈕有「浮起來」的感覺 */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   cursor: pointer;
   z-index: 1100;
   opacity: 0;
   transform: translateY(20px);
-  transition: all 0.4s ease;
-}
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
 
 .scroll-to-top.show {
   opacity: 1;
   transform: translateY(0);
 }
+.scroll-to-top i {
+  font-size: 1.8rem;
+  /* 放大箭頭 */
+  color: #f3722c;
+  line-height: 1;
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+.scroll-to-top:hover i {
+font-size: 2.2rem;
+  /* 增加箭頭尺寸 */
+  color: #f3722c;
+  line-height: 1;
+  z-index: 2;
+}
 
 .progress-ring {
   transform: rotate(-90deg);
-}
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;}
 
 .progress-ring__circle {
   transition: stroke-dashoffset 0.1s;
 }
 
 .custom-date-input {
-  width: 100%;
-  padding: 6px 15px;
-  font-size: 0.85rem;
+width: 100%;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   border: 1px solid #eee;
   background-color: #f8f9fa;
   border-radius: 50px;
-  color: #666;
+  color: #444;
   cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  /* 移除某些瀏覽器的預設外觀 */
+  position: relative;
 }
-
+.custom-date-input:hover {
+  background-color: #fff;
+  border-color: #f3722c;
+  box-shadow: 0 2px 8px rgba(243, 114, 44, 0.1);
+}
+.custom-date-input:focus {
+  outline: none;
+  border-color: #f3722c;
+  background-color: #fff;
+}
+.custom-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 5px;
+  filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(340deg);
+  /* 讓圖示變橘色 */
+}
 .alert-guide {
   background-color: #2b2b2b;
   color: white;
