@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted, defineProps, watch} from "vue"
 import axios from "axios"
-import { QrcodeStream } from "vue-qrcode-reader"
+import { QrcodeStream,QrcodeCapture } from "vue-qrcode-reader"
 const apiUrl="https://localhost:7218/api"
 import Swal from 'sweetalert2'
 
@@ -9,6 +9,7 @@ const qrInput = ref("")
 const item = ref(null)
 const message = ref("")
 const loading = ref(false)
+const cameras = ref([])
 
 const payments = [
   { value: 'cash', label: '現金付款' },
@@ -22,7 +23,7 @@ defineProps({
   order: Object
 })
 
-// 🔎 查詢
+// 查詢
 async function fetchItem(qrContent) {
   try {
     loading.value = true
@@ -42,21 +43,26 @@ async function fetchItem(qrContent) {
   }
 }
 
-// 📷 掃描成功
-// function onDecode(result) {
-//   qrInput.value = result
-//   fetchItem(result)
-//   console.log(result)
-//   console.log(qrInput.value)
-// }
+//多掃描
+const mode = ref("camera") 
+// camera = 相機掃描
+// upload = 上傳圖片
+
 
 const result = ref('')
-
+//QRCode 掃描功能
 function onDetect(detectedCodes) {
-  console.log(detectedCodes)
-  result.value = JSON.stringify(detectedCodes.map((code) => code.rawValue))
-  console.log(result.value)
-  qrInput.value = detectedCodes[0]?.rawValue || ''
+  if (!detectedCodes.length) return
+
+  const qrContent = detectedCodes[0].rawValue
+
+  result.value = qrContent
+  qrInput.value = qrContent
+
+  console.log("QRCode:", qrContent)
+
+  // 自動查詢
+  fetchItem(qrContent)
 }
 
 /*** error handling ***/
@@ -64,28 +70,21 @@ function onDetect(detectedCodes) {
 const error = ref('')
 
 function onError(err) {
-  error.value = `[${err.name}]: `
+ if (err.name === 'NotAllowedError') {
+    error.value = '請允許相機權限'
 
-  if (err.name === 'NotAllowedError') {
-  error.value += '你需要授予相機存取權限'
-} else if (err.name === 'NotFoundError') {
-  error.value += '這個裝置上沒有相機'
-} else if (err.name === 'NotSupportedError') {
-  error.value += '需要安全環境（HTTPS 或 localhost）'
-} else if (err.name === 'NotReadableError') {
-  error.value += '相機是否已被其他程式使用？'
-} else if (err.name === 'OverconstrainedError') {
-  error.value += '已安裝的相機不符合需求'
-} else if (err.name === 'StreamApiNotSupportedError') {
-  error.value += '這個瀏覽器不支援 Stream API'
-} else if (err.name === 'InsecureContextError') {
-  error.value += '相機存取僅允許在安全環境下。請使用 HTTPS 或 localhost，而不是 HTTP。'
-} else {
-  error.value += err.message
-}
+  } else if (err.name === 'NotReadableError') {
+    error.value = '相機可能被其他程式使用'
+
+  } else if (err.name === 'NotFoundError') {
+    error.value = '找不到相機'
+
+  } else {
+    error.value = ''
+  }
 }
 
-/*** track functons ***/
+/*** track functonsQRCode 偵測框 ***/
 
 function paintOutline(detectedCodes, ctx) {
   for (const detectedCode of detectedCodes) {
@@ -104,8 +103,41 @@ function paintOutline(detectedCodes, ctx) {
   }
 }
 
+//選擇鏡頭
+const selectedCamera = ref(null)
+const cameraKey = ref(0)
 
-// ✅ 確認取餐
+onMounted(async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices()
+
+  cameras.value = devices.filter(d => d.kind === "videoinput")
+
+  if (cameras.value.length > 0) {
+    selectedCamera.value = cameras.value[0].deviceId
+  }
+})
+
+//初始化相機
+const stream = ref(null)
+async function initCamera(deviceId) {
+
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop())
+  }
+
+  stream.value = await navigator.mediaDevices.getUserMedia({
+    video: { deviceId: { exact: deviceId } }
+  })
+}
+
+// 監聽 camera 改變
+watch(selectedCamera, async (newId) => {
+  await initCamera(newId)
+  cameraKey.value++   // 重新建立 qrcode-stream
+})
+
+
+//  確認取餐
 async function confirmPickup() {
   if (!item.value) return
 
@@ -145,6 +177,26 @@ async function confirmPickup() {
   <div class="row justify-content-center d-flex align-items-start">
     <div class=" col-md-4 col-12 ">
       <h2 class="text-center  order-title"><i class="bi bi-qr-code order-title"></i> 取餐系統</h2>
+
+      <!-- 選擇模式 -->
+      <div class="mb-2">
+  <label class="fw-bold">掃描方式：</label>
+
+  <select v-model="mode" class="form-select">
+    <option value="camera">相機掃描</option>
+    <option value="upload">上傳QRCode圖片</option>
+  </select>
+</div>
+
+      <select v-if="mode==='camera'" v-model="selectedCamera">
+  <option
+    v-for="camera in cameras"
+    :key="camera.deviceId"
+    :value="camera.deviceId"
+  >
+    {{ camera.label || "Camera" }}
+  </option>
+</select>
     <!-- 鏡頭掃描 -->
     <!-- <div class="mb-4 scanner">
       <qrcode-stream  @decode="onDecode" />
@@ -155,16 +207,25 @@ async function confirmPickup() {
 
     <div>
       <qrcode-stream
+        v-if="mode === 'camera'"
+        :key="cameraKey"
+        :constraints="{ deviceId: { exact: selectedCamera } }"
         @error="onError"
         @detect="onDetect"
         :track="paintOutline"
       />
+      <!-- 上傳圖片 -->
+      <qrcode-capture
+        v-if="mode === 'upload'"
+        @detect="onDetect"
+      />
     </div>
+    
 
 
 
     <!-- 手動輸入 -->
-    <div class="mb-3">
+    <div class="my-3">
       <input
         v-model="qrInput"
         class="form-control pt-2"
